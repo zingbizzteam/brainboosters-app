@@ -49,7 +49,7 @@ static Future<String?> _redirectLogic(
 
   // If logged in and on onboarding page, redirect based on user status
   if (isLoggedIn && currentPath == onboarding) {
-    bool isNew = await isNewUser(session!.user.id);
+    bool isNew = await isNewUser(session.user.id);
     if (isNew) {
       return AuthRoutes.userSetup;
     } else {

@@ -33,7 +33,7 @@ class DashboardBottomNavBar extends StatelessWidget {
         return BottomNavigationBarItem(
           icon: Icon(
             item.icon, 
-            color: safeSelectedIndex == i ? item.color : Colors.grey[400]
+            color: safeSelectedIndex == i ? item.color : item.color.withOpacity(0.6)
           ),
           label: item.label,
         );

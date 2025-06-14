@@ -1,6 +1,5 @@
 // student_routes/student_routes.dart
 import 'package:brainboosters_app/screens/Student/dashboard/dashboard_page.dart';
-import 'package:brainboosters_app/screens/Student/leaderboard/leaderboard_page.dart';
 import 'package:brainboosters_app/screens/Student/student_mainscreen.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:go_router/go_router.dart';

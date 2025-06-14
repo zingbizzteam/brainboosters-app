@@ -37,7 +37,7 @@ class Routes {
     // If not logged in   → redirect to onboarding
     if (!isLoggedIn) return onboarding;
     // If  logged in  → redirect to dashboard or user setup
-    bool isNew = await isNewUser(session!.user.id);
+    bool isNew = await isNewUser(session.user.id);
     if (isLoggedIn && isNew) {
       return AuthRoutes.userSetup;
     } else {

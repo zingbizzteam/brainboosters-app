@@ -8,12 +8,12 @@ class PhoneLoginButton extends StatelessWidget {
   final double? height;
 
   const PhoneLoginButton({
-    Key? key,
+    super.key,
     this.onOtpSent,
     this.onError,
     this.width,
     this.height,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

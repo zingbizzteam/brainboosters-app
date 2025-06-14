@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 class GoogleAuthButton extends StatefulWidget {
-  const GoogleAuthButton({Key? key}) : super(key: key);
+  const GoogleAuthButton({super.key});
 
   @override
   State<GoogleAuthButton> createState() => _GoogleAuthButtonState();

@@ -136,7 +136,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
             children: [
               OutlinedButton.icon(
                 style: ButtonStyle(
-                  padding: MaterialStateProperty.all(EdgeInsets.zero),
+                  padding: WidgetStateProperty.all(EdgeInsets.zero),
                 ),
                 label: const Text('Go Back', style: TextStyle(fontSize: 16)),
                 onPressed: () => context.go(AuthRoutes.authSelection),

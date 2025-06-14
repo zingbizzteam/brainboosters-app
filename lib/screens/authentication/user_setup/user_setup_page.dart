@@ -206,8 +206,9 @@ class _UserSetupPageState extends State<UserSetupPage> {
                           onPressed: _isLoading
                               ? null
                               : () {
-                                  if (_validateCurrentStep())
+                                  if (_validateCurrentStep()) {
                                     setState(() => _currentStep++);
+                                  }
                                 },
                           child: const Icon(
                             Icons.arrow_forward,
