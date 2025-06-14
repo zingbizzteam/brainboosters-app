@@ -1,6 +1,7 @@
+import 'package:brainboosters_app/screens/authentication/email/email_login_page.dart';
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
-import 'package:brainboosters_app/ui/navigation/app_router.dart';
+import 'package:brainboosters_app/ui/navigation/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';

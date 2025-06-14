@@ -1,53 +1,44 @@
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
-import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
-import 'package:brainboosters_app/ui/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class EmailLoginPage extends StatefulWidget {
-  const EmailLoginPage({super.key});
+class EmailRegisterPage extends StatefulWidget {
+  const EmailRegisterPage({super.key});
 
   @override
-  State<EmailLoginPage> createState() => _EmailLoginPageState();
+  State<EmailRegisterPage> createState() => _EmailRegisterPageState();
 }
 
-class _EmailLoginPageState extends State<EmailLoginPage> {
+class _EmailRegisterPageState extends State<EmailRegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _rememberPassword = false;
 
-  Future<void> _login() async {
+  Future<void> _register() async {
     setState(() => _isLoading = true);
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-
     try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
+      final response = await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
       );
-
       if (response.user != null) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Login successful!')));
-          final userId = response.user!.id;
-          final isNew = await isNewUser(userId);
-          if (mounted) {
-            isNew
-                ? context.go(AuthRoutes.userSetup)
-                : context.go(StudentRoutes.home);
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Registration successful! Please check your email to confirm.',
+              ),
+            ),
+          );
+          context.go(AuthRoutes.emailLogin);
         }
       }
     } on AuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unexpected error occurred')),
@@ -63,18 +54,17 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           bool isDesktop = constraints.maxWidth >= 768;
-
+          
           if (isDesktop) {
             return Row(
               children: [
-                // Left side - Illustration
+                // Left side - Illustration (same as login)
                 Expanded(
                   flex: 1,
                   child: Container(
                     color: const Color(0xFFB8E6F5),
                     child: Stack(
                       children: [
-                        // Brain Boosters Logo
                         Positioned(
                           top: 40,
                           left: 40,
@@ -87,16 +77,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                   height: 60,
                                   width: 60,
                                   color: Colors.blue,
-                                  child: const Icon(
-                                    Icons.school,
-                                    color: Colors.white,
-                                  ),
+                                  child: const Icon(Icons.school, color: Colors.white),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        // Illustration
                         Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -118,21 +104,20 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     ),
                   ),
                 ),
-                // Right side - Login Form
+                // Right side - Registration Form
                 Expanded(
                   flex: 1,
                   child: Container(
                     color: Colors.white,
-                    child: _buildLoginForm(),
+                    child: _buildRegisterForm(),
                   ),
                 ),
               ],
             );
           } else {
-            // Mobile layout
             return Container(
               color: Colors.white,
-              child: SafeArea(child: _buildLoginForm()),
+              child: SafeArea(child: _buildRegisterForm()),
             );
           }
         },
@@ -140,7 +125,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildRegisterForm() {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(40),
@@ -151,16 +136,15 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             children: [
               OutlinedButton.icon(
                 style: ButtonStyle(
-                  padding: WidgetStateProperty.all(EdgeInsets.all(0)),
+                  padding: MaterialStateProperty.all(EdgeInsets.zero),
                 ),
-                label: Text('Go Back', style: TextStyle(fontSize: 16)),
+                label: const Text('Go Back', style: TextStyle(fontSize: 16)),
                 onPressed: () => context.go(AuthRoutes.authSelection),
-                icon: Icon(Icons.arrow_back_ios),
+                icon: const Icon(Icons.arrow_back_ios, size: 16),
               ),
-
-              // Title
+              const SizedBox(height: 20),
               const Text(
-                'Log In',
+                'Create Account',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w600,
@@ -168,32 +152,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Subtitle
-              Row(
-                children: [
-                  const Text(
-                    'Don\'t have an account? ',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
-                  ),
-                  GestureDetector(
-                    onTap: () => context.go(AuthRoutes.emailRegister),
-                    child: const Text(
-                      'Create Account',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF5DADE2),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
               const Text(
-                'It will take less than a minute',
-                style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
+                'Get started with Brain Boosters',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF999999),
+                ),
               ),
               const SizedBox(height: 40),
 
@@ -235,9 +199,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
                       color: const Color(0xFF999999),
                     ),
                     onPressed: () {
@@ -250,31 +212,27 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               ),
               const SizedBox(height: 32),
 
-              // Sign In Button
+              // Sign Up Button
               Container(
                 decoration: BoxDecoration(
                   border: const Border(
                     bottom: BorderSide(
-                      color: Color(0xFF9d5f0e), // #9d5f0e
+                      color: Color(0xFF9D5F0E),
                       width: 3,
                     ),
                   ),
-                  borderRadius: BorderRadius.circular(
-                    8,
-                  ), // Match button's radius
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD4845C),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          8,
-                        ), // Match here too
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       elevation: 0,
                     ),
@@ -283,12 +241,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.black,
+                              color: Colors.white,
                               strokeWidth: 2,
                             ),
                           )
                         : const Text(
-                            'Sign In',
+                            'Sign Up',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -297,35 +255,27 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
 
-              const SizedBox(height: 20),
-
-              // Remember Password Checkbox
-              Row(
-                children: [
-                  Checkbox(
-                    value: _rememberPassword,
-                    onChanged: (value) {
-                      setState(() {
-                        _rememberPassword = value ?? false;
-                      });
-                    },
-                    activeColor: const Color(0xFF5DADE2),
+              // Login Link
+              Center(
+                child: GestureDetector(
+                  onTap: () => context.go(AuthRoutes.emailLogin),
+                  child: const Text.rich(
+                    TextSpan(
+                      text: 'Already have an account? ',
+                      style: TextStyle(color: Color(0xFF999999)),
+                      children: [
+                        TextSpan(
+                          text: 'Login',
+                          style: TextStyle(
+                            color: Color(0xFF5DADE2),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const Text(
-                    'Remember Password',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Forgot Password Link
-              GestureDetector(
-                onTap: () => context.go(AuthRoutes.emailResetPassword),
-                child: const Text(
-                  'Forgot Password?',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
                 ),
               ),
             ],
