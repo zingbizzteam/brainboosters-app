@@ -1,6 +1,6 @@
 // screens/common/courses/course_intro_page.dart
-import 'package:brainboosters_app/screens/Student/dashboard/data/course_dummy_data.dart';
-import 'package:brainboosters_app/screens/Student/dashboard/data/models/course_model.dart';
+import 'package:brainboosters_app/screens/common/courses/data/course_dummy_data.dart';
+import 'package:brainboosters_app/screens/common/courses/models/course_model.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/breadcrumb_widget.dart';

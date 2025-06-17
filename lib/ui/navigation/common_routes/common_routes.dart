@@ -5,6 +5,7 @@ import 'package:brainboosters_app/screens/common/coaching_centers/coaching_cente
 import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_detail_page.dart';
 import 'package:brainboosters_app/screens/common/courses/courses_page.dart';
 import 'package:brainboosters_app/screens/common/courses/course_intro_page.dart';
+import 'package:brainboosters_app/screens/common/search/search_page.dart';
 import 'package:brainboosters_app/screens/common/live_class/live_classes_page.dart';
 import 'package:brainboosters_app/screens/common/live_class/live_class_intro_page.dart';
 import 'package:brainboosters_app/screens/common/notifications/notifications_page.dart';
@@ -14,6 +15,7 @@ class CommonRoutes {
   // Route paths with leading slash for proper routing
   static const String courses = '/courses';
   static const String courseDetail = '/courses/:courseId';
+  static const String searchCourses = '/search-courses';
   static const String notifications = '/notifications';
   static const String liveClasses = '/live-classes';
   static const String liveClassDetail = '/live-classes/:liveClassId';
@@ -25,6 +27,7 @@ class CommonRoutes {
   static String getCourseDetailRoute(String courseId) => '/courses/$courseId';
   static String getLiveClassDetailRoute(String liveClassId) => '/live-classes/$liveClassId';
   static String getCoachingCenterDetailRoute(String centerId) => '/coaching-centers/$centerId';
+  static String getSearchCoursesRoute(String query) => '/search-courses?q=${Uri.encodeComponent(query)}';
 
   // Create StatefulShellBranch routes for shared navigation (only the ones used in navigation)
   static List<StatefulShellBranch> createNavigationBranches() {
@@ -94,10 +97,11 @@ class CommonRoutes {
     ];
   }
 
-  // Create all shell branches including coaching centers (for other uses)
+  // Create all shell branches including coaching centers and search (for other uses)
   static List<StatefulShellBranch> createAllShellBranches() {
     return [
       ...createNavigationBranches(),
+      
       // Branch for Coaching Centers (not in main navigation)
       StatefulShellBranch(
         routes: [
@@ -114,6 +118,19 @@ class CommonRoutes {
                 },
               ),
             ],
+          ),
+        ],
+      ),
+      
+      // Branch for Search (not in main navigation but available)
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: searchCourses,
+            builder: (context, state) {
+              final query = state.uri.queryParameters['q'] ?? '';
+              return SearchPage(query: query);
+            },
           ),
         ],
       ),
@@ -163,5 +180,14 @@ class CommonRoutes {
       ],
     ),
     GoRoute(path: settings, builder: (context, state) => const SettingsPage()),
+    
+    // Search Courses Route
+    GoRoute(
+      path: searchCourses,
+      builder: (context, state) {
+        final query = state.uri.queryParameters['q'] ?? '';
+        return SearchPage(query: query);
+      },
+    ),
   ];
 }

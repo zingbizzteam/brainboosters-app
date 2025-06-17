@@ -1,5 +1,5 @@
 // screens/common/live_class/widgets/live_class_info_widget.dart
-import 'package:brainboosters_app/screens/Student/dashboard/data/models/live_class_model.dart';
+import 'package:brainboosters_app/screens/common/live_class/models/live_class_model.dart';
 import 'package:brainboosters_app/screens/common/widgets/pricing_action_widget.dart';
 import 'package:flutter/material.dart';
 

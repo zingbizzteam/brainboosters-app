@@ -1,5 +1,5 @@
 // data/course_dummy_data.dart
-import './models/course_model.dart';
+import '../models/course_model.dart';
 
 class CourseDummyData {
   static final List<Course> courses = [

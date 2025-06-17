@@ -2,7 +2,7 @@
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/live_class_dummy_data.dart';
+import '../../../common/live_class/data/live_class_dummy_data.dart';
 
 class LiveClassList extends StatelessWidget {
   const LiveClassList({super.key});

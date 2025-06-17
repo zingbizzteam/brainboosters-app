@@ -1,7 +1,7 @@
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import './google/google_login_button.dart';
+import 'google/google_login_button.dart';
 
 class AuthSelectionPage extends StatelessWidget {
   const AuthSelectionPage({super.key});

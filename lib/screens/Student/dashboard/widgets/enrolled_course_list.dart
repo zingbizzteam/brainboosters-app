@@ -2,7 +2,7 @@
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/course_dummy_data.dart';
+import '../../../common/courses/data/course_dummy_data.dart';
 
 class EnrolledCourseList extends StatelessWidget {
   const EnrolledCourseList({super.key});

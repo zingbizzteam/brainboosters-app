@@ -1,6 +1,6 @@
 // screens/common/live_class/live_class_intro_page.dart
-import 'package:brainboosters_app/screens/Student/dashboard/data/live_class_dummy_data.dart';
-import 'package:brainboosters_app/screens/Student/dashboard/data/models/live_class_model.dart';
+import 'package:brainboosters_app/screens/common/live_class/data/live_class_dummy_data.dart';
+import 'package:brainboosters_app/screens/common/live_class/models/live_class_model.dart';
 import 'package:brainboosters_app/screens/common/widgets/breadcrumb_widget.dart';
 import 'package:brainboosters_app/screens/common/widgets/hero_image_widget.dart';
 import 'package:brainboosters_app/screens/common/widgets/stats_widget.dart';

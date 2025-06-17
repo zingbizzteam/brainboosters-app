@@ -2,7 +2,7 @@
 
  
 
-import 'package:brainboosters_app/screens/Student/dashboard/data/models/live_class_model.dart';
+import 'package:brainboosters_app/screens/common/live_class/models/live_class_model.dart';
 
 class LiveClassDummyData {
   static final List<LiveClass> liveClasses = [

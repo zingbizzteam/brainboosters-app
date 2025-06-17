@@ -1,5 +1,5 @@
 // screens/common/courses/widgets/course_info_widget.dart
-import 'package:brainboosters_app/screens/Student/dashboard/data/models/course_model.dart';
+import 'package:brainboosters_app/screens/common/courses/models/course_model.dart';
 import 'package:brainboosters_app/screens/common/widgets/pricing_action_widget.dart';
 import 'package:flutter/material.dart';
 class CourseInfoWidget extends StatelessWidget {
