@@ -1,7 +1,7 @@
 // app_router.dart
-import 'package:brainboosters_app/screens/common/search/search_page.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,18 +23,11 @@ class AppRouter {
       ),
       ...AuthRoutes.routes,
       StudentRoutes.statefulRoute,
-      // Add the search route here - IMPORTANT!
-      GoRoute(
-        path: '/search-courses',
-        builder: (context, state) {
-          final query = state.uri.queryParameters['q'] ?? '';
-          return SearchPage(query: query);
-        },
-      ),
+      // Add additional routes from CommonRoutes
+      ...CommonRoutes.getAdditionalRoutes(),
     ],
   );
 
-  // app_router.dart - Fixed redirect logic
   static Future<String?> _redirectLogic(
     BuildContext context,
     GoRouterState state,
@@ -51,9 +44,9 @@ class AppRouter {
       if (currentPath == onboarding ||
           currentPath.startsWith('/auth') ||
           AuthRoutes.routes.any((route) => route.path == currentPath)) {
-        return null; // Allow navigation
+        return null;
       }
-      return onboarding; // Redirect to onboarding
+      return onboarding;
     }
 
     // If logged in and on onboarding page, redirect based on user status
@@ -66,7 +59,6 @@ class AppRouter {
       }
     }
 
-    // For all other cases when logged in, allow navigation to proceed
     return null;
   }
 }
@@ -79,7 +71,6 @@ class SupabaseAuthStateListener extends ChangeNotifier {
   }
 }
 
-// Move this to your authentication service or provider
 Future<bool> isNewUser(String userId) async {
   try {
     final response = await Supabase.instance.client

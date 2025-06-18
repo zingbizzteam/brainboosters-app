@@ -24,7 +24,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return SafeArea(
+                return 
                   // <-- Wrap here!
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(

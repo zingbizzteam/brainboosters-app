@@ -1,6 +1,5 @@
 // screens/common/courses/courses_page.dart
 import 'package:brainboosters_app/screens/common/courses/widgets/course_footer_section.dart';
-import 'package:brainboosters_app/screens/common/courses/widgets/course_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'data/course_dummy_data.dart';
@@ -22,8 +21,6 @@ class CoursesPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Search Bar
-            const CourseSearchBar(),
             
             // Hero Section
             const CourseHeroSection(),

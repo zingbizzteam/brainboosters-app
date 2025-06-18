@@ -1,3 +1,4 @@
+// DashboardTopBar (dashboard_topbar.dart)
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,7 +11,6 @@ class DashboardTopBar extends StatefulWidget {
 
 class _DashboardTopBarState extends State<DashboardTopBar> {
   String? name;
-  String? avatarUrl;
   bool isLoading = true;
 
   @override
@@ -30,11 +30,11 @@ class _DashboardTopBarState extends State<DashboardTopBar> {
         .maybeSingle();
 
     setState(() {
-      name = data?['name'] ??
+      name =
+          data?['name'] ??
           user.userMetadata?['full_name'] ??
           user.email?.split('@').first ??
           'User';
-      avatarUrl = data?['avatar_url'] ?? user.userMetadata?['avatar_url'];
       isLoading = false;
     });
   }
@@ -77,50 +77,13 @@ class _DashboardTopBarState extends State<DashboardTopBar> {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   _getGreeting(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.black87,
-                  ),
+                  style: const TextStyle(fontSize: 20, color: Colors.black87),
                 ),
               ),
             ],
           ),
         ),
-      
-            _UserAvatar(name: name, avatarUrl: avatarUrl),
-         
       ],
-    );
-  }
-}
-
-class _UserAvatar extends StatelessWidget {
-  final String? name;
-  final String? avatarUrl;
-  const _UserAvatar({this.name, this.avatarUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    if (avatarUrl != null && avatarUrl!.isNotEmpty) {
-      return CircleAvatar(
-        backgroundImage: NetworkImage(avatarUrl!),
-        radius: 20,
-      );
-    }
-    // Fallback: Use initials
-    final initials = (name != null && name!.isNotEmpty)
-        ? name!.trim().split(' ').map((e) => e[0]).take(2).join().toUpperCase()
-        : '?';
-    return CircleAvatar(
-      backgroundColor: Colors.blue.shade100,
-      radius: 20,
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Color(0xFF4AA0E6),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
     );
   }
 }

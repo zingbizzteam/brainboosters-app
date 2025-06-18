@@ -24,9 +24,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return SafeArea(
-                  // <-- Wrap here!
-                  child: SingleChildScrollView(
+                return  SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
                       horizontal: isWide ? 32 : 16,
                       vertical: isWide ? 24 : 12,
@@ -145,7 +143,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                     ),
-                  ),
+                 
                 );
               },
             ),

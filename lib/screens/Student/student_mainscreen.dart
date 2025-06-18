@@ -1,4 +1,5 @@
 // student_mainscreen.dart
+import 'package:brainboosters_app/screens/Student/widgets/appbar_widget.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:flutter/material.dart';
@@ -14,25 +15,25 @@ final _navItems = [
     color: Colors.blue,
   ),
   _NavItem(
-    route: CommonRoutes.courses, // Branch 1
+    route: CommonRoutes.courses,
     label: 'Courses',
     icon: Icons.menu_book,
     color: const Color(0xFFA78DF0),
   ),
   _NavItem(
-    route: CommonRoutes.liveClasses, // Branch 2
+    route: CommonRoutes.liveClasses,
     label: 'Live',
     icon: Icons.live_tv,
     color: const Color(0xFFF76B6A),
   ),
   _NavItem(
-    route: CommonRoutes.notifications, // Branch 3
-    label: 'Notifications',
-    icon: Icons.notifications,
+    route: CommonRoutes.coachingCenters,
+    label: 'Coaching',
+    icon: Icons.school, // Changed icon
     color: const Color(0xFFF9B857),
   ),
   _NavItem(
-    route: CommonRoutes.settings, // Branch 4
+    route: CommonRoutes.settings,
     label: 'Settings',
     icon: Icons.settings,
     color: const Color(0xFF5873ff),
@@ -44,7 +45,6 @@ class StudentMainScreen extends StatelessWidget {
   final StatefulNavigationShell shell;
 
   void _onNavTap(int index) {
-    print('Navigation tapped: $index, Current branch: ${shell.currentIndex}');
     shell.goBranch(index);
   }
 
@@ -55,16 +55,19 @@ class StudentMainScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FBFD),
-      body: Row(
-        children: [
-          if (isWide)
-            DashboardSidebar(
-              selectedIndex: selectedIndex,
-              onItemSelected: _onNavTap,
-              items: _navItems,
-            ),
-          Expanded(child: shell),
-        ],
+      appBar: AppBarWidget(),
+      body: SafeArea(
+        child: Row(
+          children: [
+            if (isWide)
+              DashboardSidebar(
+                selectedIndex: selectedIndex,
+                onItemSelected: _onNavTap,
+                items: _navItems,
+              ),
+            Expanded(child: shell),
+          ],
+        ),
       ),
       bottomNavigationBar: isWide
           ? null

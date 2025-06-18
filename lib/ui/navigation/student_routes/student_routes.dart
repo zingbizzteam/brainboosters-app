@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 class StudentRoutes {
   static const String home = '/home';
-  static const String leaderboard = '/leaderboard';
 
   static final StatefulShellRoute statefulRoute = StatefulShellRoute.indexedStack(
     builder: (context, state, navigationShell) => StudentMainScreen(shell: navigationShell),
@@ -20,7 +19,7 @@ class StudentRoutes {
           ),
         ],
       ),
-      // Branches 1-4: Common navigation routes (courses, live-classes, notifications, settings)
+      // Branches 1-4: Common navigation routes
       ...CommonRoutes.createNavigationBranches(),
     ],
   );

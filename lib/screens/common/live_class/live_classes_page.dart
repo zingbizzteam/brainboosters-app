@@ -8,7 +8,6 @@ import '../../../ui/navigation/common_routes/common_routes.dart';
 import 'widgets/live_class_hero_section.dart';
 import 'widgets/live_class_categories_section.dart';
 import 'widgets/featured_instructors_section.dart';
-import '../courses/widgets/course_search_bar.dart';
 import '../courses/widgets/app_promotion_section.dart';
 import '../courses/widgets/course_footer_section.dart';
 
@@ -22,8 +21,6 @@ class LiveClassesPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Search Bar
-            const CourseSearchBar(),
             
             // Hero Section
             const LiveClassHeroSection(),

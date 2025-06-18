@@ -1,4 +1,3 @@
-
 // Fixed DashboardBottomNavBar (bottom_navbar.dart)
 import 'package:flutter/material.dart';
 
@@ -18,11 +17,11 @@ class DashboardBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Ensure selectedIndex is within bounds
     final safeSelectedIndex = selectedIndex.clamp(0, items.length - 1);
-    
+
     return BottomNavigationBar(
       currentIndex: safeSelectedIndex,
       onTap: (index) {
-        print('Bottom nav tapped: $index');
+        debugPrint('Bottom nav tapped: $index');
         onItemSelected(index);
       },
       type: BottomNavigationBarType.fixed,
@@ -32,8 +31,10 @@ class DashboardBottomNavBar extends StatelessWidget {
         final item = items[i];
         return BottomNavigationBarItem(
           icon: Icon(
-            item.icon, 
-            color: safeSelectedIndex == i ? item.color : item.color.withOpacity(0.6)
+            item.icon,
+            color: safeSelectedIndex == i
+                ? item.color
+                : item.color.withOpacity(0.6),
           ),
           label: item.label,
         );

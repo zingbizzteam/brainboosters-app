@@ -1,9 +1,18 @@
-// screens/common/courses/search_courses_page.dart
+// screens/common/search/search_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../courses/data/course_dummy_data.dart';
 import '../courses/models/course_model.dart';
-import '../../../ui/navigation/common_routes/common_routes.dart';
+import '../live_class/data/live_class_dummy_data.dart';
+import '../live_class/models/live_class_model.dart';
+import '../coaching_centers/data/coaching_center_dummy_data.dart';
+import '../coaching_centers/models/coaching_center_model.dart';
+import 'widgets/search_bar_widget.dart';
+import 'widgets/search_filters_widget.dart';
+import 'widgets/search_results_widget.dart';
+import 'widgets/search_tab_bar_widget.dart';
+
+enum SearchContentType { all, courses, liveClasses, coachingCenters }
 
 class SearchPage extends StatefulWidget {
   final String query;
@@ -13,24 +22,31 @@ class SearchPage extends StatefulWidget {
   State<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
-  final TextEditingController _searchController = TextEditingController();
+class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
+  SearchContentType selectedType = SearchContentType.all;
   String sortBy = 'Relevance';
   String filterDifficulty = 'All';
   String filterPrice = 'All';
   String filterCategory = 'All';
   bool showFilters = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _searchController.text = widget.query;
+    _tabController = TabController(length: 4, vsync: this);
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // Get filtered courses
   List<Course> get _filteredCourses {
     List<Course> results = CourseDummyData.courses;
     
-    // Search filter
     if (widget.query.isNotEmpty) {
       results = results.where((c) =>
           c.title.toLowerCase().contains(widget.query.toLowerCase()) ||
@@ -39,48 +55,115 @@ class _SearchPageState extends State<SearchPage> {
           c.description.toLowerCase().contains(widget.query.toLowerCase())).toList();
     }
 
-    // Difficulty filter
+    // Apply filters
     if (filterDifficulty != 'All') {
       results = results.where((c) => c.difficulty == filterDifficulty).toList();
     }
     
-    // Price filter
     if (filterPrice == 'Free') {
       results = results.where((c) => c.isFree).toList();
     } else if (filterPrice == 'Paid') {
       results = results.where((c) => !c.isFree).toList();
     }
     
-    // Category filter
     if (filterCategory != 'All') {
       results = results.where((c) => c.category == filterCategory).toList();
     }
 
-    // Sort
-    switch (sortBy) {
-      case 'Newest':
-        results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
-      case 'Price: Low to High':
-        results.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case 'Price: High to Low':
-        results.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case 'Rating':
-        results.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
-      case 'Popularity':
-        results.sort((a, b) => b.totalRatings.compareTo(a.totalRatings));
-        break;
+    // Apply sorting
+    _applySorting(results);
+    return results;
+  }
+
+  // Get filtered live classes
+  List<LiveClass> get _filteredLiveClasses {
+    List<LiveClass> results = LiveClassDummyData.liveClasses;
+    
+    if (widget.query.isNotEmpty) {
+      results = results.where((lc) =>
+          lc.title.toLowerCase().contains(widget.query.toLowerCase()) ||
+          lc.subject.toLowerCase().contains(widget.query.toLowerCase()) ||
+          lc.instructor.toLowerCase().contains(widget.query.toLowerCase()) ||
+          lc.description.toLowerCase().contains(widget.query.toLowerCase())).toList();
     }
 
     return results;
   }
 
-  void _onSearch() {
-    final query = _searchController.text.trim();
-    context.pushReplacement(CommonRoutes.getSearchCoursesRoute(query));
+  // Get filtered coaching centers
+  List<CoachingCenter> get _filteredCoachingCenters {
+    List<CoachingCenter> results = CoachingCenterDummyData.coachingCenters;
+    
+    if (widget.query.isNotEmpty) {
+      results = results.where((cc) =>
+          cc.name.toLowerCase().contains(widget.query.toLowerCase()) ||
+          cc.location.toLowerCase().contains(widget.query.toLowerCase()) ||
+          cc.description.toLowerCase().contains(widget.query.toLowerCase()) ||
+          cc.specializations.any((s) => s.toLowerCase().contains(widget.query.toLowerCase()))).toList();
+    }
+
+    return results;
+  }
+
+  void _applySorting<T>(List<T> results) {
+    switch (sortBy) {
+      case 'Newest':
+        if (T == Course) {
+          (results as List<Course>).sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        }
+        break;
+      case 'Price: Low to High':
+        if (T == Course) {
+          (results as List<Course>).sort((a, b) => a.price.compareTo(b.price));
+        }
+        break;
+      case 'Price: High to Low':
+        if (T == Course) {
+          (results as List<Course>).sort((a, b) => b.price.compareTo(a.price));
+        }
+        break;
+      case 'Rating':
+        if (T == Course) {
+          (results as List<Course>).sort((a, b) => b.rating.compareTo(a.rating));
+        } else if (T == CoachingCenter) {
+          (results as List<CoachingCenter>).sort((a, b) => b.rating.compareTo(a.rating));
+        }
+        break;
+      case 'Popularity':
+        if (T == Course) {
+          (results as List<Course>).sort((a, b) => b.totalRatings.compareTo(a.totalRatings));
+        }
+        break;
+    }
+  }
+
+  int get _totalResults {
+    switch (selectedType) {
+      case SearchContentType.courses:
+        return _filteredCourses.length;
+      case SearchContentType.liveClasses:
+        return _filteredLiveClasses.length;
+      case SearchContentType.coachingCenters:
+        return _filteredCoachingCenters.length;
+      case SearchContentType.all:
+        return _filteredCourses.length + _filteredLiveClasses.length + _filteredCoachingCenters.length;
+    }
+  }
+
+  void _onFilterChanged({
+    String? sortBy,
+    String? filterDifficulty,
+    String? filterPrice,
+    String? filterCategory,
+    bool? showFilters,
+  }) {
+    setState(() {
+      if (sortBy != null) this.sortBy = sortBy;
+      if (filterDifficulty != null) this.filterDifficulty = filterDifficulty;
+      if (filterPrice != null) this.filterPrice = filterPrice;
+      if (filterCategory != null) this.filterCategory = filterCategory;
+      if (showFilters != null) this.showFilters = showFilters;
+    });
   }
 
   @override
@@ -96,313 +179,78 @@ class _SearchPageState extends State<SearchPage> {
         elevation: 0,
         title: widget.query.isNotEmpty 
           ? Text('Search Results for "${widget.query}"')
-          : const Text('All Courses'),
+          : const Text('Search Everything'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => context.pop(),
+        ),
+        bottom: SearchTabBarWidget(
+          tabController: _tabController,
+          filteredCourses: _filteredCourses,
+          filteredLiveClasses: _filteredLiveClasses,
+          filteredCoachingCenters: _filteredCoachingCenters,
+          onTabChanged: (index) {
+            setState(() {
+              selectedType = SearchContentType.values[index];
+            });
+          },
         ),
       ),
       body: Column(
         children: [
           // Search Bar
-          Container(
+          SearchBarWidget(
+            initialQuery: widget.query,
             padding: EdgeInsets.symmetric(
               horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
               vertical: 16,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onSubmitted: (_) => _onSearch(),
-                    decoration: InputDecoration(
-                      hintText: 'Search for courses...',
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      prefixIcon: const Icon(Icons.search),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _onSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      vertical: isMobile ? 14 : 16,
-                      horizontal: isMobile ? 16 : 24,
-                    ),
-                  ),
-                  child: const Text('Search'),
-                ),
-              ],
             ),
           ),
           
           // Filters and Sort
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
-              vertical: 16,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[200]!),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${_filteredCourses.length} courses found',
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (isMobile)
-                      IconButton(
-                        onPressed: () => setState(() => showFilters = !showFilters),
-                        icon: Icon(showFilters ? Icons.close : Icons.filter_list),
-                      ),
-                  ],
-                ),
-                
-                if (!isMobile || showFilters) ...[
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 12,
-                    children: [
-                      _buildDropdown(
-                        'Sort by',
-                        sortBy,
-                        ['Relevance', 'Newest', 'Price: Low to High', 'Price: High to Low', 'Rating', 'Popularity'],
-                        (value) => setState(() => sortBy = value!),
-                      ),
-                      _buildDropdown(
-                        'Difficulty',
-                        filterDifficulty,
-                        ['All', 'Beginner', 'Intermediate', 'Advanced'],
-                        (value) => setState(() => filterDifficulty = value!),
-                      ),
-                      _buildDropdown(
-                        'Price',
-                        filterPrice,
-                        ['All', 'Free', 'Paid'],
-                        (value) => setState(() => filterPrice = value!),
-                      ),
-                      _buildDropdown(
-                        'Category',
-                        filterCategory,
-                        ['All', 'Programming', 'Data Science', 'Technology', 'Mobile Development'],
-                        (value) => setState(() => filterCategory = value!),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
+          SearchFiltersWidget(
+            totalResults: _totalResults,
+            selectedType: selectedType,
+            sortBy: sortBy,
+            filterDifficulty: filterDifficulty,
+            filterPrice: filterPrice,
+            filterCategory: filterCategory,
+            showFilters: showFilters,
+            isMobile: isMobile,
+            isTablet: isTablet,
+            onFilterChanged: _onFilterChanged,
           ),
           
           // Results
           Expanded(
-            child: _filteredCourses.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No courses found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Try adjusting your search or filters',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : GridView.builder(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
-                      vertical: 24,
-                    ),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isMobile ? 1 : (isTablet ? 2 : 3),
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: isMobile ? 1.2 : 0.75,
-                    ),
-                    itemCount: _filteredCourses.length,
-                    itemBuilder: (context, index) {
-                      return _buildCourseCard(_filteredCourses[index], isMobile);
-                    },
-                  ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                SearchResultsWidget.all(
+                  filteredCourses: _filteredCourses,
+                  filteredLiveClasses: _filteredLiveClasses,
+                  filteredCoachingCenters: _filteredCoachingCenters,
+                  isMobile: isMobile,
+                ),
+                SearchResultsWidget.courses(
+                  filteredCourses: _filteredCourses,
+                  isMobile: isMobile,
+                  isTablet: isTablet,
+                ),
+                SearchResultsWidget.liveClasses(
+                  filteredLiveClasses: _filteredLiveClasses,
+                  isMobile: isMobile,
+                  isTablet: isTablet,
+                ),
+                SearchResultsWidget.coachingCenters(
+                  filteredCoachingCenters: _filteredCoachingCenters,
+                  isMobile: isMobile,
+                  isTablet: isTablet,
+                ),
+              ],
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDropdown(
-    String label,
-    String value,
-    List<String> items,
-    ValueChanged<String?> onChanged,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        items: items.map((item) => DropdownMenuItem(
-          value: item,
-          child: Text('$label: $item'),
-        )).toList(),
-        onChanged: onChanged,
-        underline: Container(),
-        style: const TextStyle(fontSize: 14, color: Colors.black),
-        isDense: true,
-      ),
-    );
-  }
-
-  Widget _buildCourseCard(Course course, bool isMobile) {
-    return GestureDetector(
-      onTap: () {
-        context.push(CommonRoutes.getCourseDetailRoute(course.id));
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Course Image
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                child: Image.network(
-                  course.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.book, size: 40, color: Colors.grey),
-                  ),
-                ),
-              ),
-            ),
-            
-            // Course Info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.title,
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      course.academy,
-                      style: TextStyle(
-                        fontSize: isMobile ? 12 : 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.amber, size: isMobile ? 14 : 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          course.rating.toStringAsFixed(1),
-                          style: TextStyle(
-                            fontSize: isMobile ? 12 : 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          course.isFree ? 'Free' : '₹${course.price.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: isMobile ? 14 : 16,
-                            fontWeight: FontWeight.bold,
-                            color: course.isFree ? Colors.green : Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
