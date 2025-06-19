@@ -1,4 +1,5 @@
 // lib/routes/auth_routes.dart
+import 'package:brainboosters_app/screens/authentication/email/email_login_page_teacher.dart';
 import 'package:go_router/go_router.dart';
 import '../../screens/authentication/auth_page.dart';
 import '../../screens/authentication/email/email_register_page.dart';
@@ -10,6 +11,7 @@ class AuthRoutes {
   static const String prefix = '/auth';
   static const String emailRegister = '$prefix/email/register';
   static const String emailLogin = '$prefix/email/login';
+  static const String emailLoginTeacher = '$prefix/email/teacher';
   static const String emailResetPassword = '$prefix/email/reset-password';
   static const String authSelection = prefix;
   static const String userSetup = '$prefix/user-setup';
@@ -22,6 +24,10 @@ class AuthRoutes {
     GoRoute(
       path: emailLogin,
       builder: (context, state) => const EmailLoginPage(),
+    ),
+    GoRoute(
+      path: emailLoginTeacher,
+      builder: (context, state) => const EmailLoginPageTeacher(),
     ),
     GoRoute(
       path: emailResetPassword,

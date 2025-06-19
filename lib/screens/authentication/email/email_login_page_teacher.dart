@@ -1,18 +1,18 @@
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
-import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:brainboosters_app/ui/navigation/app_router.dart';
+import 'package:brainboosters_app/ui/navigation/teacher_routes/teacher_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class EmailLoginPage extends StatefulWidget {
-  const EmailLoginPage({super.key});
+class EmailLoginPageTeacher extends StatefulWidget {
+  const EmailLoginPageTeacher({super.key});
 
   @override
-  State<EmailLoginPage> createState() => _EmailLoginPageState();
+  State<EmailLoginPageTeacher> createState() => _EmailLoginPageTeacherState();
 }
 
-class _EmailLoginPageState extends State<EmailLoginPage> {
+class _EmailLoginPageTeacherState extends State<EmailLoginPageTeacher> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -40,7 +40,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
           if (mounted) {
             isNew
                 ? context.go(AuthRoutes.userSetup)
-                : context.go(StudentRoutes.home);
+                : context.go(TeacherRoutes.home);
           }
         }
       }
@@ -149,37 +149,18 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    style: ButtonStyle(
-                      padding: WidgetStateProperty.all(EdgeInsets.all(0)),
-                    ),
-                    label: const Text(
-                      'Go Back',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    onPressed: () => context.go(AuthRoutes.authSelection),
-                    icon: const Icon(Icons.arrow_back_ios),
-                  ),
-                  const SizedBox(width: 16),
-                  TextButton(
-                    onPressed: () => context.go(AuthRoutes.emailLoginTeacher),
-                    child: const Text(
-                      'Teacher Login',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF5DADE2),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              OutlinedButton.icon(
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(EdgeInsets.all(0)),
+                ),
+                label: const Text('Go Back', style: TextStyle(fontSize: 16)),
+                onPressed: () => context.go(AuthRoutes.emailLogin),
+                icon: const Icon(Icons.arrow_back_ios),
               ),
 
               // Title
               const Text(
-                'Log In',
+                'Welcome Back',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w600,
@@ -189,32 +170,32 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               const SizedBox(height: 16),
 
               // Subtitle
-              Row(
-                children: [
-                  const Text(
-                    'Don\'t have an account? ',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
-                  ),
-                  GestureDetector(
-                    onTap: () => context.go(AuthRoutes.emailRegister),
-                    child: const Text(
-                      'Create Account',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF5DADE2),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+              // Row(
+              //   children: [
+              //     const Text(
+              //       'Don\'t have an account? ',
+              //       style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
+              //     ),
+              //     GestureDetector(
+              //       onTap: () => context.go(AuthRoutes.emailRegister),
+              //       child: const Text(
+              //         'Create Account',
+              //         style: TextStyle(
+              //           fontSize: 14,
+              //           color: Color(0xFF5DADE2),
+              //           fontWeight: FontWeight.w500,
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 8),
 
-              const Text(
-                'It will take less than a minute',
-                style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
-              ),
-              const SizedBox(height: 40),
+              // const Text(
+              //   'It will take less than a minute',
+              //   style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
+              // ),
+              // const SizedBox(height: 40),
 
               // Email Field
               TextField(

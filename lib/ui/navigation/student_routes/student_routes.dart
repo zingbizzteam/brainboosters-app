@@ -8,8 +8,10 @@ class StudentRoutes {
   static const String home = '/home';
   static const String leaderboard = '/leaderboard';
 
-  static final StatefulShellRoute statefulRoute = StatefulShellRoute.indexedStack(
-    builder: (context, state, navigationShell) => StudentMainScreen(shell: navigationShell),
+  static final StatefulShellRoute
+  statefulRoute = StatefulShellRoute.indexedStack(
+    builder: (context, state, navigationShell) =>
+        StudentMainScreen(shell: navigationShell),
     branches: [
       // Branch 0: Home (Student-specific)
       StatefulShellBranch(
