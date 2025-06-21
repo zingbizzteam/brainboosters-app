@@ -14,30 +14,42 @@ class _EmailResetPasswordPageState extends State<EmailResetPasswordPage> {
   bool _isLoading = false;
 
   Future<void> _resetPassword() async {
-    setState(() => _isLoading = true);
-    final email = _emailController.text.trim();
-    try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset link sent! Check your email.'),
-          ),
-        );
-        context.go(AuthRoutes.emailLogin);
-      }
-    } on AuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unexpected error occurred')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  setState(() => _isLoading = true);
+  final email = _emailController.text.trim();
+  
+  // Capture ScaffoldMessenger before async operations
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  
+  try {
+    await Supabase.instance.client.auth.resetPasswordForEmail(email);
+    
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(
+        content: Text('Password reset link sent! Check your email.'),
+      ),
+    );
+    
+    // Only check mounted before navigation
+    if (!mounted) return;
+    context.go(AuthRoutes.emailLogin);
+    
+  } on AuthException catch (e) {
+    // Use captured messenger instead of context
+    scaffoldMessenger.showSnackBar(
+      SnackBar(content: Text(e.message))
+    );
+  } catch (e) {
+    // Use captured messenger instead of context
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(content: Text('Unexpected error occurred'))
+    );
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

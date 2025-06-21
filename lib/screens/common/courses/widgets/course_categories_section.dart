@@ -9,7 +9,7 @@ class CourseCategoriesSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     final categories = [
       {
         'title': 'Live Classes',
@@ -36,25 +36,29 @@ class CourseCategoriesSection extends StatelessWidget {
         horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
         vertical: 40,
       ),
-      child: isMobile 
-        ? Column(
-            children: categories.map((category) => 
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildCategoryCard(category, true),
-              ),
-            ).toList(),
-          )
-        : Row(
-            children: categories.map((category) => 
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: _buildCategoryCard(category, false),
-                ),
-              ),
-            ).toList(),
-          ),
+      child: isMobile
+          ? Column(
+              children: categories
+                  .map(
+                    (category) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildCategoryCard(category, true),
+                    ),
+                  )
+                  .toList(),
+            )
+          : Row(
+              children: categories
+                  .map(
+                    (category) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: _buildCategoryCard(category, false),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
     );
   }
 
@@ -66,7 +70,7 @@ class CourseCategoriesSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -79,14 +83,10 @@ class CourseCategoriesSection extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: category['color'].withOpacity(0.1),
+              color: category['color'].withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              category['icon'],
-              color: category['color'],
-              size: 24,
-            ),
+            child: Icon(category['icon'], color: category['color'], size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(

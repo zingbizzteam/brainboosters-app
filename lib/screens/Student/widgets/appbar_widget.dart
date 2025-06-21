@@ -179,7 +179,7 @@ class _AppBarWidgetState extends State<AppBarWidget>
                   size: 24,
                 ),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.blue.withOpacity(0.1),
+                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
                   padding: const EdgeInsets.all(8),
                 ),
               ),
@@ -200,7 +200,7 @@ class _AppBarWidgetState extends State<AppBarWidget>
                           size: 24,
                         ),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.blue.withOpacity(0.1),
+                          backgroundColor: Colors.blue.withValues(alpha: 0.1),
                           padding: const EdgeInsets.all(8),
                         ),
                       ),

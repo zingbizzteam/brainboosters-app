@@ -1,4 +1,4 @@
-// DashboardTopBar (dashboard_topbar.dart)
+// DashboardTopBar (dashboard_top_bar.dart)
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

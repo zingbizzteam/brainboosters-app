@@ -8,7 +8,7 @@ class HeroImageWidget extends StatelessWidget {
   final String badge;
   final Color badgeColor;
   final Widget? overlayContent;
-  
+
   const HeroImageWidget({
     super.key,
     required this.imageUrl,
@@ -23,7 +23,7 @@ class HeroImageWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth <= 768;
-    
+
     return Container(
       width: double.infinity,
       height: isMobile ? 250 : 300,
@@ -41,16 +41,12 @@ class HeroImageWidget extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.black.withOpacity(0.7),
-              Colors.black.withOpacity(0.3),
+              Colors.black.withValues(alpha: 0.7),
+              Colors.black.withValues(alpha: 0.3),
             ],
           ),
         ),
-        child: Stack(
-          children: [
-            if (overlayContent != null) overlayContent!,
-          ],
-        ),
+        child: Stack(children: [if (overlayContent != null) overlayContent!]),
       ),
     );
   }

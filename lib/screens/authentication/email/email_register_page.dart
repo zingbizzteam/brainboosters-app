@@ -17,36 +17,49 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
   bool _obscurePassword = true;
 
   Future<void> _register() async {
-    setState(() => _isLoading = true);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    try {
-      final response = await Supabase.instance.client.auth.signUp(
-        email: email,
-        password: password,
+  setState(() => _isLoading = true);
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+  
+  // Capture ScaffoldMessenger before async operations
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  
+  try {
+    final response = await Supabase.instance.client.auth.signUp(
+      email: email,
+      password: password,
+    );
+    
+    if (response.user != null) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Registration successful! Please check your email to confirm.',
+          ),
+        ),
       );
-      if (response.user != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Registration successful! Please check your email to confirm.',
-              ),
-            ),
-          );
-          context.go(AuthRoutes.emailLogin);
-        }
-      }
-    } on AuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unexpected error occurred')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      
+      // Only check mounted before navigation
+      if (!mounted) return;
+      context.go(AuthRoutes.emailLogin);
+    }
+  } on AuthException catch (e) {
+    // Use captured messenger instead of context
+    scaffoldMessenger.showSnackBar(
+      SnackBar(content: Text(e.message))
+    );
+  } catch (e) {
+    // Use captured messenger instead of context
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(content: Text('Unexpected error occurred'))
+    );
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +106,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                                 errorBuilder: (_, __, ___) => Container(
                                   height: 300,
                                   width: 300,
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: Colors.blue.withValues(alpha: 0.3),
                                   child: const Icon(Icons.computer, size: 100),
                                 ),
                               ),

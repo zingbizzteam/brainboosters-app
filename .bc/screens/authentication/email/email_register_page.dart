@@ -38,7 +38,9 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
         }
       }
     } on AuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unexpected error occurred')),
@@ -54,7 +56,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           bool isDesktop = constraints.maxWidth >= 768;
-          
+
           if (isDesktop) {
             return Row(
               children: [
@@ -77,7 +79,10 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                                   height: 60,
                                   width: 60,
                                   color: Colors.blue,
-                                  child: const Icon(Icons.school, color: Colors.white),
+                                  child: const Icon(
+                                    Icons.school,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ],
@@ -93,7 +98,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                                 errorBuilder: (_, __, ___) => Container(
                                   height: 300,
                                   width: 300,
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: Colors.blue.withValues(alpha: 0.3),
                                   child: const Icon(Icons.computer, size: 100),
                                 ),
                               ),
@@ -154,10 +159,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
               const SizedBox(height: 16),
               const Text(
                 'Get started with Brain Boosters',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF999999),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
               ),
               const SizedBox(height: 40),
 
@@ -199,7 +201,9 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: const Color(0xFF999999),
                     ),
                     onPressed: () {
@@ -216,10 +220,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
               Container(
                 decoration: BoxDecoration(
                   border: const Border(
-                    bottom: BorderSide(
-                      color: Color(0xFF9D5F0E),
-                      width: 3,
-                    ),
+                    bottom: BorderSide(color: Color(0xFF9D5F0E), width: 3),
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),

@@ -1,4 +1,4 @@
-import 'package:brainboosters_app/screens/student/dashboard/widgets/Dashboard_topBar.dart';
+import 'package:brainboosters_app/screens/student/dashboard/widgets/dashboard_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'widgets/stat_card.dart';
 import 'widgets/live_class_list.dart';

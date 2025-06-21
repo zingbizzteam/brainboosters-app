@@ -47,8 +47,10 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
   List<Course> get _filteredCourses {
     if (_searchQuery.isEmpty) return _courses;
     return _courses
-        .where((course) =>
-            course.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where(
+          (course) =>
+              course.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
         .toList();
   }
 
@@ -116,7 +118,9 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
                 itemCount: filteredCourses.length,
                 itemBuilder: (context, index) {
                   final course = filteredCourses[index];
-                  final isSelected = widget.selectedCourses.contains(course.name);
+                  final isSelected = widget.selectedCourses.contains(
+                    course.name,
+                  );
                   return GestureDetector(
                     onTap: () => widget.onCourseToggle(course.name),
                     child: Container(
@@ -129,7 +133,7 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -142,7 +146,7 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: course.color.withOpacity(0.1),
+                              color: course.color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(

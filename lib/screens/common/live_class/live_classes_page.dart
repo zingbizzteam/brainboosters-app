@@ -21,28 +21,27 @@ class LiveClassesPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            
             // Hero Section
             const LiveClassHeroSection(),
-            
+
             // Live Class Categories
             const LiveClassCategoriesSection(),
-            
+
             // Upcoming Live Classes
             _buildUpcomingLiveClassesSection(context),
-            
+
             // Featured Instructors
             const FeaturedInstructorsSection(),
-            
+
             // Live Classes by Category
             _buildLiveClassesByCategorySection(context),
-            
+
             // App Promotion - Only on Web
             if (kIsWeb) const AppPromotionSection(),
-            
+
             // Footer - Only on Web
             if (kIsWeb) const CourseFooterSection(),
-            
+
             // Footer spacing for mobile
             if (!kIsWeb) const SizedBox(height: 40),
           ],
@@ -89,7 +88,12 @@ class LiveClassesPage extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Dynamic Live Class Grid
-          _buildDynamicLiveClassGrid(context, upcomingClasses, isMobile, isTablet),
+          _buildDynamicLiveClassGrid(
+            context,
+            upcomingClasses,
+            isMobile,
+            isTablet,
+          ),
         ],
       ),
     );
@@ -134,7 +138,12 @@ class LiveClassesPage extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Dynamic Live Class Grid
-          _buildDynamicLiveClassGrid(context, categoryClasses, isMobile, isTablet),
+          _buildDynamicLiveClassGrid(
+            context,
+            categoryClasses,
+            isMobile,
+            isTablet,
+          ),
 
           const SizedBox(height: 32),
 
@@ -193,7 +202,11 @@ class LiveClassesPage extends StatelessWidget {
       ),
       itemCount: liveClasses.length,
       itemBuilder: (context, index) {
-        return _buildDynamicLiveClassCard(context, liveClasses[index], isMobile);
+        return _buildDynamicLiveClassCard(
+          context,
+          liveClasses[index],
+          isMobile,
+        );
       },
     );
   }
@@ -226,7 +239,7 @@ class LiveClassesPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -276,7 +289,10 @@ class LiveClassesPage extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor,
                         borderRadius: BorderRadius.circular(12),
@@ -284,11 +300,7 @@ class LiveClassesPage extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.circle,
-                            color: Colors.white,
-                            size: 8,
-                          ),
+                          Icon(Icons.circle, color: Colors.white, size: 8),
                           const SizedBox(width: 4),
                           Text(
                             liveClass.status.toUpperCase(),
@@ -365,11 +377,15 @@ class LiveClassesPage extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          liveClass.price == 0.0 ? 'Free' : '₹${liveClass.price.toStringAsFixed(0)}',
+                          liveClass.price == 0.0
+                              ? 'Free'
+                              : '₹${liveClass.price.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: isMobile ? 14 : 16,
                             fontWeight: FontWeight.bold,
-                            color: liveClass.price == 0.0 ? Colors.green : Colors.black,
+                            color: liveClass.price == 0.0
+                                ? Colors.green
+                                : Colors.black,
                           ),
                         ),
                         const Spacer(),

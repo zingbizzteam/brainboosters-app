@@ -9,7 +9,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     final instructors = [
       {
         'name': 'Dr. Sarah Johnson',
@@ -71,7 +71,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -99,14 +99,16 @@ class FeaturedInstructorsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: isMobile ? _buildMobileInstructorLayout(instructor) : _buildDesktopInstructorLayout(instructor),
+      child: isMobile
+          ? _buildMobileInstructorLayout(instructor)
+          : _buildDesktopInstructorLayout(instructor),
     );
   }
 
@@ -130,7 +132,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        
+
         // Instructor Info
         Expanded(
           child: Column(
@@ -147,10 +149,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 instructor['expertise'],
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const SizedBox(height: 8),
               Row(
@@ -167,10 +166,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
                   const SizedBox(width: 16),
                   Text(
                     '${instructor['students']} students',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -201,7 +197,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Instructor Info
         Text(
           instructor['name'],
@@ -215,10 +211,7 @@ class FeaturedInstructorsSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           instructor['expertise'],
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -238,20 +231,14 @@ class FeaturedInstructorsSection extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               '${instructor['rating']}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           '${instructor['students']} students',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[500],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
         ),
       ],
     );

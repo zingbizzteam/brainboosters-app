@@ -20,42 +20,56 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   bool _rememberPassword = false;
 
   Future<void> _login() async {
-    setState(() => _isLoading = true);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  setState(() => _isLoading = true);
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
 
-    try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+  try {
+    final response = await Supabase.instance.client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
 
-      if (response.user != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Login successful!')));
-          final userId = response.user!.id;
-          final isNew = await isNewUser(userId);
-          if (mounted) {
-            isNew
-                ? context.go(AuthRoutes.userSetup)
-                : context.go(StudentRoutes.home);
-          }
-        }
-      }
-    } on AuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
+    if (response.user != null) {
+      // Check mounted before using context
+      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unexpected error occurred')),
+        const SnackBar(content: Text('Login successful!'))
       );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      
+      final userId = response.user!.id;
+      final isNew = await isNewUser(userId);
+      
+      // Check mounted again after another async operation
+      if (!mounted) return;
+      
+      if (isNew) {
+        context.go(AuthRoutes.userSetup);
+      } else {
+        context.go(StudentRoutes.home);
+      }
+    }
+  } on AuthException catch (e) {
+    // Check mounted before using context
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message))
+    );
+  } catch (e) {
+    // Check mounted before using context
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unexpected error occurred'))
+    );
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +121,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                 errorBuilder: (_, __, ___) => Container(
                                   height: 300,
                                   width: 300,
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: Colors.blue.withValues(alpha: 0.3),
                                   child: const Icon(Icons.computer, size: 100),
                                 ),
                               ),

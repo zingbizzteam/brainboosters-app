@@ -27,7 +27,7 @@ class CoachingCenterCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               spreadRadius: 1,
               blurRadius: 6,
               offset: const Offset(0, 2),
@@ -60,11 +60,8 @@ class CoachingCenterCard extends StatelessWidget {
                 child: Image.network(
                   coachingCenter.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Icons.school,
-                    size: 24,
-                    color: Colors.grey[400],
-                  ),
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.school, size: 24, color: Colors.grey[400]),
                 ),
               ),
             ),
@@ -134,11 +131,7 @@ class CoachingCenterCard extends StatelessWidget {
         // Description
         Text(
           coachingCenter.description,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[700],
-            height: 1.3,
-          ),
+          style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.3),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -166,8 +159,8 @@ class CoachingCenterCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: coachingCenter.hasAvailableSeats 
-                    ? Colors.blue[100] 
+                color: coachingCenter.hasAvailableSeats
+                    ? Colors.blue[100]
                     : Colors.red[100],
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -175,8 +168,8 @@ class CoachingCenterCard extends StatelessWidget {
                 coachingCenter.admissionStatus,
                 style: TextStyle(
                   fontSize: 10,
-                  color: coachingCenter.hasAvailableSeats 
-                      ? Colors.blue[700] 
+                  color: coachingCenter.hasAvailableSeats
+                      ? Colors.blue[700]
                       : Colors.red[700],
                   fontWeight: FontWeight.w600,
                 ),
@@ -218,11 +211,8 @@ class CoachingCenterCard extends StatelessWidget {
             child: Image.network(
               coachingCenter.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.school,
-                size: 40,
-                color: Colors.grey[400],
-              ),
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(Icons.school, size: 40, color: Colors.grey[400]),
             ),
           ),
         ),
@@ -248,9 +238,12 @@ class CoachingCenterCard extends StatelessWidget {
                   ),
                   if (coachingCenter.isVerified)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -293,10 +286,7 @@ class CoachingCenterCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '• ${coachingCenter.formattedStudents} students',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -349,7 +339,7 @@ class CoachingCenterCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -367,7 +357,7 @@ class CoachingCenterCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

@@ -255,7 +255,7 @@ class _CourseIntroPageState extends State<CourseIntroPage>
             width: isMobile ? 50 : 60,
             height: isMobile ? 50 : 60,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

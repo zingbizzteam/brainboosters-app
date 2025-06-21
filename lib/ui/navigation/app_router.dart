@@ -36,7 +36,7 @@ class AppRouter {
     final isLoggedIn = session != null;
     final currentPath = state.uri.path;
 
-    print('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn');
+    debugPrint('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn');
 
     // If not logged in and trying to access protected routes
     if (!isLoggedIn) {

@@ -9,7 +9,7 @@ class LiveClassCategoriesSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     final categories = [
       {
         'title': 'Programming',
@@ -66,28 +66,31 @@ class LiveClassCategoriesSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          
-          isMobile 
-            ? Column(
-                children: categories.map((category) => 
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildCategoryCard(category, true),
+
+          isMobile
+              ? Column(
+                  children: categories
+                      .map(
+                        (category) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildCategoryCard(category, true),
+                        ),
+                      )
+                      .toList(),
+                )
+              : GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isTablet ? 2 : 4,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.2,
                   ),
-                ).toList(),
-              )
-            : GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isTablet ? 2 : 4,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.2,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) =>
+                      _buildCategoryCard(categories[index], false),
                 ),
-                itemCount: categories.length,
-                itemBuilder: (context, index) => _buildCategoryCard(categories[index], false),
-              ),
         ],
       ),
     );
@@ -101,7 +104,7 @@ class LiveClassCategoriesSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -117,7 +120,7 @@ class LiveClassCategoriesSection extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: category['color'].withOpacity(0.1),
+                  color: category['color'].withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -129,9 +132,12 @@ class LiveClassCategoriesSection extends StatelessWidget {
               if (!isMobile) const Spacer(),
               if (!isMobile)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: category['color'].withOpacity(0.1),
+                    color: category['color'].withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

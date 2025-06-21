@@ -66,9 +66,9 @@ class DashboardSidebar extends StatelessWidget {
                       ),
                     ),
                     selected: isSelected,
-                    selectedTileColor: item.color.withOpacity(0.08),
+                    selectedTileColor: item.color.withValues(alpha: 0.08),
                     onTap: () {
-                      print('Sidebar tapped: $i');
+                      debugPrint('Sidebar tapped: $i');
                       onItemSelected(i);
                     },
                     shape: RoundedRectangleBorder(

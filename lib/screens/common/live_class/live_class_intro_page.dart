@@ -181,7 +181,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
                       decoration: BoxDecoration(
                         color: _getStatusColor(
                           liveClass.status,
-                        ).withOpacity(0.1),
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: _getStatusColor(liveClass.status),

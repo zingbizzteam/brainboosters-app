@@ -162,7 +162,7 @@ class LiveClassInfoWidget extends StatelessWidget {
           buttonColor: liveClass.canJoin ? Colors.blue : Colors.grey,
           onPressed: liveClass.canJoin ? () {
   // Handle enrollment
-  print('Joining live class: ${liveClass.title}');
+  debugPrint('Joining live class: ${liveClass.title}');
 } : () {},
           isMobile: isMobile,
         ),
