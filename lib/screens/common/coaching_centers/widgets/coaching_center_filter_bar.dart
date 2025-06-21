@@ -1,5 +1,6 @@
 // screens/common/coaching_centers/widgets/coaching_center_filter_bar.dart
 import 'package:flutter/material.dart';
+import '../data/coaching_center_dummy_data.dart';
 
 class CoachingCenterFilterBar extends StatelessWidget {
   final String sortBy;
@@ -72,6 +73,7 @@ class CoachingCenterFilterBar extends StatelessWidget {
                     'Rating',
                     'Students',
                     'Experience',
+                    'Success Rate',
                     'Fees: Low to High',
                     'Fees: High to Low',
                   ].map((item) => DropdownMenuItem(
@@ -89,7 +91,6 @@ class CoachingCenterFilterBar extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 12),
 
         // Location and Verified filters
@@ -122,9 +123,7 @@ class CoachingCenterFilterBar extends StatelessWidget {
                         isExpanded: true,
                         items: [
                           'All',
-                          'Chennai',
-                          'Trichy',
-                          'Bangalore',
+                          ...CoachingCenterDummyData.getUniqueLocations(),
                         ].map((item) => DropdownMenuItem(
                           value: item,
                           child: Text(
@@ -141,7 +140,6 @@ class CoachingCenterFilterBar extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(width: 16),
 
             // Verified filter
@@ -154,22 +152,6 @@ class CoachingCenterFilterBar extends StatelessWidget {
                     value: showOnlyVerified,
                     onChanged: onVerifiedToggled,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    trackOutlineColor: WidgetStateProperty.resolveWith<Color?>(
-                      (Set<WidgetState> states) {
-                        if (!states.contains(WidgetState.selected)) {
-                          return Colors.grey[400];
-                        }
-                        return null;
-                      },
-                    ),
-                    trackOutlineWidth: WidgetStateProperty.resolveWith<double?>(
-                      (Set<WidgetState> states) {
-                        if (!states.contains(WidgetState.selected)) {
-                          return 1.5;
-                        }
-                        return null;
-                      },
-                    ),
                   ),
                 ),
                 Text(
@@ -215,6 +197,7 @@ class CoachingCenterFilterBar extends StatelessWidget {
               'Rating',
               'Students',
               'Experience',
+              'Success Rate',
               'Fees: Low to High',
               'Fees: High to Low',
             ].map((item) => DropdownMenuItem(
@@ -226,7 +209,6 @@ class CoachingCenterFilterBar extends StatelessWidget {
             isDense: true,
           ),
         ),
-
         const SizedBox(width: 24),
 
         // Location filter
@@ -251,9 +233,7 @@ class CoachingCenterFilterBar extends StatelessWidget {
             underline: Container(),
             items: [
               'All',
-              'Chennai',
-              'Trichy',
-              'Bangalore',
+              ...CoachingCenterDummyData.getUniqueLocations(),
             ].map((item) => DropdownMenuItem(
               value: item,
               child: Text(item),
@@ -263,7 +243,6 @@ class CoachingCenterFilterBar extends StatelessWidget {
             isDense: true,
           ),
         ),
-
         const SizedBox(width: 24),
 
         // Verified filter
@@ -274,22 +253,6 @@ class CoachingCenterFilterBar extends StatelessWidget {
               value: showOnlyVerified,
               onChanged: onVerifiedToggled,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              trackOutlineColor: WidgetStateProperty.resolveWith<Color?>(
-                (Set<WidgetState> states) {
-                  if (!states.contains(WidgetState.selected)) {
-                    return Colors.grey[400];
-                  }
-                  return null;
-                },
-              ),
-              trackOutlineWidth: WidgetStateProperty.resolveWith<double?>(
-                (Set<WidgetState> states) {
-                  if (!states.contains(WidgetState.selected)) {
-                    return 1.5;
-                  }
-                  return null;
-                },
-              ),
             ),
             const SizedBox(width: 8),
             Text(

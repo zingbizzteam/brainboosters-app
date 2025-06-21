@@ -97,19 +97,22 @@ class _AppBarWidgetState extends State<AppBarWidget>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
     return Container(
       height: kToolbarHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(color: Color(0xFFF9FBFD)),
       child: Row(
         children: [
-          // Leading Widget
+          // Leading Widget: Hide logo on mobile when search is expanded
           if (widget.showBackButton)
             IconButton(
               icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF4AA0E6)),
               onPressed: () => Navigator.of(context).pop(),
             )
-          else
+          else if (!(isMobile && isSearchExpanded)) // <--- HIDE LOGO
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Image.asset(
@@ -143,7 +146,6 @@ class _AppBarWidgetState extends State<AppBarWidget>
                         'Search courses, live classes, coaching centers...',
                   );
                 }
-
                 return widget.title != null
                     ? Center(
                         child: Text(

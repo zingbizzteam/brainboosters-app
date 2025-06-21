@@ -68,9 +68,7 @@ class CoachingCenterCard extends StatelessWidget {
                 ),
               ),
             ),
-            
             const SizedBox(width: 12),
-            
             // Name and verification
             Expanded(
               child: Column(
@@ -103,14 +101,10 @@ class CoachingCenterCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 14,
-                      ),
+                      Icon(Icons.star, color: Colors.amber, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        coachingCenter.rating.toStringAsFixed(1),
+                        coachingCenter.formattedRating,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -135,7 +129,6 @@ class CoachingCenterCard extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 12),
 
         // Description
@@ -149,8 +142,49 @@ class CoachingCenterCard extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-
         const SizedBox(height: 12),
+
+        // Success rate and admission status
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                coachingCenter.successRateText,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.green[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: coachingCenter.hasAvailableSeats 
+                    ? Colors.blue[100] 
+                    : Colors.red[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                coachingCenter.admissionStatus,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: coachingCenter.hasAvailableSeats 
+                      ? Colors.blue[700] 
+                      : Colors.red[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
 
         // Info chips - Mobile optimized
         Wrap(
@@ -158,8 +192,9 @@ class CoachingCenterCard extends StatelessWidget {
           runSpacing: 6,
           children: [
             _buildMobileInfoChip('${coachingCenter.coursesOffered} Courses'),
-            _buildMobileInfoChip('${coachingCenter.experienceYears}+ Years'),
-            _buildMobileInfoChip(coachingCenter.location.split(',').first), // Just city name
+            _buildMobileInfoChip(coachingCenter.experienceText),
+            _buildMobileInfoChip(coachingCenter.location.split(',').first),
+            _buildMobileInfoChip(coachingCenter.formattedFees),
           ],
         ),
       ],
@@ -191,7 +226,6 @@ class CoachingCenterCard extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(width: 16),
 
         // Coaching Center Details
@@ -241,20 +275,15 @@ class CoachingCenterCard extends StatelessWidget {
                     ),
                 ],
               ),
-
               const SizedBox(height: 8),
 
-              // Rating and Reviews
+              // Rating, Reviews, and Success Rate
               Row(
                 children: [
-                  Icon(
-                    Icons.star,
-                    color: Colors.amber,
-                    size: 18,
-                  ),
+                  Icon(Icons.star, color: Colors.amber, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    coachingCenter.rating.toStringAsFixed(1),
+                    coachingCenter.formattedRating,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -269,9 +298,17 @@ class CoachingCenterCard extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '• ${coachingCenter.successRateText}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.green[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
-
               const SizedBox(height: 8),
 
               // Description
@@ -285,7 +322,6 @@ class CoachingCenterCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-
               const SizedBox(height: 12),
 
               // Tags/Chips
@@ -294,8 +330,10 @@ class CoachingCenterCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   _buildInfoChip('${coachingCenter.coursesOffered} Courses'),
-                  _buildInfoChip('${coachingCenter.experienceYears}+ Years'),
+                  _buildInfoChip(coachingCenter.experienceText),
                   _buildInfoChip(coachingCenter.location),
+                  _buildInfoChip(coachingCenter.formattedFees),
+                  _buildInfoChip(coachingCenter.admissionStatus),
                   if (coachingCenter.specializations.isNotEmpty)
                     _buildInfoChip(coachingCenter.specializations.first),
                 ],

@@ -4,34 +4,46 @@ class LiveClass {
   final String title;
   final String description;
   final String imageUrl;
-  final String thumbnailUrl; // Added for better image handling
+  final String thumbnailUrl;
   final DateTime startTime;
   final DateTime endTime;
   final String academy;
   final List<String> teachers;
-  final String instructor; // Primary instructor name for easy access
+  final String instructor;
   final String category;
   final String subject;
-  final int duration; // in minutes
+  final int duration;
   final bool isLive;
   final bool isRecorded;
-  final bool isFree; // Added for pricing logic
+  final bool isFree;
   final int maxParticipants;
   final int currentParticipants;
   final double price;
-  final String difficulty; // Beginner, Intermediate, Advanced
+  final String difficulty;
   final List<String> tags;
   final String meetingLink;
-  final String status; // upcoming, live, completed, cancelled
-  final DateTime createdAt; // Added for sorting
-  final DateTime updatedAt; // Added for tracking updates
-  final double rating; // Added for rating system
-  final int totalRatings; // Added for rating count
-  final List<String> prerequisites; // Added for course requirements
-  final String language; // Added for language support
-  final bool isRecordingAvailable; // Added to check if recording is available
-  final String recordingUrl; // Added for recorded session access
-  final Map<String, dynamic> metadata; // Added for additional flexible data
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final double rating;
+  final int totalRatings;
+  final List<String> prerequisites;
+  final String language;
+  final bool isRecordingAvailable;
+  final String recordingUrl;
+  final Map<String, dynamic> metadata;
+
+  // Analytics fields
+  final int viewCount;
+  final int chatMessageCount;
+  final int reactionCount;
+  final double averageEngagementScore;
+  final Map<String, double> engagementScores; // userID -> score
+  final int questionsAsked;
+  final int resourceDownloads;
+
+  // Comments
+  final List<LiveClassComment> comments;
 
   const LiveClass({
     required this.id,
@@ -67,88 +79,117 @@ class LiveClass {
     this.isRecordingAvailable = false,
     this.recordingUrl = '',
     this.metadata = const {},
+    // Analytics
+    this.viewCount = 0,
+    this.chatMessageCount = 0,
+    this.reactionCount = 0,
+    this.averageEngagementScore = 0.0,
+    this.engagementScores = const {},
+    this.questionsAsked = 0,
+    this.resourceDownloads = 0,
+    // Comments
+    this.comments = const [],
   });
 
-  // Getters for computed properties
   String get formattedTime {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final classDate = DateTime(startTime.year, startTime.month, startTime.day);
-    
-    String timeStr = "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
-    
-    if (classDate == today) {
-      return "Today, $timeStr";
-    } else if (classDate == tomorrow) {
-      return "Tomorrow, $timeStr";
-    } else {
-      return "${startTime.day}/${startTime.month}/${startTime.year}, $timeStr";
-    }
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final tomorrow = today.add(const Duration(days: 1));
+  final classDate = DateTime(startTime.year, startTime.month, startTime.day);
+  
+  String timeStr = "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+  
+  if (classDate == today) {
+    return "Today, $timeStr";
+  } else if (classDate == tomorrow) {
+    return "Tomorrow, $timeStr";
+  } else {
+    return "${startTime.day}/${startTime.month}/${startTime.year}, $timeStr";
+  }
+}
+
+String get formattedPrice {
+  return isFree ? 'Free' : '₹${price.toStringAsFixed(0)}';
+}
+
+String get formattedDuration {
+  final hours = duration ~/ 60;
+  final minutes = duration % 60;
+  
+  if (hours > 0) {
+    return minutes > 0 ? "${hours}h ${minutes}m" : "${hours}h";
+  } else {
+    return "${minutes}m";
+  }
+}
+
+String get availabilityStatus {
+  final now = DateTime.now();
+  final spotsLeft = maxParticipants - currentParticipants;
+  
+  if (status == 'cancelled') return 'Cancelled';
+  if (status == 'completed') return 'Completed';
+  if (now.isAfter(endTime)) return 'Ended';
+  if (now.isAfter(startTime) && now.isBefore(endTime)) return 'Live Now';
+  if (spotsLeft <= 0) return 'Full';
+  if (spotsLeft <= 5) return 'Almost Full';
+  return 'Available';
+}
+
+bool get canJoin {
+  final now = DateTime.now();
+  return status == 'upcoming' && 
+         now.isBefore(endTime) && 
+         currentParticipants < maxParticipants;
+}
+
+bool get isStartingSoon {
+  final now = DateTime.now();
+  final timeDiff = startTime.difference(now).inMinutes;
+  return timeDiff <= 15 && timeDiff > 0;
+}
+
+bool get hasStarted {
+  return DateTime.now().isAfter(startTime);
+}
+
+bool get hasEnded {
+  return DateTime.now().isAfter(endTime);
+}
+
+int get spotsRemaining {
+  return maxParticipants - currentParticipants;
+}
+
+double get occupancyPercentage {
+  return (currentParticipants / maxParticipants) * 100;
+}
+
+String get primaryTeacher {
+  return teachers.isNotEmpty ? teachers.first : instructor;
+}
+
+double get engagementPercentage {
+  return (averageEngagementScore * 100).clamp(0, 100);
+}
+
+String get engagementLevel {
+  if (averageEngagementScore >= 0.8) return 'High';
+  if (averageEngagementScore >= 0.5) return 'Medium';
+  return 'Low';
+}
+
+ 
+  // New comment-related methods
+  void addComment(LiveClassComment comment) {
+    comments.add(comment);
   }
 
-  String get formattedDuration {
-    final hours = duration ~/ 60;
-    final minutes = duration % 60;
-    
-    if (hours > 0) {
-      return minutes > 0 ? "${hours}h ${minutes}m" : "${hours}h";
-    } else {
-      return "${minutes}m";
-    }
+  List<LiveClassComment> get recentComments {
+    return comments.take(5).toList();
   }
 
-  String get formattedPrice {
-    return isFree ? 'Free' : '₹${price.toStringAsFixed(0)}';
-  }
-
-  String get availabilityStatus {
-    final now = DateTime.now();
-    final spotsLeft = maxParticipants - currentParticipants;
-    
-    if (status == 'cancelled') return 'Cancelled';
-    if (status == 'completed') return 'Completed';
-    if (now.isAfter(endTime)) return 'Ended';
-    if (now.isAfter(startTime) && now.isBefore(endTime)) return 'Live Now';
-    if (spotsLeft <= 0) return 'Full';
-    if (spotsLeft <= 5) return 'Almost Full';
-    return 'Available';
-  }
-
-  bool get canJoin {
-    final now = DateTime.now();
-    return status == 'upcoming' && 
-           now.isBefore(endTime) && 
-           currentParticipants < maxParticipants;
-  }
-
-  bool get isStartingSoon {
-    final now = DateTime.now();
-    final timeDiff = startTime.difference(now).inMinutes;
-    return timeDiff <= 15 && timeDiff > 0;
-  }
-
-  bool get hasStarted {
-    return DateTime.now().isAfter(startTime);
-  }
-
-  bool get hasEnded {
-    return DateTime.now().isAfter(endTime);
-  }
-
-  int get spotsRemaining {
-    return maxParticipants - currentParticipants;
-  }
-
-  double get occupancyPercentage {
-    return (currentParticipants / maxParticipants) * 100;
-  }
-
-  String get primaryTeacher {
-    return teachers.isNotEmpty ? teachers.first : instructor;
-  }
-
-  // Factory constructor for creating from JSON
+  // Factory constructor for JSON
   factory LiveClass.fromJson(Map<String, dynamic> json) {
     return LiveClass(
       id: json['id'] ?? '',
@@ -175,8 +216,8 @@ class LiveClass {
       tags: List<String>.from(json['tags'] ?? []),
       meetingLink: json['meeting_link'] ?? '',
       status: json['status'] ?? 'upcoming',
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
       rating: (json['rating'] ?? 0.0).toDouble(),
       totalRatings: json['total_ratings'] ?? 0,
       prerequisites: List<String>.from(json['prerequisites'] ?? []),
@@ -184,6 +225,18 @@ class LiveClass {
       isRecordingAvailable: json['is_recording_available'] ?? false,
       recordingUrl: json['recording_url'] ?? '',
       metadata: json['metadata'] ?? {},
+      // Analytics
+      viewCount: json['view_count'] ?? 0,
+      chatMessageCount: json['chat_message_count'] ?? 0,
+      reactionCount: json['reaction_count'] ?? 0,
+      averageEngagementScore: (json['average_engagement_score'] ?? 0.0).toDouble(),
+      engagementScores: Map<String, double>.from(json['engagement_scores'] ?? {}),
+      questionsAsked: json['questions_asked'] ?? 0,
+      resourceDownloads: json['resource_downloads'] ?? 0,
+      // Comments
+      comments: (json['comments'] as List<dynamic>?)
+          ?.map((e) => LiveClassComment.fromJson(e))
+          .toList() ?? [],
     );
   }
 
@@ -223,93 +276,81 @@ class LiveClass {
       'is_recording_available': isRecordingAvailable,
       'recording_url': recordingUrl,
       'metadata': metadata,
+      // Analytics
+      'view_count': viewCount,
+      'chat_message_count': chatMessageCount,
+      'reaction_count': reactionCount,
+      'average_engagement_score': averageEngagementScore,
+      'engagement_scores': engagementScores,
+      'questions_asked': questionsAsked,
+      'resource_downloads': resourceDownloads,
+      // Comments
+      'comments': comments.map((e) => e.toJson()).toList(),
     };
   }
 
-  // Copy with method for immutable updates
-  LiveClass copyWith({
-    String? id,
-    String? slug,
-    String? title,
-    String? description,
-    String? imageUrl,
-    String? thumbnailUrl,
-    DateTime? startTime,
-    DateTime? endTime,
-    String? academy,
-    List<String>? teachers,
-    String? instructor,
-    String? category,
-    String? subject,
-    int? duration,
-    bool? isLive,
-    bool? isRecorded,
-    bool? isFree,
-    int? maxParticipants,
-    int? currentParticipants,
-    double? price,
-    String? difficulty,
-    List<String>? tags,
-    String? meetingLink,
-    String? status,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    double? rating,
-    int? totalRatings,
-    List<String>? prerequisites,
-    String? language,
-    bool? isRecordingAvailable,
-    String? recordingUrl,
-    Map<String, dynamic>? metadata,
-  }) {
-    return LiveClass(
-      id: id ?? this.id,
-      slug: slug ?? this.slug,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      imageUrl: imageUrl ?? this.imageUrl,
-      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      academy: academy ?? this.academy,
-      teachers: teachers ?? this.teachers,
-      instructor: instructor ?? this.instructor,
-      category: category ?? this.category,
-      subject: subject ?? this.subject,
-      duration: duration ?? this.duration,
-      isLive: isLive ?? this.isLive,
-      isRecorded: isRecorded ?? this.isRecorded,
-      isFree: isFree ?? this.isFree,
-      maxParticipants: maxParticipants ?? this.maxParticipants,
-      currentParticipants: currentParticipants ?? this.currentParticipants,
-      price: price ?? this.price,
-      difficulty: difficulty ?? this.difficulty,
-      tags: tags ?? this.tags,
-      meetingLink: meetingLink ?? this.meetingLink,
-      status: status ?? this.status,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      rating: rating ?? this.rating,
-      totalRatings: totalRatings ?? this.totalRatings,
-      prerequisites: prerequisites ?? this.prerequisites,
-      language: language ?? this.language,
-      isRecordingAvailable: isRecordingAvailable ?? this.isRecordingAvailable,
-      recordingUrl: recordingUrl ?? this.recordingUrl,
-      metadata: metadata ?? this.metadata,
+}
+
+class LiveClassComment {
+  final String id;
+  final String userId;
+  final String userName;
+  final String userAvatarUrl;
+  final String text;
+  final DateTime timestamp;
+  final int likes;
+  final List<LiveClassComment> replies;
+  final Sentiment sentiment;
+
+  const LiveClassComment({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.userAvatarUrl,
+    required this.text,
+    required this.timestamp,
+    this.likes = 0,
+    this.replies = const [],
+    this.sentiment = Sentiment.neutral,
+  });
+
+  factory LiveClassComment.fromJson(Map<String, dynamic> json) {
+    return LiveClassComment(
+      id: json['id'] ?? '',
+      userId: json['user_id'] ?? '',
+      userName: json['user_name'] ?? '',
+      userAvatarUrl: json['user_avatar_url'] ?? '',
+      text: json['text'] ?? '',
+      timestamp: DateTime.parse(json['timestamp']),
+      likes: json['likes'] ?? 0,
+      replies: (json['replies'] as List<dynamic>?)
+          ?.map((e) => LiveClassComment.fromJson(e))
+          .toList() ?? [],
+      sentiment: Sentiment.values.firstWhere(
+        (e) => e.name == json['sentiment'],
+        orElse: () => Sentiment.neutral,
+      ),
     );
   }
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is LiveClass && other.id == id;
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'user_name': userName,
+      'user_avatar_url': userAvatarUrl,
+      'text': text,
+      'timestamp': timestamp.toIso8601String(),
+      'likes': likes,
+      'replies': replies.map((e) => e.toJson()).toList(),
+      'sentiment': sentiment.name,
+    };
   }
+}
 
-  @override
-  int get hashCode => id.hashCode;
-
-  @override
-  String toString() {
-    return 'LiveClass(id: $id, title: $title, startTime: $startTime, status: $status)';
-  }
+enum Sentiment {
+  positive,
+  negative,
+  neutral,
+  confused,
 }

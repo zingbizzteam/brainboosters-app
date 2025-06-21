@@ -21,28 +21,27 @@ class CoursesPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            
             // Hero Section
             const CourseHeroSection(),
-            
+
             // Course Categories
             const CourseCategoriesSection(),
-            
+
             // Coaching Centers
             const CoachingCentersSection(),
-            
+
             // Featured Courses (Dynamic)
             _buildFeaturedCoursesSection(context),
-            
+
             // Top Rated Courses (Dynamic)
             _buildTopRatedCoursesSection(context),
-            
+
             // App Promotion - Only on Web
             if (kIsWeb) const AppPromotionSection(),
-            
+
             // Footer - Only on Web
             if (kIsWeb) const CourseFooterSection(),
-            
+
             // Footer spacing for mobile
             if (!kIsWeb) const SizedBox(height: 40),
           ],
@@ -51,7 +50,7 @@ class CoursesPage extends StatelessWidget {
     );
   }
 
- Widget _buildFeaturedCoursesSection(BuildContext context) {
+  Widget _buildFeaturedCoursesSection(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
@@ -271,7 +270,7 @@ class CoursesPage extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
-                      maxLines: 1,
+                      maxLines: 2, // Allow 2 lines for title
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
@@ -283,11 +282,13 @@ class CoursesPage extends StatelessWidget {
                         fontSize: isMobile ? 12 : 14,
                         color: Colors.grey[600],
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
 
                     const Spacer(),
 
-                    // Rating and Price Row
+                    // Rating and Price Row (keep this as the bottom element)
                     Row(
                       children: [
                         // Rating
@@ -310,8 +311,9 @@ class CoursesPage extends StatelessWidget {
                         // Price
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min, // Add this
                           children: [
-                            if (course.hasDiscount) ...[
+                            if (course.hasDiscount)
                               Text(
                                 '₹${course.originalPrice.toStringAsFixed(0)}',
                                 style: TextStyle(
@@ -320,11 +322,8 @@ class CoursesPage extends StatelessWidget {
                                   decoration: TextDecoration.lineThrough,
                                 ),
                               ),
-                            ],
                             Text(
-                              course.isFree
-                                  ? 'Free'
-                                  : '₹${course.price.toStringAsFixed(0)}',
+                              course.formattedPrice,
                               style: TextStyle(
                                 fontSize: isMobile ? 14 : 16,
                                 fontWeight: FontWeight.bold,
@@ -336,16 +335,6 @@ class CoursesPage extends StatelessWidget {
                           ],
                         ),
                       ],
-                    ),
-
-                    // Course Duration and Lessons
-                    const SizedBox(height: 4),
-                    Text(
-                      '${course.formattedDuration} • ${course.totalLessons} lessons',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : 12,
-                        color: Colors.grey[500],
-                      ),
                     ),
                   ],
                 ),

@@ -1,5 +1,5 @@
 // student_mainscreen.dart
-import 'package:brainboosters_app/screens/Student/widgets/appbar_widget.dart';
+import 'package:brainboosters_app/screens/student/widgets/appbar_widget.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:flutter/material.dart';

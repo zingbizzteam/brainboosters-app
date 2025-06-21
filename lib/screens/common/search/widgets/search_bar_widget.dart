@@ -48,38 +48,40 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (widget.isExpanded) {
-      return Container(
-        height: 40,
-        margin: widget.padding ?? EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: TextField(
-          controller: _searchController,
-          autofocus: widget.autoFocus,
-          onSubmitted: (_) => _onSearch(),
-          textAlignVertical: TextAlignVertical.center,
-          decoration: InputDecoration(
-            hintText:
-                widget.hintText ??
-                'Search courses, live classes, coaching centers...',
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8, 
-            ),
-            hintStyle: const TextStyle(fontSize: 14),
-            isDense: true, 
+ @override
+Widget build(BuildContext context) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isMobile = screenWidth < 768;
+
+  if (widget.isExpanded) {
+    return Container(
+      height: 40,
+      margin: widget.padding ?? EdgeInsets.zero,
+      width: isMobile ? double.infinity : null, // Full width on mobile
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: TextField(
+        controller: _searchController,
+        autofocus: widget.autoFocus,
+        onSubmitted: (_) => _onSearch(),
+        textAlignVertical: TextAlignVertical.center,
+        decoration: InputDecoration(
+          hintText: widget.hintText ?? 'Search courses, live classes, coaching centers...',
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
           ),
-          style: const TextStyle(fontSize: 14),
+          hintStyle: const TextStyle(fontSize: 14),
+          isDense: true,
         ),
-      );
-    }
+        style: const TextStyle(fontSize: 14),
+      ),
+    );
+  }
 
     // Full search bar for search page
     return Container(

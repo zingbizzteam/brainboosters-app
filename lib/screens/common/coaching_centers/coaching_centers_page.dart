@@ -61,6 +61,9 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
       case 'Experience':
         filtered.sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
         break;
+      case 'Success Rate':
+        filtered.sort((a, b) => b.successRate.compareTo(a.successRate));
+        break;
       case 'Fees: Low to High':
         filtered.sort((a, b) => a.fees.compareTo(b.fees));
         break;
@@ -145,7 +148,9 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
                     TextButton.icon(
                       onPressed: _toggleFilter,
                       icon: Icon(
-                        _isFilterExpanded ? Icons.expand_less : Icons.expand_more,
+                        _isFilterExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
                         color: const Color(0xFF4AA0E6),
                       ),
                       label: Text(
@@ -185,7 +190,8 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
                           sortBy: _sortBy,
                           filterLocation: _filterLocation,
                           showOnlyVerified: _showOnlyVerified,
-                          onSortChanged: (value) => setState(() => _sortBy = value),
+                          onSortChanged: (value) =>
+                              setState(() => _sortBy = value),
                           onLocationChanged: (value) =>
                               setState(() => _filterLocation = value),
                           onVerifiedToggled: (value) =>
@@ -198,29 +204,24 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
 
             // Coaching Centers List
             _filteredAndSortedCenters.isEmpty
-                ? SliverFillRemaining(
-                    child: _buildEmptyState(),
-                  )
+                ? SliverFillRemaining(child: _buildEmptyState())
                 : SliverPadding(
                     padding: EdgeInsets.all(
                       isMobile ? 12 : (isTablet ? 40 : 80),
                     ),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return CoachingCenterCard(
-                            coachingCenter: _filteredAndSortedCenters[index],
-                            onTap: () {
-                              context.push(
-                                CommonRoutes.getCoachingCenterDetailRoute(
-                                  _filteredAndSortedCenters[index].id,
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        childCount: _filteredAndSortedCenters.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return CoachingCenterCard(
+                          coachingCenter: _filteredAndSortedCenters[index],
+                          onTap: () {
+                            context.push(
+                              CommonRoutes.getCoachingCenterDetailRoute(
+                                _filteredAndSortedCenters[index].id,
+                              ),
+                            );
+                          },
+                        );
+                      }, childCount: _filteredAndSortedCenters.length),
                     ),
                   ),
           ],
