@@ -29,7 +29,7 @@ final _navItems = [
   _NavItem(
     route: CommonRoutes.coachingCenters,
     label: 'Coaching',
-    icon: Icons.school, // Changed icon
+    icon: Icons.school,
     color: const Color(0xFFF9B857),
   ),
   _NavItem(
@@ -48,14 +48,29 @@ class StudentMainScreen extends StatelessWidget {
     shell.goBranch(index);
   }
 
+  bool _shouldShowAppBar(BuildContext context) {
+    final currentLocation = GoRouterState.of(context).uri.toString();
+    
+    // Hide AppBar on nested routes (routes with more than one segment after the base)
+    final pathSegments = currentLocation.split('/').where((s) => s.isNotEmpty).toList();
+    
+    // Show AppBar only on main tab routes
+    return pathSegments.length <= 1 || 
+           currentLocation == StudentRoutes.home ||
+           currentLocation == CommonRoutes.courses ||
+           currentLocation == CommonRoutes.liveClasses ||
+           currentLocation == CommonRoutes.coachingCenters ||
+           currentLocation == CommonRoutes.settings;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 900;
     final selectedIndex = shell.currentIndex;
+    final showAppBar = _shouldShowAppBar(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FBFD),
-      appBar: AppBarWidget(),
       body: SafeArea(
         child: Row(
           children: [
@@ -65,7 +80,26 @@ class StudentMainScreen extends StatelessWidget {
                 onItemSelected: _onNavTap,
                 items: _navItems,
               ),
-            Expanded(child: shell),
+            Expanded(
+              child: showAppBar 
+                ? NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                      SliverAppBar(
+                        backgroundColor: const Color(0xFFF9FBFD),
+                        elevation: 0,
+                        scrolledUnderElevation: 0,
+                        floating: true,
+                        snap: true,
+                        pinned: false,
+                        flexibleSpace: AppBarWidget(),
+                        automaticallyImplyLeading: false,
+                        toolbarHeight: kToolbarHeight,
+                      ),
+                    ],
+                    body: shell,
+                  )
+                : shell,
+            ),
           ],
         ),
       ),
@@ -85,6 +119,7 @@ class _NavItem {
   final String label;
   final IconData icon;
   final Color color;
+
   const _NavItem({
     required this.route,
     required this.label,

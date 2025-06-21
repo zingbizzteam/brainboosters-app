@@ -19,6 +19,7 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
   String _sortBy = 'Rating';
   String _filterLocation = 'All';
   bool _showOnlyVerified = false;
+  bool _isFilterExpanded = false; // Added for filter toggle
 
   @override
   void initState() {
@@ -71,6 +72,12 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
     return filtered;
   }
 
+  void _toggleFilter() {
+    setState(() {
+      _isFilterExpanded = !_isFilterExpanded;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -79,126 +86,146 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header and Description
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
-                vertical: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Mobile breadcrumb
-                  if (isMobile) ...[
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildBreadcrumbItem('Home', false),
-                          _buildBreadcrumbSeparator(),
-                          _buildBreadcrumbItem('Python Coaching Centers', true),
-                        ],
+        child: CustomScrollView(
+          slivers: [
+            // Header Section (Scrollable)
+            SliverToBoxAdapter(
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Coaching Centers',
+                      style: TextStyle(
+                        fontSize: isMobile ? 20 : 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ] else ...[
-                    // Desktop breadcrumb
-                    Row(
-                      children: [
-                        _buildBreadcrumbItem('Home', false),
-                        _buildBreadcrumbSeparator(),
-                        _buildBreadcrumbItem('Python Coaching Centers', true),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      isMobile
+                          ? 'Top coaching centers partner with us. Select one to view their courses.'
+                          : 'Some of the top coaching centers in the country partner with us.\nSelect a coaching center to view the courses offered by them.',
+                      style: TextStyle(
+                        fontSize: isMobile ? 13 : 16,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
                     ),
-                    const SizedBox(height: 16),
                   ],
-
-                  Text(
-                    isMobile
-                        ? 'Coaching Centers for Python'
-                        : 'Coaching Centers for Python',
-                    style: TextStyle(
-                      fontSize: isMobile ? 20 : 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isMobile
-                        ? 'Top coaching centers partner with us. Select one to view their courses.'
-                        : 'Some of the top coaching centers in the country partner with us.\nSelect a coaching center to view the courses offered by them.',
-                    style: TextStyle(
-                      fontSize: isMobile ? 13 : 16,
-                      color: Colors.grey[600],
-                      height: 1.4,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
-            // Filter Bar
-            CoachingCenterFilterBar(
-              sortBy: _sortBy,
-              filterLocation: _filterLocation,
-              showOnlyVerified: _showOnlyVerified,
-              onSortChanged: (value) => setState(() => _sortBy = value),
-              onLocationChanged: (value) =>
-                  setState(() => _filterLocation = value),
-              onVerifiedToggled: (value) =>
-                  setState(() => _showOnlyVerified = value),
+            // Filter Toggle Button
+            SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_filteredAndSortedCenters.length} coaching centers found',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _toggleFilter,
+                      icon: Icon(
+                        _isFilterExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: const Color(0xFF4AA0E6),
+                      ),
+                      label: Text(
+                        _isFilterExpanded ? 'Hide Filters' : 'Show Filters',
+                        style: const TextStyle(
+                          color: Color(0xFF4AA0E6),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.blue.withOpacity(0.1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Collapsible Filter Bar
+            SliverToBoxAdapter(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                height: _isFilterExpanded ? null : 0,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: _isFilterExpanded ? 1.0 : 0.0,
+                  child: _isFilterExpanded
+                      ? CoachingCenterFilterBar(
+                          sortBy: _sortBy,
+                          filterLocation: _filterLocation,
+                          showOnlyVerified: _showOnlyVerified,
+                          onSortChanged: (value) => setState(() => _sortBy = value),
+                          onLocationChanged: (value) =>
+                              setState(() => _filterLocation = value),
+                          onVerifiedToggled: (value) =>
+                              setState(() => _showOnlyVerified = value),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
             ),
 
             // Coaching Centers List
-            Expanded(
-              child: _filteredAndSortedCenters.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: EdgeInsets.all(
-                        isMobile ? 12 : (isTablet ? 40 : 80),
-                      ),
-                      itemCount: _filteredAndSortedCenters.length,
-                      itemBuilder: (context, index) {
-                        return CoachingCenterCard(
-                          coachingCenter: _filteredAndSortedCenters[index],
-                          onTap: () {
-                            context.push(
-                              CommonRoutes.getCoachingCenterDetailRoute(
-                                _filteredAndSortedCenters[index].id,
-                              ),
-                            );
-                          },
-                        );
-                      },
+            _filteredAndSortedCenters.isEmpty
+                ? SliverFillRemaining(
+                    child: _buildEmptyState(),
+                  )
+                : SliverPadding(
+                    padding: EdgeInsets.all(
+                      isMobile ? 12 : (isTablet ? 40 : 80),
                     ),
-            ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          return CoachingCenterCard(
+                            coachingCenter: _filteredAndSortedCenters[index],
+                            onTap: () {
+                              context.push(
+                                CommonRoutes.getCoachingCenterDetailRoute(
+                                  _filteredAndSortedCenters[index].id,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        childCount: _filteredAndSortedCenters.length,
+                      ),
+                    ),
+                  ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBreadcrumbItem(String text, bool isLast) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 12,
-        color: isLast ? Colors.black : Colors.grey[600],
-        fontWeight: isLast ? FontWeight.w500 : FontWeight.normal,
-      ),
-    );
-  }
-
-  Widget _buildBreadcrumbSeparator() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text('/', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
     );
   }
 

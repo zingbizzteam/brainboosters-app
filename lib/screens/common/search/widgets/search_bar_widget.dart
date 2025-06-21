@@ -63,6 +63,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           controller: _searchController,
           autofocus: widget.autoFocus,
           onSubmitted: (_) => _onSearch(),
+          textAlignVertical: TextAlignVertical.center,
           decoration: InputDecoration(
             hintText:
                 widget.hintText ??
@@ -70,9 +71,10 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 8,
+              vertical: 8, 
             ),
             hintStyle: const TextStyle(fontSize: 14),
+            isDense: true, 
           ),
           style: const TextStyle(fontSize: 14),
         ),
@@ -101,8 +103,6 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
             child: TextField(
               controller: _searchController,
               onSubmitted: (_) => _onSearch(),
-              textAlignVertical:
-                  TextAlignVertical.center, 
               decoration: InputDecoration(
                 hintText:
                     widget.hintText ??
@@ -114,11 +114,15 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                   borderSide: BorderSide.none,
                 ),
                 prefixIcon: const Icon(Icons.search),
-               
+                // Removed textAlignVertical from here since it was causing issues
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16, // Added explicit vertical padding
+                ),
+                isDense: false, // Keep this false for the full search bar
               ),
             ),
           ),
-
           const SizedBox(width: 12),
           ElevatedButton(
             onPressed: _onSearch,

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AppBarWidget extends StatefulWidget implements PreferredSizeWidget {
+class AppBarWidget extends StatefulWidget {
   final String? title;
   final bool showBackButton;
   final List<Widget>? additionalActions;
@@ -19,9 +19,6 @@ class AppBarWidget extends StatefulWidget implements PreferredSizeWidget {
 
   @override
   State<AppBarWidget> createState() => _AppBarWidgetState();
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
 class _AppBarWidgetState extends State<AppBarWidget>
@@ -100,21 +97,24 @@ class _AppBarWidgetState extends State<AppBarWidget>
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: const Color(0xFFF9FBFD),
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      leading: widget.showBackButton
-          ? IconButton(
+    return Container(
+      height: kToolbarHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(color: Color(0xFFF9FBFD)),
+      child: Row(
+        children: [
+          // Leading Widget
+          if (widget.showBackButton)
+            IconButton(
               icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF4AA0E6)),
               onPressed: () => Navigator.of(context).pop(),
             )
-          : Padding(
+          else
+            Padding(
               padding: const EdgeInsets.all(8.0),
               child: Image.asset(
-                'assets/images/logo.png',
-                height: 32,
-                width: 32,
+                'assets/images/Brain_Boosters_Logo.png',
+                fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF4AA0E6),
@@ -128,112 +128,129 @@ class _AppBarWidgetState extends State<AppBarWidget>
                 ),
               ),
             ),
-      title: AnimatedBuilder(
-        animation: _searchAnimation,
-        builder: (context, child) {
-          if (isSearchExpanded) {
-            return SearchBarWidget(
-              isExpanded: true,
-              autoFocus: true,
-              onSearchToggle: _toggleSearch,
-              hintText: 'Search courses, live classes, coaching centers...',
-            );
-          }
 
-          return widget.title != null
-              ? Text(
-                  widget.title!,
-                  style: const TextStyle(
-                    color: Color(0xFF4AA0E6),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                )
-              : const SizedBox.shrink();
-        },
-      ),
-      centerTitle: widget.title != null && !isSearchExpanded,
-      actions: [
-        // Additional actions if provided
-        if (widget.additionalActions != null && !isSearchExpanded)
-          ...widget.additionalActions!,
+          // Title/Search Area
+          Expanded(
+            child: AnimatedBuilder(
+              animation: _searchAnimation,
+              builder: (context, child) {
+                if (isSearchExpanded) {
+                  return SearchBarWidget(
+                    isExpanded: true,
+                    autoFocus: true,
+                    onSearchToggle: _toggleSearch,
+                    hintText:
+                        'Search courses, live classes, coaching centers...',
+                  );
+                }
 
-        // Search Button
-        IconButton(
-          onPressed: _toggleSearch,
-          icon: Icon(
-            isSearchExpanded ? Icons.close : Icons.search,
-            color: const Color(0xFF4AA0E6),
-            size: 24,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.blue.withOpacity(0.1),
-            padding: const EdgeInsets.all(8),
-          ),
-        ),
-
-        if (!isSearchExpanded) ...[
-          // Notification Button
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Stack(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    context.push(CommonRoutes.notifications);
-                  },
-                  icon: const Icon(
-                    Icons.notifications_outlined,
-                    color: Color(0xFF4AA0E6),
-                    size: 24,
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.blue.withOpacity(0.1),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                ),
-                // Notification badge
-                if (unreadNotificationCount > 0)
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white, width: 1),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        unreadNotificationCount > 99
-                            ? '99+'
-                            : unreadNotificationCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                return widget.title != null
+                    ? Center(
+                        child: Text(
+                          widget.title!,
+                          style: const TextStyle(
+                            color: Color(0xFF4AA0E6),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
+                      )
+                    : const SizedBox.shrink();
+              },
             ),
           ),
 
-          // User Avatar
-          Padding(
-            padding: const EdgeInsets.only(right: 16, left: 8),
-            child: isLoading
-                ? const CircularProgressIndicator(strokeWidth: 2)
-                : UserAvatar(name: name, avatarUrl: avatarUrl),
+          // Actions
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Additional actions if provided
+              if (widget.additionalActions != null && !isSearchExpanded)
+                ...widget.additionalActions!,
+
+              // Search Button
+              IconButton(
+                onPressed: _toggleSearch,
+                icon: Icon(
+                  isSearchExpanded ? Icons.close : Icons.search,
+                  color: const Color(0xFF4AA0E6),
+                  size: 24,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.blue.withOpacity(0.1),
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+
+              if (!isSearchExpanded) ...[
+                // Notification Button
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Stack(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          context.push(CommonRoutes.notifications);
+                        },
+                        icon: const Icon(
+                          Icons.notifications_outlined,
+                          color: Color(0xFF4AA0E6),
+                          size: 24,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.blue.withOpacity(0.1),
+                          padding: const EdgeInsets.all(8),
+                        ),
+                      ),
+                      // Notification badge
+                      if (unreadNotificationCount > 0)
+                        Positioned(
+                          right: 6,
+                          top: 6,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white, width: 1),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              unreadNotificationCount > 99
+                                  ? '99+'
+                                  : unreadNotificationCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // User Avatar
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : UserAvatar(name: name, avatarUrl: avatarUrl),
+                ),
+              ],
+            ],
           ),
         ],
-      ],
+      ),
     );
   }
 }

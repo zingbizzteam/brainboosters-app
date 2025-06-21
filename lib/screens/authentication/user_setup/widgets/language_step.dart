@@ -15,10 +15,6 @@ class LanguageStep extends StatelessWidget {
     final List<String> languages = [
       'English',
       'Tamil',
-      'French',
-      'German',
-      'Chinese',
-      'Japanese',
       'Hindi',
     ];
     return Padding(
