@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../courses/models/course_model.dart';
 import '../../live_class/models/live_class_model.dart';
-import '../../coaching_centers/models/coaching_center_model.dart';
+import '../../view_coaching_centers/models/coaching_center_model.dart';
 import '../../../../ui/navigation/common_routes/common_routes.dart';
 
 class CourseCard extends StatelessWidget {

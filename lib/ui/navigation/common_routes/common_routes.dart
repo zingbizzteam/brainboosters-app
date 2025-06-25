@@ -1,8 +1,8 @@
 // common_routes/common_routes.dart
 import 'package:brainboosters_app/screens/common/settings/profile_page.dart';
 import 'package:brainboosters_app/screens/common/settings/settings_page.dart';
-import 'package:brainboosters_app/screens/common/coaching_centers/coaching_centers_page.dart';
-import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_details_page.dart';
+import 'package:brainboosters_app/screens/common/view_coaching_centers/coaching_centers_page.dart';
+import 'package:brainboosters_app/screens/common/view_coaching_centers/coaching_center_details_page.dart';
 import 'package:brainboosters_app/screens/common/courses/courses_page.dart';
 import 'package:brainboosters_app/screens/common/courses/course_intro_page.dart';
 import 'package:brainboosters_app/screens/common/search/search_page.dart';
