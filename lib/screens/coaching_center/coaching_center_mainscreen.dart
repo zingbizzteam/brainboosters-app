@@ -130,7 +130,8 @@ class _CoachingCenterMainScreenState extends State<CoachingCenterMainScreen> {
               if (value == 'logout') {
                 _logout(context);
               } else if (value == 'profile') {
-                // TODO: Navigate to profile
+                // Navigate to profile (this will be outside the shell)
+                context.push('/coaching-center/profile');
               }
             },
             itemBuilder: (context) => [

@@ -284,27 +284,27 @@ create table if not exists coaching_center_faculty (
   updated_at timestamptz default now()
 );
 
--- Courses table (matching your course model)
+-- UPDATED: Courses table (removed thumbnail_url, renamed image_url to course_image_url, added intro_video_url)
 create table if not exists courses (
   id uuid primary key default gen_random_uuid(),
   course_id text unique not null,
   slug text unique not null,
   title text not null,
   description text,
-  image_url text,
-  thumbnail_url text,
+  course_image_url text,
+  intro_video_url text,
   academy text,
   instructors text[],
   category text,
   subcategory text,
   subject text,
-  level text check (level in ('beginner', 'intermediate', 'advanced')),
-  difficulty text check (difficulty in ('Beginner', 'Intermediate', 'Advanced')),
+  level text check (level in ('beginner', 'intermediate', 'advanced', 'expert')),
+  difficulty text check (difficulty in ('Beginner', 'Easy', 'Medium', 'Hard', 'Expert')),
   language text default 'english',
   duration integer, -- in hours
   duration_hours integer,
   total_lessons integer default 0,
-  price decimal(10,2) not null,
+  price decimal(10,2) not null default 0,
   original_price decimal(10,2),
   is_free boolean default false,
   max_enrollments integer,
@@ -617,3 +617,49 @@ create trigger update_coaching_center_registrations_updated_at before update on 
 create trigger update_courses_updated_at before update on courses for each row execute procedure update_updated_at_column();
 create trigger update_live_classes_updated_at before update on live_classes for each row execute procedure update_updated_at_column();
 create trigger update_enrollments_updated_at before update on enrollments for each row execute procedure update_updated_at_column();
+
+-- Create the storage bucket for course media
+INSERT INTO storage.buckets (id, name, public) VALUES ('course-media', 'course-media', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Set up RLS policies for the bucket
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'course-media');
+CREATE POLICY "Authenticated users can upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'course-media' AND auth.role() = 'authenticated');
+CREATE POLICY "Users can update own files" ON storage.objects FOR UPDATE USING (bucket_id = 'course-media' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can delete own files" ON storage.objects FOR DELETE USING (bucket_id = 'course-media' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ALTER commands for existing databases (if needed)
+-- Remove thumbnail_url column if it exists
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'courses' AND column_name = 'thumbnail_url') THEN
+        ALTER TABLE courses DROP COLUMN thumbnail_url;
+    END IF;
+END $$;
+
+-- Rename image_url to course_image_url if needed
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'courses' AND column_name = 'image_url') THEN
+        ALTER TABLE courses RENAME COLUMN image_url TO course_image_url;
+    END IF;
+END $$;
+
+-- Add intro_video_url column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'courses' AND column_name = 'intro_video_url') THEN
+        ALTER TABLE courses ADD COLUMN intro_video_url TEXT;
+    END IF;
+END $$;
+
+-- Update level constraint to include 'expert'
+ALTER TABLE courses DROP CONSTRAINT IF EXISTS courses_level_check;
+ALTER TABLE courses ADD CONSTRAINT courses_level_check CHECK (level IN ('beginner', 'intermediate', 'advanced', 'expert'));
+
+-- Update difficulty constraint to include more options
+ALTER TABLE courses DROP CONSTRAINT IF EXISTS courses_difficulty_check;
+ALTER TABLE courses ADD CONSTRAINT courses_difficulty_check CHECK (difficulty IN ('Beginner', 'Easy', 'Medium', 'Hard', 'Expert'));
+
+-- Set default value for price column
+ALTER TABLE courses ALTER COLUMN price SET DEFAULT 0;

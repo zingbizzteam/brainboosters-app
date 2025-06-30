@@ -5,9 +5,9 @@ import 'widgets/courses_header.dart';
 import 'widgets/course_card.dart';
 import 'widgets/course_stats.dart';
 import 'widgets/course_filter.dart';
-import 'course_details_page.dart';
+import 'course_details/course_details_page.dart';
 import 'create_course_page.dart';
-import 'edit_course_page.dart';
+import 'edit_course/edit_course_page.dart';
 
 class CoachingCenterCoursesPage extends StatefulWidget {
   const CoachingCenterCoursesPage({super.key});

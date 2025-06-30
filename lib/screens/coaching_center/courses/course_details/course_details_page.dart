@@ -1,7 +1,8 @@
 // screens/coaching_center/courses/course_details_page.dart
+import 'package:brainboosters_app/screens/coaching_center/courses/course_details/widgets/video_player_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'edit_course_page.dart'; // Import the edit course page
+import '../edit_course/edit_course_page.dart'; // Import the edit course page
 
 class CourseDetailsPage extends StatefulWidget {
   final String courseId;
@@ -273,6 +274,66 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Course Image and Video Section
+            if (_course!['course_image_url'] != null ||
+                _course!['intro_video_url'] != null) ...[
+              Container(
+                height: constraints.maxWidth > 600 ? 250 : 200,
+                width: double.infinity,
+                child: _course!['intro_video_url'] != null
+                    ? MediaKitVideoPlayer(url: _course!['intro_video_url'])
+                    : _course!['course_image_url'] != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          _course!['course_image_url'],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No course image',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+              ),
+              SizedBox(height: constraints.maxWidth > 600 ? 16 : 12),
+            ],
+
             // Title and Status Row
             Row(
               children: [

@@ -38,42 +38,25 @@ class CourseCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Course Image/Thumbnail
+                // Course Image/Thumbnail - UPDATED
                 Flexible(
                   flex: isSmallCard ? 2 : 3,
                   child: Container(
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.vertical(
                         top: Radius.circular(12),
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF00B894).withOpacity(0.8),
-                          const Color(0xFF00B894),
-                        ],
                       ),
                     ),
                     child: Stack(
                       children: [
-                        if (course['thumbnail_url'] != null)
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                            child: Image.network(
-                              course['thumbnail_url'],
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildDefaultThumbnail(),
-                            ),
-                          )
-                        else
-                          _buildDefaultThumbnail(),
+                        // Course Image - FIXED to use course_image_url
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: _buildCourseImage(),
+                        ),
 
                         // Status Badge
                         Positioned(
@@ -193,7 +176,11 @@ class CourseCard extends StatelessWidget {
                         if (!isSmallCard)
                           Row(
                             children: [
-                              Icon(Icons.star, color: Colors.amber, size: 14),
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 14,
+                              ),
                               const SizedBox(width: 2),
                               Text(
                                 rating.toStringAsFixed(1),
@@ -259,12 +246,57 @@ class CourseCard extends StatelessWidget {
     );
   }
 
+  // UPDATED: New method to build course image with proper fallback
+  Widget _buildCourseImage() {
+    // Check for course_image_url (correct field name)
+    if (course['course_image_url'] != null &&
+        course['course_image_url'].toString().isNotEmpty) {
+      return Image.network(
+        course['course_image_url'],
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildLoadingPlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) => _buildDefaultThumbnail(),
+      );
+    }
+
+    // Fallback to default thumbnail
+    return _buildDefaultThumbnail();
+  }
+
+  // Loading placeholder while image loads
+  Widget _buildLoadingPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00B894).withOpacity(0.3),
+            const Color(0xFF00B894).withOpacity(0.1),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00B894)),
+        ),
+      ),
+    );
+  }
+
+  // Default thumbnail when no image is available
   Widget _buildDefaultThumbnail() {
     return Container(
       width: double.infinity,
       height: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -275,7 +307,21 @@ class CourseCard extends StatelessWidget {
         ),
       ),
       child: const Center(
-        child: Icon(Icons.play_circle_outline, color: Colors.white, size: 48),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.school, color: Colors.white, size: 32),
+            SizedBox(height: 8),
+            Text(
+              'Course',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
