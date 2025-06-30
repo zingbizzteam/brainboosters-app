@@ -8,7 +8,7 @@ import 'widgets/sidebar.dart';
 
 final _navItems = [
   _NavItem(
-    route: TeacherRoutes.home,
+    route: TeacherRoutes.teacherhome,
     label: 'Home',
     icon: Icons.home,
     color: Colors.blue,

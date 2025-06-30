@@ -4,7 +4,7 @@ import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart
 import 'package:go_router/go_router.dart';
 
 class TeacherRoutes {
-  static const String home = '/home';
+  static const String teacherhome = '/teacher-home';
   static const String courses = '/courses';
   static const String liveClasses = '/live-classes';
 
@@ -15,7 +15,7 @@ class TeacherRoutes {
       StatefulShellBranch(
         routes: [
           GoRoute(
-            path: home,
+            path: teacherhome,
             builder: (context, state) => const TeacherHomePage(),
           ),
         ],

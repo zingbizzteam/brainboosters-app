@@ -19,6 +19,8 @@ class _EmailLoginPageTeacherState extends State<EmailLoginPageTeacher> {
   bool _obscurePassword = true;
   bool _rememberPassword = false;
 
+
+
   Future<void> _login() async {
     setState(() => _isLoading = true);
     final email = _emailController.text.trim();
@@ -40,7 +42,7 @@ class _EmailLoginPageTeacherState extends State<EmailLoginPageTeacher> {
           if (mounted) {
             isNew
                 ? context.go(AuthRoutes.userSetup)
-                : context.go(TeacherRoutes.home);
+                : context.go(TeacherRoutes.teacherhome);
           }
         }
       }
