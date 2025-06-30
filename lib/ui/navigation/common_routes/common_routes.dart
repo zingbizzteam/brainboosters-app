@@ -1,8 +1,8 @@
 // common_routes/common_routes.dart
 import 'package:brainboosters_app/screens/common/settings/profile_page.dart';
 import 'package:brainboosters_app/screens/common/settings/settings_page.dart';
-import 'package:brainboosters_app/screens/common/coaching_centers/coaching_centers_page.dart';
-import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_detail_page.dart';
+import 'package:brainboosters_app/screens/common/view_coaching_centers/coaching_centers_page.dart';
+import 'package:brainboosters_app/screens/common/view_coaching_centers/coaching_center_details_page.dart';
 import 'package:brainboosters_app/screens/common/courses/courses_page.dart';
 import 'package:brainboosters_app/screens/common/courses/course_intro_page.dart';
 import 'package:brainboosters_app/screens/common/search/search_page.dart';
@@ -12,7 +12,7 @@ import 'package:brainboosters_app/screens/common/notifications/notifications_pag
 import 'package:go_router/go_router.dart';
 
 class CommonRoutes {
-  // Route paths with leading slash for proper routing
+  // Route paths
   static const String courses = '/courses';
   static const String courseDetail = '/courses/:courseId';
   static const String searchCourses = '/search-courses';
@@ -29,7 +29,7 @@ class CommonRoutes {
   static String getCoachingCenterDetailRoute(String centerId) => '/coaching-centers/$centerId';
   static String getSearchCoursesRoute(String query) => '/search-courses?q=${Uri.encodeComponent(query)}';
 
-  // Create StatefulShellBranch routes for shared navigation (only the ones used in navigation)
+  // Create StatefulShellBranch routes for navigation
   static List<StatefulShellBranch> createNavigationBranches() {
     return [
       // Branch for Courses
@@ -39,7 +39,6 @@ class CommonRoutes {
             path: courses,
             builder: (context, state) => const CoursesPage(),
             routes: [
-              // Nested route for course details
               GoRoute(
                 path: ':courseId',
                 builder: (context, state) {
@@ -58,7 +57,6 @@ class CommonRoutes {
             path: liveClasses,
             builder: (context, state) => const LiveClassesPage(),
             routes: [
-              // Nested route for live class details
               GoRoute(
                 path: ':liveClassId',
                 builder: (context, state) {
@@ -70,12 +68,21 @@ class CommonRoutes {
           ),
         ],
       ),
-      // Branch for Notifications
+      // Branch for Coaching Centers
       StatefulShellBranch(
         routes: [
           GoRoute(
-            path: notifications,
-            builder: (context, state) => const NotificationsPage(),
+            path: coachingCenters,
+            builder: (context, state) => const CoachingCentersPage(),
+            routes: [
+              GoRoute(
+                path: ':centerId',
+                builder: (context, state) {
+                  final centerId = state.pathParameters['centerId']!;
+                  return CoachingCenterDetailPage(centerId: centerId);
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -97,97 +104,22 @@ class CommonRoutes {
     ];
   }
 
-  // Create all shell branches including coaching centers and search (for other uses)
-  static List<StatefulShellBranch> createAllShellBranches() {
+  // Additional routes that are not part of main navigation but accessible
+  static List<RouteBase> getAdditionalRoutes() {
     return [
-      ...createNavigationBranches(),
-      
-      // Branch for Coaching Centers (not in main navigation)
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: coachingCenters,
-            builder: (context, state) => const CoachingCentersPage(),
-            routes: [
-              // Nested route for coaching center details
-              GoRoute(
-                path: ':centerId',
-                builder: (context, state) {
-                  final centerId = state.pathParameters['centerId']!;
-                  return CoachingCenterDetailPage(centerId: centerId);
-                },
-              ),
-            ],
-          ),
-        ],
+      // Notifications route
+      GoRoute(
+        path: notifications,
+        builder: (context, state) => const NotificationsPage(),
       ),
-      
-      // Branch for Search (not in main navigation but available)
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: searchCourses,
-            builder: (context, state) {
-              final query = state.uri.queryParameters['q'] ?? '';
-              return SearchPage(query: query);
-            },
-          ),
-        ],
+      // Search route
+      GoRoute(
+        path: searchCourses,
+        builder: (context, state) {
+          final query = state.uri.queryParameters['q'] ?? '';
+          return SearchPage(query: query);
+        },
       ),
     ];
   }
-
-  // Keep the original routes for non-shell navigation if needed
-  static final List<RouteBase> routes = [
-    GoRoute(
-      path: courses,
-      builder: (context, state) => const CoursesPage(),
-      routes: [
-        GoRoute(
-          path: ':courseId',
-          builder: (context, state) {
-            final courseId = state.pathParameters['courseId']!;
-            return CourseIntroPage(courseId: courseId);
-          },
-        ),
-      ],
-    ),
-    GoRoute(
-      path: liveClasses,
-      builder: (context, state) => const LiveClassesPage(),
-      routes: [
-        GoRoute(
-          path: ':liveClassId',
-          builder: (context, state) {
-            final liveClassId = state.pathParameters['liveClassId']!;
-            return LiveClassIntroPage(liveClassId: liveClassId);
-          },
-        ),
-      ],
-    ),
-    GoRoute(path: notifications, builder: (context, state) => const NotificationsPage()),
-    GoRoute(
-      path: coachingCenters,
-      builder: (context, state) => const CoachingCentersPage(),
-      routes: [
-        GoRoute(
-          path: ':centerId',
-          builder: (context, state) {
-            final centerId = state.pathParameters['centerId']!;
-            return CoachingCenterDetailPage(centerId: centerId);
-          },
-        ),
-      ],
-    ),
-    GoRoute(path: settings, builder: (context, state) => const SettingsPage()),
-    
-    // Search Courses Route
-    GoRoute(
-      path: searchCourses,
-      builder: (context, state) {
-        final query = state.uri.queryParameters['q'] ?? '';
-        return SearchPage(query: query);
-      },
-    ),
-  ];
 }

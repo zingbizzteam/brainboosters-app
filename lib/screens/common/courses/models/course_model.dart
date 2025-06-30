@@ -1,4 +1,48 @@
-// models/models.dart
+import 'chapter_model.dart';
+import 'review_model.dart';
+
+class CourseAnalytics {
+  final int enrolledCount;
+  final int completedCount;
+  final int viewCount;
+  final int likes;
+  final int shares;
+  final int questionsAsked;
+  final int discussions;
+
+  const CourseAnalytics({
+    this.enrolledCount = 0,
+    this.completedCount = 0,
+    this.viewCount = 0,
+    this.likes = 0,
+    this.shares = 0,
+    this.questionsAsked = 0,
+    this.discussions = 0,
+  });
+}
+
+class WhatsIncluded {
+  final bool certificate;
+  final bool quizzes;
+  final bool assignments;
+  final bool downloadableResources;
+  final bool lifetimeAccess;
+  final bool accessOnMobile;
+  final bool instructorQnA;
+  final bool communityAccess;
+
+  const WhatsIncluded({
+    this.certificate = false,
+    this.quizzes = false,
+    this.assignments = false,
+    this.downloadableResources = false,
+    this.lifetimeAccess = false,
+    this.accessOnMobile = false,
+    this.instructorQnA = false,
+    this.communityAccess = false,
+  });
+}
+
 class Course {
   final String id;
   final String slug;
@@ -26,6 +70,13 @@ class Course {
   final List<String> requirements;
   final List<String> whatYouWillLearn;
 
+  // New fields
+  final CourseAnalytics analytics;
+  final WhatsIncluded whatsIncluded;
+  final List<Chapter> chapters;
+  final List<Review> reviews;
+  final List<String> courseContentTitles; // e.g. ["Introduction", "Basics", "Advanced Topics"]
+
   const Course({
     required this.id,
     required this.slug,
@@ -52,6 +103,12 @@ class Course {
     required this.language,
     required this.requirements,
     required this.whatYouWillLearn,
+    // New
+    this.analytics = const CourseAnalytics(),
+    this.whatsIncluded = const WhatsIncluded(),
+    this.chapters = const [],
+    this.reviews = const [],
+    this.courseContentTitles = const [],
   });
 
   bool get isFree => price == 0.0;

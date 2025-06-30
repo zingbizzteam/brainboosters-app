@@ -9,7 +9,7 @@ class AppPromotionSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
@@ -21,10 +21,7 @@ class AppPromotionSection extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF4F46E5),
-              Color(0xFF7C3AED),
-            ],
+            colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
           ),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -47,15 +44,9 @@ class AppPromotionSection extends StatelessWidget {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        Expanded(
-          flex: 6,
-          child: _buildTextContent(false),
-        ),
+        Expanded(flex: 6, child: _buildTextContent(false)),
         const SizedBox(width: 40),
-        Expanded(
-          flex: 4,
-          child: _buildPhoneImage(),
-        ),
+        Expanded(flex: 4, child: _buildPhoneImage()),
       ],
     );
   }
@@ -82,7 +73,7 @@ class AppPromotionSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        
+
         // Download buttons
         Wrap(
           spacing: 16,
@@ -142,14 +133,10 @@ class AppPromotionSection extends StatelessWidget {
         width: 200,
         height: 300,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Icon(
-          Icons.phone_android,
-          color: Colors.white,
-          size: 80,
-        ),
+        child: const Icon(Icons.phone_android, color: Colors.white, size: 80),
       ),
     );
   }

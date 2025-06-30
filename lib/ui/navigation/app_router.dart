@@ -1,7 +1,9 @@
 // app_router.dart
-import 'package:brainboosters_app/screens/common/search/search_page.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
+import 'package:brainboosters_app/ui/navigation/admin_routes/admin_routes.dart';
+import 'package:brainboosters_app/ui/navigation/coaching_center_routes/coaching_center_routes.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,18 +25,15 @@ class AppRouter {
       ),
       ...AuthRoutes.routes,
       StudentRoutes.statefulRoute,
-      // Add the search route here - IMPORTANT!
-      GoRoute(
-        path: '/search-courses',
-        builder: (context, state) {
-          final query = state.uri.queryParameters['q'] ?? '';
-          return SearchPage(query: query);
-        },
-      ),
+      AdminRoutes.statefulRoute,
+      CoachingCenterRoutes.statefulRoute,
+      // Add standalone coaching center routes (without bottom nav)
+      ...CoachingCenterRoutes.standaloneRoutes,
+      // Add additional routes from CommonRoutes
+      ...CommonRoutes.getAdditionalRoutes(),
     ],
   );
 
-  // app_router.dart - Fixed redirect logic
   static Future<String?> _redirectLogic(
     BuildContext context,
     GoRouterState state,
@@ -43,7 +42,7 @@ class AppRouter {
     final isLoggedIn = session != null;
     final currentPath = state.uri.path;
 
-    print('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn');
+    debugPrint('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn');
 
     // If not logged in and trying to access protected routes
     if (!isLoggedIn) {
@@ -51,22 +50,34 @@ class AppRouter {
       if (currentPath == onboarding ||
           currentPath.startsWith('/auth') ||
           AuthRoutes.routes.any((route) => route.path == currentPath)) {
-        return null; // Allow navigation
+        return null;
       }
-      return onboarding; // Redirect to onboarding
+      return onboarding;
     }
 
     // If logged in and on onboarding page, redirect based on user status
     if (isLoggedIn && currentPath == onboarding) {
-      bool isNew = await isNewUser(session.user.id);
-      if (isNew) {
+      // Check user type for proper redirection
+      final userProfile = await getUserProfile(session.user.id);
+
+      if (userProfile == null) {
         return AuthRoutes.userSetup;
-      } else {
-        return StudentRoutes.home;
+      }
+
+      // Redirect based on user type
+      switch (userProfile['user_type']) {
+        case 'admin':
+          return AdminRoutes.dashboard;
+        case 'coaching_center':
+          return CoachingCenterRoutes.dashboard;
+        case 'faculty':
+          // Add faculty routes when ready
+          return StudentRoutes.home; // Temporary
+        default:
+          return StudentRoutes.home;
       }
     }
 
-    // For all other cases when logged in, allow navigation to proceed
     return null;
   }
 }
@@ -79,21 +90,27 @@ class SupabaseAuthStateListener extends ChangeNotifier {
   }
 }
 
-// Move this to your authentication service or provider
-Future<bool> isNewUser(String userId) async {
+// Updated helper function to get user profile
+Future<Map<String, dynamic>?> getUserProfile(String userId) async {
   try {
     final response = await Supabase.instance.client
-        .from('profiles')
+        .from('user_profiles')
         .select()
         .eq('id', userId)
         .maybeSingle();
 
-    return response == null;
+    return response;
   } on PostgrestException catch (e) {
     debugPrint('Profile check error: $e');
-    return true;
+    return null;
   } catch (e) {
     debugPrint('Unexpected error: $e');
-    return true;
+    return null;
   }
+}
+
+// Keep the old function for backward compatibility
+Future<bool> isNewUser(String userId) async {
+  final profile = await getUserProfile(userId);
+  return profile == null;
 }

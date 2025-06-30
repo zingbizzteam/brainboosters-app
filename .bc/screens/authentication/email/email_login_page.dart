@@ -107,7 +107,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                 errorBuilder: (_, __, ___) => Container(
                                   height: 300,
                                   width: 300,
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: Colors.blue.withValues(alpha: 0.3),
                                   child: const Icon(Icons.computer, size: 100),
                                 ),
                               ),

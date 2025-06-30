@@ -29,14 +29,16 @@ class NotificationItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: notification.isRead ? Colors.white : Colors.blue.withOpacity(0.05),
+          color: notification.isRead
+              ? Colors.white
+              : Colors.blue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
-              ? Colors.blue 
-              : notification.isRead 
-                ? Colors.grey[200]! 
-                : Colors.blue.withOpacity(0.2),
+            color: isSelected
+                ? Colors.blue
+                : notification.isRead
+                ? Colors.grey[200]!
+                : Colors.blue.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -63,17 +65,13 @@ class NotificationItem extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: _getTypeColor().withOpacity(0.1),
+                    color: _getTypeColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    _getTypeIcon(),
-                    color: _getTypeColor(),
-                    size: 20,
-                  ),
+                  child: Icon(_getTypeIcon(), color: _getTypeColor(), size: 20),
                 ),
               ),
-            
+
             // Notification content
             Expanded(
               child: Column(
@@ -86,17 +84,16 @@ class NotificationItem extends StatelessWidget {
                           notification.title,
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.bold,
+                            fontWeight: notification.isRead
+                                ? FontWeight.w500
+                                : FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
                       ),
                       Text(
                         notification.timeAgo,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                       ),
                     ],
                   ),
@@ -115,9 +112,12 @@ class NotificationItem extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: _getTypeColor().withOpacity(0.1),
+                          color: _getTypeColor().withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -130,20 +130,26 @@ class NotificationItem extends StatelessWidget {
                         ),
                       ),
                       if (notification.priority == NotificationPriority.high ||
-                          notification.priority == NotificationPriority.urgent) ...[
+                          notification.priority ==
+                              NotificationPriority.urgent) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: notification.priority == NotificationPriority.urgent
-                              ? Colors.red
-                              : Colors.orange,
+                            color:
+                                notification.priority ==
+                                    NotificationPriority.urgent
+                                ? Colors.red
+                                : Colors.orange,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             notification.priority == NotificationPriority.urgent
-                              ? 'URGENT'
-                              : 'HIGH',
+                                ? 'URGENT'
+                                : 'HIGH',
                             style: const TextStyle(
                               fontSize: 8,
                               color: Colors.white,

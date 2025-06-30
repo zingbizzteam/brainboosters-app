@@ -1,6 +1,9 @@
 // screens/common/courses/course_intro_page.dart
 import 'package:brainboosters_app/screens/common/courses/data/course_dummy_data.dart';
 import 'package:brainboosters_app/screens/common/courses/models/course_model.dart';
+import 'package:brainboosters_app/screens/common/courses/widgets/course_content_tab.dart';
+import 'package:brainboosters_app/screens/common/courses/widgets/reviews_tab.dart';
+import 'package:brainboosters_app/screens/common/courses/widgets/whats_included_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/breadcrumb_widget.dart';
@@ -11,16 +14,17 @@ import 'widgets/course_info_widget.dart';
 
 class CourseIntroPage extends StatefulWidget {
   final String courseId;
-  
+
   const CourseIntroPage({super.key, required this.courseId});
 
   @override
   State<CourseIntroPage> createState() => _CourseIntroPageState();
 }
 
-class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderStateMixin {
+class _CourseIntroPageState extends State<CourseIntroPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -59,19 +63,30 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
               icon: const Icon(Icons.arrow_back, color: Colors.black),
               onPressed: () => context.pop(),
             ),
-            title: isMobile ? null : BreadcrumbWidget(
-              items: [
-                BreadcrumbItem('Home', false),
-                BreadcrumbItem('Python Coaching Centers', false),
-                BreadcrumbItem('The Leaders Academy', false),
-                BreadcrumbItem('Courses', false),
-                BreadcrumbItem('The Complete Python Course', true),
-              ],
-            ),
+            title: isMobile
+                ? null
+                : BreadcrumbWidget(
+                    items: [
+                      BreadcrumbItem(
+                        'Home',
+                        false,
+                        onTap: () => context.go('/'),
+                      ),
+                      BreadcrumbItem(
+                        'Courses',
+                        false,
+                        onTap: () => context.go('/courses'),
+                      ),
+                      BreadcrumbItem(course.title, true),
+                    ],
+                  ),
             actions: [
               if (!isMobile) ...[
                 IconButton(
-                  icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+                  icon: const Icon(
+                    Icons.notifications_outlined,
+                    color: Colors.black,
+                  ),
                   onPressed: () {},
                 ),
                 Padding(
@@ -100,7 +115,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
               ],
             ],
           ),
-          
+
           // Main Content
           SliverToBoxAdapter(
             child: Padding(
@@ -111,28 +126,35 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  
+
                   // Breadcrumb for mobile
                   if (isMobile) ...[
                     BreadcrumbWidget(
                       items: [
-                        BreadcrumbItem('Home', false),
-                        BreadcrumbItem('Python Coaching Centers', false),
-                        BreadcrumbItem('The Leaders Academy', false),
-                        BreadcrumbItem('Courses', false),
-                        BreadcrumbItem('The Complete Python Course', true),
+                        BreadcrumbItem(
+                          'Home',
+                          false,
+                          onTap: () => context.go('/'),
+                        ),
+                        BreadcrumbItem(
+                          'Courses',
+                          false,
+                          onTap: () => context.go('/courses'),
+                        ),
+                        BreadcrumbItem(course.title, true),
                       ],
                     ),
+
                     const SizedBox(height: 20),
                   ],
-                  
+
                   // Main Course Section
-                  isDesktop || isTablet 
-                    ? _buildDesktopLayout(course)
-                    : _buildMobileLayout(course),
-                  
+                  isDesktop || isTablet
+                      ? _buildDesktopLayout(course)
+                      : _buildMobileLayout(course),
+
                   const SizedBox(height: 40),
-                  
+
                   // Course Stats
                   StatsWidget(
                     items: [
@@ -140,10 +162,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
                         icon: Icons.people_outline,
                         text: '6,57,849 Students',
                       ),
-                      StatItem(
-                        icon: Icons.access_time,
-                        text: '6 hr',
-                      ),
+                      StatItem(icon: Icons.access_time, text: '6 hr'),
                       StatItem(
                         icon: Icons.calendar_today_outlined,
                         text: 'Last Updated on 23 May, 2023',
@@ -151,18 +170,23 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
                     ],
                     trailingWidget: _buildRating(),
                   ),
-                  
+
                   const SizedBox(height: 30),
-                  
+
                   // Tabs Section
                   TabSectionWidget(
                     tabController: _tabController,
-                    tabs: const ['About', 'Course Content', "What's Included", 'Reviews'],
+                    tabs: const [
+                      'About',
+                      'Course Content',
+                      "What's Included",
+                      'Reviews',
+                    ],
                     tabViews: [
                       _buildAboutTab(course, isMobile),
-                      _buildCourseContentTab(),
-                      _buildWhatsIncludedTab(),
-                      _buildReviewsTab(),
+                      CourseContentTab(chapters: course.chapters),
+                      WhatsIncludedTab(whatsIncluded: course.whatsIncluded),
+                      ReviewsTab(reviews: course.reviews),
                     ],
                   ),
                 ],
@@ -190,14 +214,11 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             overlayContent: _buildCourseImageOverlay(),
           ),
         ),
-        
+
         const SizedBox(width: 40),
-        
+
         // Right Side - Course Info
-        Expanded(
-          flex: 6,
-          child: CourseInfoWidget(course: course),
-        ),
+        Expanded(flex: 6, child: CourseInfoWidget(course: course)),
       ],
     );
   }
@@ -223,7 +244,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
   Widget _buildCourseImageOverlay() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth <= 768;
-    
+
     return Stack(
       children: [
         // Background pattern/design
@@ -234,7 +255,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             width: isMobile ? 50 : 60,
             height: isMobile ? 50 : 60,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -244,7 +265,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             ),
           ),
         ),
-        
+
         // Python logo/icon
         Positioned(
           top: 30,
@@ -268,7 +289,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             ),
           ),
         ),
-        
+
         // Main content
         Positioned(
           left: 20,
@@ -297,7 +318,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             ],
           ),
         ),
-        
+
         // Year badge
         Positioned(
           left: 20,
@@ -321,7 +342,7 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             ),
           ),
         ),
-        
+
         // Instructor image
         if (!isMobile)
           Positioned(
@@ -358,18 +379,12 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
         const SizedBox(width: 8),
         const Text(
           '4.8',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(width: 4),
         Text(
           '(137 ratings)',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
       ],
     );
@@ -406,11 +421,26 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
             ),
           ),
           const SizedBox(height: 12),
-          _buildLearningPoint('Python fundamentals: variables, data types, loops, functions, and more', isMobile),
-          _buildLearningPoint('Object-Oriented Programming (OOP) in Python', isMobile),
-          _buildLearningPoint('File handling, error handling, and working with libraries', isMobile),
-          _buildLearningPoint('Real-world projects to boost your confidence', isMobile),
-          _buildLearningPoint('An intro to web development, automation, and data analysis with Python', isMobile),
+          _buildLearningPoint(
+            'Python fundamentals: variables, data types, loops, functions, and more',
+            isMobile,
+          ),
+          _buildLearningPoint(
+            'Object-Oriented Programming (OOP) in Python',
+            isMobile,
+          ),
+          _buildLearningPoint(
+            'File handling, error handling, and working with libraries',
+            isMobile,
+          ),
+          _buildLearningPoint(
+            'Real-world projects to boost your confidence',
+            isMobile,
+          ),
+          _buildLearningPoint(
+            'An intro to web development, automation, and data analysis with Python',
+            isMobile,
+          ),
           const SizedBox(height: 24),
           Text(
             'Why join?',
@@ -421,9 +451,18 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
           ),
           const SizedBox(height: 12),
           _buildLearningPoint('No prior coding experience needed', isMobile),
-          _buildLearningPoint('Learn by doing – practical assignments and mini-projects', isMobile),
-          _buildLearningPoint('Get mentored by experts from The Leaders Academy', isMobile),
-          _buildLearningPoint('Lifetime access & certification upon completion', isMobile),
+          _buildLearningPoint(
+            'Learn by doing – practical assignments and mini-projects',
+            isMobile,
+          ),
+          _buildLearningPoint(
+            'Get mentored by experts from The Leaders Academy',
+            isMobile,
+          ),
+          _buildLearningPoint(
+            'Lifetime access & certification upon completion',
+            isMobile,
+          ),
         ],
       ),
     );
@@ -457,24 +496,6 @@ class _CourseIntroPageState extends State<CourseIntroPage> with TickerProviderSt
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCourseContentTab() {
-    return const Center(
-      child: Text('Course Content will be displayed here'),
-    );
-  }
-
-  Widget _buildWhatsIncludedTab() {
-    return const Center(
-      child: Text('What\'s Included will be displayed here'),
-    );
-  }
-
-  Widget _buildReviewsTab() {
-    return const Center(
-      child: Text('Reviews will be displayed here'),
     );
   }
 }

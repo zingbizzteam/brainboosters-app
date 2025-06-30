@@ -1,6 +1,8 @@
 import 'package:brainboosters_app/ui/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:media_kit/media_kit.dart';                      // Provides [Player], [Media], [Playlist] etc.
 
 Future<void> main() async {
   await Supabase.initialize(
@@ -8,6 +10,7 @@ Future<void> main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlwbmhqa2JneGxoanB0dmlpcWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MTYwMDUsImV4cCI6MjA2NTI5MjAwNX0.71kriJWMSZkoqRlK4fVfoO88coDnAUrx97nvEe-M3Ws',
   );
+  MediaKit.ensureInitialized();
   runApp(MainApp());
 }
 
@@ -17,6 +20,9 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      localizationsDelegates: const [
+        FlutterQuillLocalizations.delegate,
+      ],
       routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

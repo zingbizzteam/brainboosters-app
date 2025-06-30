@@ -9,7 +9,7 @@ class CourseFooterSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     return Container(
       width: double.infinity,
       color: const Color(0xFF1E3A8A), // Dark blue background
@@ -23,7 +23,7 @@ class CourseFooterSection extends StatelessWidget {
             ),
             child: isMobile ? _buildMobileFooter() : _buildDesktopFooter(),
           ),
-          
+
           // Bottom Bar
           Container(
             width: double.infinity,
@@ -34,7 +34,7 @@ class CourseFooterSection extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -45,7 +45,7 @@ class CourseFooterSection extends StatelessWidget {
                 Text(
                   '© 2025 Brain Boosters. All rights reserved.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: isMobile ? 12 : 14,
                   ),
                 ),
@@ -74,7 +74,7 @@ class CourseFooterSection extends StatelessWidget {
         // Logo and Description
         _buildBrandSection(),
         const SizedBox(height: 40),
-        
+
         // Company Links
         _buildFooterColumn('Company', [
           'About Us',
@@ -83,7 +83,7 @@ class CourseFooterSection extends StatelessWidget {
           'Blog',
         ]),
         const SizedBox(height: 32),
-        
+
         // Essentials Links
         _buildFooterColumn('Essentials', [
           'Courses',
@@ -92,7 +92,7 @@ class CourseFooterSection extends StatelessWidget {
           'Certifications',
         ]),
         const SizedBox(height: 32),
-        
+
         // Follow Us
         _buildSocialSection(),
       ],
@@ -104,13 +104,10 @@ class CourseFooterSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Logo and Description (40% width)
-        Expanded(
-          flex: 4,
-          child: _buildBrandSection(),
-        ),
-        
+        Expanded(flex: 4, child: _buildBrandSection()),
+
         const SizedBox(width: 60),
-        
+
         // Company Links
         Expanded(
           flex: 2,
@@ -121,7 +118,7 @@ class CourseFooterSection extends StatelessWidget {
             'Blog',
           ]),
         ),
-        
+
         // Essentials Links
         Expanded(
           flex: 2,
@@ -132,12 +129,9 @@ class CourseFooterSection extends StatelessWidget {
             'Certifications',
           ]),
         ),
-        
+
         // Follow Us
-        Expanded(
-          flex: 2,
-          child: _buildSocialSection(),
-        ),
+        Expanded(flex: 2, child: _buildSocialSection()),
       ],
     );
   }
@@ -174,14 +168,14 @@ class CourseFooterSection extends StatelessWidget {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 20),
-        
+
         // Description
         Text(
           'Empowering learners worldwide with quality education and professional development opportunities.',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 16,
             height: 1.6,
           ),
@@ -203,10 +197,12 @@ class CourseFooterSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        ...links.map((link) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildFooterLink(link),
-        )),
+        ...links.map(
+          (link) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildFooterLink(link),
+          ),
+        ),
       ],
     );
   }
@@ -239,7 +235,7 @@ class CourseFooterSection extends StatelessWidget {
         Text(
           'Running a coaching center? Reach more learners on Brain Boosters.',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 14,
             height: 1.5,
           ),
@@ -257,10 +253,7 @@ class CourseFooterSection extends StatelessWidget {
           ),
           child: const Text(
             'Teach on Brain Boosters',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -275,7 +268,7 @@ class CourseFooterSection extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.8),
+          color: Colors.white.withValues(alpha: 0.8),
           fontSize: 14,
           height: 1.5,
         ),
@@ -292,14 +285,10 @@ class CourseFooterSection extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 20,
-        ),
+        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }

@@ -9,7 +9,7 @@ class CourseHeroSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -46,15 +46,9 @@ class CourseHeroSection extends StatelessWidget {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        Expanded(
-          flex: 6,
-          child: _buildTextContent(false),
-        ),
+        Expanded(flex: 6, child: _buildTextContent(false)),
         const SizedBox(width: 60),
-        Expanded(
-          flex: 4,
-          child: _buildPythonLogo(),
-        ),
+        Expanded(flex: 4, child: _buildPythonLogo()),
       ],
     );
   }
@@ -82,7 +76,7 @@ class CourseHeroSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        
+
         // Features
         Row(
           children: [
@@ -93,9 +87,9 @@ class CourseHeroSection extends StatelessWidget {
             _buildFeature(Icons.people_outline, 'Expert Instructors', isMobile),
           ],
         ),
-        
+
         const SizedBox(height: 32),
-        
+
         // Buttons
         Wrap(
           spacing: 16,
@@ -153,11 +147,7 @@ class CourseHeroSection extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: isMobile ? 16 : 20,
-        ),
+        Icon(icon, color: Colors.white, size: isMobile ? 16 : 20),
         const SizedBox(width: 8),
         Text(
           text,
@@ -177,7 +167,7 @@ class CourseHeroSection extends StatelessWidget {
         width: 200,
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(100),
         ),
         child: Stack(

@@ -1,4 +1,4 @@
-import 'package:brainboosters_app/screens/Student/dashboard/widgets/Dashboard_topBar.dart';
+import 'package:brainboosters_app/screens/student/dashboard/widgets/dashboard_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'widgets/stat_card.dart';
 import 'widgets/live_class_list.dart';
@@ -24,9 +24,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return SafeArea(
-                  // <-- Wrap here!
-                  child: SingleChildScrollView(
+                return  SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
                       horizontal: isWide ? 32 : 16,
                       vertical: isWide ? 24 : 12,
@@ -145,7 +143,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                     ),
-                  ),
+                 
                 );
               },
             ),

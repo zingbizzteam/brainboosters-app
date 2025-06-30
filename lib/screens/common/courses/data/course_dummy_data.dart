@@ -1,5 +1,8 @@
 // data/course_dummy_data.dart
 import '../models/course_model.dart';
+import '../models/chapter_model.dart';
+import '../models/lesson_model.dart';
+import '../models/review_model.dart';
 
 class CourseDummyData {
   static final List<Course> courses = [
@@ -39,6 +42,100 @@ class CourseDummyData {
         "Data analysis with Pandas",
         "Build real-world projects"
       ],
+      analytics: CourseAnalytics(
+        enrolledCount: 1200,
+        completedCount: 800,
+        viewCount: 5000,
+        likes: 320,
+        shares: 80,
+        questionsAsked: 100,
+        discussions: 15,
+      ),
+      whatsIncluded: WhatsIncluded(
+        certificate: true,
+        quizzes: true,
+        assignments: true,
+        downloadableResources: true,
+        lifetimeAccess: true,
+        accessOnMobile: true,
+        instructorQnA: true,
+        communityAccess: true,
+      ),
+      chapters: [
+        Chapter(
+          id: "ch1",
+          title: "Introduction",
+          description: "Getting started with Python and setup.",
+          order: 1,
+          lessons: [
+            Lesson(
+              id: "l1",
+              title: "Welcome & Course Overview",
+              videoUrl: "https://example.com/video1",
+              content: "Welcome to the course!",
+              duration: 5,
+              isPreview: true,
+              isCompleted: true,
+              createdAt: DateTime(2024, 1, 15),
+            ),
+            Lesson(
+              id: "l2",
+              title: "Installing Python",
+              videoUrl: "https://example.com/video2",
+              content: "How to install Python on your system.",
+              duration: 10,
+              isPreview: true,
+              isCompleted: false,
+              createdAt: DateTime(2024, 1, 15),
+            ),
+          ],
+        ),
+        Chapter(
+          id: "ch2",
+          title: "Python Basics",
+          description: "Learn Python basics.",
+          order: 2,
+          lessons: [
+            Lesson(
+              id: "l3",
+              title: "Variables and Data Types",
+              videoUrl: "https://example.com/video3",
+              content: "Understanding variables and data types.",
+              duration: 12,
+              isPreview: false,
+              isCompleted: false,
+              createdAt: DateTime(2024, 1, 16),
+            ),
+          ],
+        ),
+      ],
+      reviews: [
+        Review(
+          id: "r1",
+          userId: "u1",
+          userName: "Amit Kumar",
+          userAvatarUrl: "https://i.pravatar.cc/150?img=1",
+          rating: 5.0,
+          comment: "Amazing course! Highly recommended.",
+          createdAt: DateTime(2024, 2, 1),
+        ),
+        Review(
+          id: "r2",
+          userId: "u2",
+          userName: "Priya Singh",
+          userAvatarUrl: "https://i.pravatar.cc/150?img=2",
+          rating: 4.5,
+          comment: "Very clear explanations.",
+          createdAt: DateTime(2024, 2, 5),
+        ),
+      ],
+      courseContentTitles: [
+        "Introduction",
+        "Python Basics",
+        "OOP",
+        "Web Development",
+        "Projects",
+      ],
     ),
     Course(
       id: "c002",
@@ -75,6 +172,62 @@ class CourseDummyData {
         "Advanced prompting techniques",
         "Real-world applications",
         "Ethical AI usage"
+      ],
+      analytics: CourseAnalytics(
+        enrolledCount: 800,
+        completedCount: 500,
+        viewCount: 2500,
+        likes: 150,
+        shares: 30,
+        questionsAsked: 40,
+        discussions: 7,
+      ),
+      whatsIncluded: WhatsIncluded(
+        certificate: true,
+        quizzes: true,
+        assignments: false,
+        downloadableResources: true,
+        lifetimeAccess: true,
+        accessOnMobile: true,
+        instructorQnA: true,
+        communityAccess: false,
+      ),
+      chapters: [
+        Chapter(
+          id: "ch1",
+          title: "Prompt Engineering Overview",
+          description: "Introduction to prompt engineering.",
+          order: 1,
+          lessons: [
+            Lesson(
+              id: "l1",
+              title: "What is Prompt Engineering?",
+              videoUrl: "https://example.com/ai1",
+              content: "Introduction to prompt engineering.",
+              duration: 8,
+              isPreview: true,
+              isCompleted: false,
+              createdAt: DateTime(2024, 3, 10),
+            ),
+          ],
+        ),
+      ],
+      reviews: [
+        Review(
+          id: "r3",
+          userId: "u3",
+          userName: "Rahul Dev",
+          userAvatarUrl: "https://i.pravatar.cc/150?img=3",
+          rating: 5.0,
+          comment: "Great for beginners in AI.",
+          createdAt: DateTime(2024, 4, 1),
+        ),
+      ],
+      courseContentTitles: [
+        "Prompt Engineering Overview",
+        "Best Practices",
+        "Advanced Techniques",
+        "Applications",
       ],
     ),
     Course(
@@ -113,6 +266,62 @@ class CourseDummyData {
         "API development and integration",
         "Deployment and DevOps basics"
       ],
+      analytics: CourseAnalytics(
+        enrolledCount: 900,
+        completedCount: 400,
+        viewCount: 3500,
+        likes: 200,
+        shares: 50,
+        questionsAsked: 60,
+        discussions: 10,
+      ),
+      whatsIncluded: WhatsIncluded(
+        certificate: true,
+        quizzes: true,
+        assignments: true,
+        downloadableResources: true,
+        lifetimeAccess: true,
+        accessOnMobile: true,
+        instructorQnA: true,
+        communityAccess: true,
+      ),
+      chapters: [
+        Chapter(
+          id: "ch1",
+          title: "Frontend Basics",
+          description: "Learn HTML, CSS, and JavaScript.",
+          order: 1,
+          lessons: [
+            Lesson(
+              id: "l1",
+              title: "HTML Basics",
+              videoUrl: "https://example.com/web1",
+              content: "Introduction to HTML.",
+              duration: 10,
+              isPreview: true,
+              isCompleted: false,
+              createdAt: DateTime(2023, 8, 5),
+            ),
+          ],
+        ),
+      ],
+      reviews: [
+        Review(
+          id: "r4",
+          userId: "u4",
+          userName: "Sneha Patel",
+          userAvatarUrl: "https://i.pravatar.cc/150?img=4",
+          rating: 4.7,
+          comment: "Covers everything for a full stack dev!",
+          createdAt: DateTime(2023, 9, 1),
+        ),
+      ],
+      courseContentTitles: [
+        "Frontend Basics",
+        "Backend Development",
+        "Database Management",
+        "Deployment",
+      ],
     ),
     Course(
       id: "c004",
@@ -150,6 +359,62 @@ class CourseDummyData {
         "Data visualization",
         "Model deployment"
       ],
+      analytics: CourseAnalytics(
+        enrolledCount: 700,
+        completedCount: 600,
+        viewCount: 2000,
+        likes: 110,
+        shares: 25,
+        questionsAsked: 30,
+        discussions: 5,
+      ),
+      whatsIncluded: WhatsIncluded(
+        certificate: true,
+        quizzes: true,
+        assignments: true,
+        downloadableResources: true,
+        lifetimeAccess: true,
+        accessOnMobile: true,
+        instructorQnA: true,
+        communityAccess: true,
+      ),
+      chapters: [
+        Chapter(
+          id: "ch1",
+          title: "Data Science Foundations",
+          description: "Core concepts in data science.",
+          order: 1,
+          lessons: [
+            Lesson(
+              id: "l1",
+              title: "What is Data Science?",
+              videoUrl: "https://example.com/ds1",
+              content: "Introduction to data science.",
+              duration: 9,
+              isPreview: true,
+              isCompleted: false,
+              createdAt: DateTime(2023, 11, 20),
+            ),
+          ],
+        ),
+      ],
+      reviews: [
+        Review(
+          id: "r5",
+          userId: "u5",
+          userName: "Rohan Mehta",
+          userAvatarUrl: "https://i.pravatar.cc/150?img=5",
+          rating: 4.8,
+          comment: "Loved the hands-on projects.",
+          createdAt: DateTime(2023, 12, 1),
+        ),
+      ],
+      courseContentTitles: [
+        "Data Science Foundations",
+        "Machine Learning",
+        "Data Visualization",
+        "Model Deployment",
+      ],
     ),
     Course(
       id: "c005",
@@ -186,6 +451,62 @@ class CourseDummyData {
         "UI/UX design principles",
         "State management",
         "App store deployment"
+      ],
+      analytics: CourseAnalytics(
+        enrolledCount: 400,
+        completedCount: 200,
+        viewCount: 1600,
+        likes: 75,
+        shares: 18,
+        questionsAsked: 15,
+        discussions: 2,
+      ),
+      whatsIncluded: WhatsIncluded(
+        certificate: true,
+        quizzes: true,
+        assignments: true,
+        downloadableResources: true,
+        lifetimeAccess: true,
+        accessOnMobile: true,
+        instructorQnA: true,
+        communityAccess: false,
+      ),
+      chapters: [
+        Chapter(
+          id: "ch1",
+          title: "Flutter Basics",
+          description: "Introduction to Flutter.",
+          order: 1,
+          lessons: [
+            Lesson(
+              id: "l1",
+              title: "Getting Started with Flutter",
+              videoUrl: "https://example.com/flutter1",
+              content: "Install Flutter and set up your environment.",
+              duration: 7,
+              isPreview: true,
+              isCompleted: false,
+              createdAt: DateTime(2024, 2, 1),
+            ),
+          ],
+        ),
+      ],
+      reviews: [
+        Review(
+          id: "r6",
+          userId: "u6",
+          userName: "Neha Agarwal",
+          userAvatarUrl: "https://i.pravatar.cc/150?img=6",
+          rating: 4.6,
+          comment: "Great introduction to Flutter.",
+          createdAt: DateTime(2024, 3, 1),
+        ),
+      ],
+      courseContentTitles: [
+        "Flutter Basics",
+        "Dart Programming",
+        "UI/UX Design",
+        "Deployment",
       ],
     ),
   ];

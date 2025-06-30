@@ -1,10 +1,13 @@
-// lib/routes/auth_routes.dart
-import 'package:brainboosters_app/screens/authentication/email/email_login_page_teacher.dart';
+// ui/navigation/auth_routes.dart
 import 'package:go_router/go_router.dart';
-import '../../screens/authentication/auth_page.dart';
-import '../../screens/authentication/email/email_register_page.dart';
-import '../../screens/authentication/email/email_login_page.dart';
-import '../../screens/authentication/email/email_reset_password_page.dart';
+import '../../screens/authentication/auth_selection_page.dart';
+import '../../screens/authentication/student/email/email_register_page.dart';
+import '../../screens/authentication/student/email/email_login_page.dart';
+import '../../screens/authentication/student/email/email_reset_password_page.dart';
+import '../../screens/authentication/faculty/faculty_login_page.dart';
+import '../../screens/authentication/coaching_center/coaching_center_login_page.dart';
+import '../../screens/authentication/coaching_center/coaching_center_register_page.dart';
+import '../../screens/authentication/admin/admin_login_page.dart';
 import '../../screens/authentication/user_setup/user_setup_page.dart';
 
 class AuthRoutes {
@@ -13,6 +16,10 @@ class AuthRoutes {
   static const String emailLogin = '$prefix/email/login';
   static const String emailLoginTeacher = '$prefix/email/teacher';
   static const String emailResetPassword = '$prefix/email/reset-password';
+  static const String facultyLogin = '$prefix/faculty/login';
+  static const String coachingCenterLogin = '$prefix/coaching-center/login';
+  static const String coachingCenterRegister = '$prefix/coaching-center/register';
+  static const String adminLogin = '$prefix/admin/secure-portal'; // Hidden URL
   static const String authSelection = prefix;
   static const String userSetup = '$prefix/user-setup';
 
@@ -25,13 +32,30 @@ class AuthRoutes {
       path: emailLogin,
       builder: (context, state) => const EmailLoginPage(),
     ),
-    GoRoute(
-      path: emailLoginTeacher,
-      builder: (context, state) => const EmailLoginPageTeacher(),
-    ),
+    // GoRoute(
+    //   path: emailLoginTeacher,
+    //   builder: (context, state) => const EmailLoginPage(
+        
+    // ),
     GoRoute(
       path: emailResetPassword,
       builder: (context, state) => const EmailResetPasswordPage(),
+    ),
+    GoRoute(
+      path: facultyLogin,
+      builder: (context, state) => const FacultyLoginPage(),
+    ),
+    GoRoute(
+      path: coachingCenterLogin,
+      builder: (context, state) => const CoachingCenterLoginPage(),
+    ),
+    GoRoute(
+      path: coachingCenterRegister,
+      builder: (context, state) => const CoachingCenterRegisterPage(),
+    ),
+    GoRoute(
+      path: adminLogin,
+      builder: (context, state) => const AdminLoginPage(),
     ),
     GoRoute(
       path: authSelection,

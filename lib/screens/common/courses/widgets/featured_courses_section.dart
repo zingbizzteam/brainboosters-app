@@ -9,7 +9,7 @@ class FeaturedCoursesSection extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1200;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
@@ -35,7 +35,7 @@ class FeaturedCoursesSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          
+
           // Course Grid
           _buildCourseGrid(isMobile, isTablet),
         ],
@@ -44,13 +44,16 @@ class FeaturedCoursesSection extends StatelessWidget {
   }
 
   Widget _buildCourseGrid(bool isMobile, bool isTablet) {
-    final courses = List.generate(8, (index) => {
-      'title': 'Python for Data Science and Machine Learning',
-      'instructor': 'The Leaders Academy',
-      'rating': 4.8,
-      'price': '₹599',
-      'originalPrice': '₹2999',
-    });
+    final courses = List.generate(
+      8,
+      (index) => {
+        'title': 'Python for Data Science and Machine Learning',
+        'instructor': 'The Leaders Academy',
+        'rating': 4.8,
+        'price': '₹599',
+        'originalPrice': '₹2999',
+      },
+    );
 
     int crossAxisCount;
     if (isMobile) {
@@ -84,7 +87,7 @@ class FeaturedCoursesSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -113,7 +116,7 @@ class FeaturedCoursesSection extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Course Info
           Expanded(
             flex: 2,
