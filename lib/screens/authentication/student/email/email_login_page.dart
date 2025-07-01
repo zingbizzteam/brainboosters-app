@@ -1,9 +1,9 @@
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
-import 'package:brainboosters_app/ui/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});
@@ -18,6 +18,69 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberPassword = false;
+  bool _isResendingEmail = false;
+  
+  // Email verification resend tracking
+  int _resendCount = 0;
+  DateTime? _lastResendTime;
+  static const int maxResendPerDay = 3;
+  static const int resendCooldownMinutes = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadResendData();
+  }
+
+  Future<void> _loadResendData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    final savedDate = prefs.getString('resend_date') ?? '';
+    
+    if (savedDate == today) {
+      _resendCount = prefs.getInt('resend_count') ?? 0;
+      final lastResendString = prefs.getString('last_resend_time');
+      if (lastResendString != null) {
+        _lastResendTime = DateTime.parse(lastResendString);
+      }
+    } else {
+      // Reset for new day
+      _resendCount = 0;
+      _lastResendTime = null;
+      await prefs.setString('resend_date', today);
+      await prefs.setInt('resend_count', 0);
+      await prefs.remove('last_resend_time');
+    }
+  }
+
+  Future<void> _saveResendData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    await prefs.setString('resend_date', today);
+    await prefs.setInt('resend_count', _resendCount);
+    if (_lastResendTime != null) {
+      await prefs.setString('last_resend_time', _lastResendTime!.toIso8601String());
+    }
+  }
+
+  bool get _canResendEmail {
+    if (_resendCount >= maxResendPerDay) return false;
+    if (_lastResendTime == null) return true;
+    
+    final timeDiff = DateTime.now().difference(_lastResendTime!);
+    return timeDiff.inMinutes >= resendCooldownMinutes;
+  }
+
+  String get _resendButtonText {
+    if (_resendCount >= maxResendPerDay) {
+      return 'Daily limit reached';
+    }
+    if (_lastResendTime != null && !_canResendEmail) {
+      final remaining = resendCooldownMinutes - DateTime.now().difference(_lastResendTime!).inMinutes;
+      return 'Resend in ${remaining}m';
+    }
+    return 'Resend verification email';
+  }
 
   Future<void> _login() async {
     setState(() => _isLoading = true);
@@ -25,57 +88,294 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     final password = _passwordController.text.trim();
 
     try {
-      // Check for admin backdoor credentials
-      if (email.toLowerCase() == 'bb_admin' && password == 'BB_ADMIN') {
-        // Redirect to admin login page
-        if (!mounted) return;
-        context.go(AuthRoutes.adminLogin);
-        return;
-      }
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       if (response.user != null) {
-        // Check mounted before using context
         if (!mounted) return;
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login successful!')));
+        // Check if email is verified
+        if (response.user!.emailConfirmedAt == null) {
+          await Supabase.instance.client.auth.signOut();
+          
+          if (!mounted) return;
+          
+          _showEmailVerificationDialog(email);
+          return;
+        }
 
-        final userId = response.user!.id;
-        final isNew = await isNewUser(userId);
+        // Get user profile to check user type
+        final userProfile = await _getUserProfile(response.user!.id);
+        
+        if (userProfile == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please complete your profile setup')),
+          );
+          context.go(AuthRoutes.userSetup);
+          return;
+        }
 
-        // Check mounted again after another async operation
+        // Check if user is a student
+        if (userProfile['user_type'] != 'student') {
+          await Supabase.instance.client.auth.signOut();
+          
+          if (!mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Access denied. Only students can access this app. '
+                'Your account type: ${userProfile['user_type']}',
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+
+        // Check if student profile is complete
+        final studentProfile = await _getStudentProfile(response.user!.id);
+
         if (!mounted) return;
 
-        if (isNew) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
+
+        // Navigate based on profile completion
+        if (studentProfile == null || !userProfile['onboarding_completed']) {
           context.go(AuthRoutes.userSetup);
         } else {
           context.go(StudentRoutes.home);
         }
       }
     } on AuthException catch (e) {
-      // Check mounted before using context
       if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      // Check mounted before using context
-      if (!mounted) return;
+      
+      String errorMessage = 'Login failed';
+      
+      switch (e.message.toLowerCase()) {
+        case 'invalid login credentials':
+          errorMessage = 'Invalid email or password';
+          break;
+        case 'email not confirmed':
+          errorMessage = 'Please verify your email before logging in';
+          _showEmailVerificationDialog(_emailController.text.trim());
+          return;
+        case 'too many requests':
+          errorMessage = 'Too many login attempts. Please try again later';
+          break;
+        default:
+          errorMessage = e.message;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unexpected error occurred')),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An unexpected error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showEmailVerificationDialog(String email) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.email, color: Color(0xFF5DADE2)),
+              SizedBox(width: 8),
+              Text('Email Verification Required'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please verify your email address to continue. We sent a verification link to:',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  email,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Didn\'t receive the email? Check your spam folder or request a new one.',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+              if (_resendCount > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Verification emails sent today: $_resendCount/$maxResendPerDay',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+            ElevatedButton(
+              onPressed: _canResendEmail && !_isResendingEmail
+                  ? () async {
+                      setDialogState(() => _isResendingEmail = true);
+                      await _resendVerificationEmail(email);
+                      setDialogState(() => _isResendingEmail = false);
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5DADE2),
+                foregroundColor: Colors.white,
+              ),
+              child: _isResendingEmail
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(_resendButtonText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _resendVerificationEmail(String email) async {
+    try {
+      await Supabase.instance.client.auth.resend(
+        type: OtpType.signup,
+        email: email,
+      );
+
+      _resendCount++;
+      _lastResendTime = DateTime.now();
+      await _saveResendData();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification email sent! Please check your inbox.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send verification email: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> _getUserProfile(String userId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('user_profiles')
+          .select('user_type, first_name, last_name, onboarding_completed, is_active')
+          .eq('id', userId)
+          .single();
+      
+      return response;
+    } catch (e) {
+      print('Error fetching user profile: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _getStudentProfile(String userId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('students')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+      
+      return response;
+    } catch (e) {
+      print('Error fetching student profile: $e');
+      return null;
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  String? _validateInputs() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty) {
+      return 'Please enter your email';
+    }
+
+    if (!_isValidEmail(email)) {
+      return 'Please enter a valid email address';
+    }
+
+    if (password.isEmpty) {
+      return 'Please enter your password';
+    }
+
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return null;
+  }
+
+  Future<void> _handleLogin() async {
+    final validationError = _validateInputs();
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    await _login();
   }
 
   @override
@@ -95,7 +395,6 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     color: const Color(0xFFB8E6F5),
                     child: Stack(
                       children: [
-                        // Brain Boosters Logo
                         Positioned(
                           top: 40,
                           left: 40,
@@ -117,7 +416,6 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                             ],
                           ),
                         ),
-                        // Illustration
                         Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -150,7 +448,6 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               ],
             );
           } else {
-            // Mobile layout
             return Container(
               color: Colors.white,
               child: SafeArea(child: _buildLoginForm()),
@@ -172,16 +469,17 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             children: [
               OutlinedButton.icon(
                 style: ButtonStyle(
-                  padding: WidgetStateProperty.all(EdgeInsets.all(0)),
+                  padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
                 ),
-                label: Text('Go Back', style: TextStyle(fontSize: 16)),
+                label: const Text('Go Back', style: TextStyle(fontSize: 16)),
                 onPressed: () => context.go(AuthRoutes.authSelection),
-                icon: Icon(Icons.arrow_back_ios),
+                icon: const Icon(Icons.arrow_back_ios),
               ),
+              const SizedBox(height: 32),
 
               // Title
               const Text(
-                'Log In',
+                'Welcome Back',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.w600,
@@ -210,12 +508,6 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-
-              const Text(
-                'It will take less than a minute',
-                style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
-              ),
               const SizedBox(height: 40),
 
               // Email Field
@@ -235,6 +527,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   ),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                enabled: !_isLoading,
               ),
               const SizedBox(height: 24),
 
@@ -268,6 +561,8 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     },
                   ),
                 ),
+                enabled: !_isLoading,
+                onSubmitted: (_) => _handleLogin(),
               ),
               const SizedBox(height: 32),
 
@@ -275,27 +570,20 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               Container(
                 decoration: BoxDecoration(
                   border: const Border(
-                    bottom: BorderSide(
-                      color: Color(0xFF9d5f0e), // #9d5f0e
-                      width: 3,
-                    ),
+                    bottom: BorderSide(color: Color(0xFF9d5f0e), width: 3),
                   ),
-                  borderRadius: BorderRadius.circular(
-                    8,
-                  ), // Match button's radius
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD4845C),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          8,
-                        ), // Match here too
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       elevation: 0,
                     ),
@@ -304,7 +592,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.black,
+                              color: Colors.white,
                               strokeWidth: 2,
                             ),
                           )
@@ -326,7 +614,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 children: [
                   Checkbox(
                     value: _rememberPassword,
-                    onChanged: (value) {
+                    onChanged: _isLoading ? null : (value) {
                       setState(() {
                         _rememberPassword = value ?? false;
                       });
@@ -343,10 +631,13 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
               // Forgot Password Link
               GestureDetector(
-                onTap: () => context.go(AuthRoutes.emailResetPassword),
-                child: const Text(
+                onTap: _isLoading ? null : () => context.go(AuthRoutes.emailResetPassword),
+                child: Text(
                   'Forgot Password?',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _isLoading ? Colors.grey : const Color(0xFF999999),
+                  ),
                 ),
               ),
             ],

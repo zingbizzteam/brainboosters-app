@@ -1,8 +1,6 @@
 // app_router.dart
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
-import 'package:brainboosters_app/ui/navigation/admin_routes/admin_routes.dart';
-import 'package:brainboosters_app/ui/navigation/coaching_center_routes/coaching_center_routes.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +9,6 @@ import '../../screens/onboarding/onboarding_screen.dart';
 
 class AppRouter {
   static const String onboarding = '/';
-
   static final _authStateListener = SupabaseAuthStateListener();
 
   static final router = GoRouter(
@@ -25,11 +22,6 @@ class AppRouter {
       ),
       ...AuthRoutes.routes,
       StudentRoutes.statefulRoute,
-      AdminRoutes.statefulRoute,
-      CoachingCenterRoutes.statefulRoute,
-      // Add standalone coaching center routes (without bottom nav)
-      ...CoachingCenterRoutes.standaloneRoutes,
-      // Add additional routes from CommonRoutes
       ...CommonRoutes.getAdditionalRoutes(),
     ],
   );
@@ -44,41 +36,62 @@ class AppRouter {
 
     debugPrint('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn');
 
-    // If not logged in and trying to access protected routes
+    // If not logged in, allow only onboarding and auth routes
     if (!isLoggedIn) {
-      // Allow access to onboarding and auth routes
-      if (currentPath == onboarding ||
-          currentPath.startsWith('/auth') ||
-          AuthRoutes.routes.any((route) => route.path == currentPath)) {
-        return null;
+      if (currentPath == onboarding || currentPath.startsWith('/auth')) {
+        return null; // Allow access
       }
-      return onboarding;
+      return onboarding; // Redirect to onboarding
     }
 
-    // If logged in and on onboarding page, redirect based on user status
-    if (isLoggedIn && currentPath == onboarding) {
-      // Check user type for proper redirection
-      final userProfile = await getUserProfile(session.user.id);
+    // If logged in and on onboarding, check user setup status
+    if (currentPath == onboarding) {
+      return await _getRedirectForLoggedInUser(session!.user.id);
+    }
+
+    return null; // No redirect needed
+  }
+
+  static Future<String> _getRedirectForLoggedInUser(String userId) async {
+    try {
+      // Check if user profile exists
+      final userProfile = await Supabase.instance.client
+          .from('user_profiles')
+          .select('user_type, onboarding_completed')
+          .eq('id', userId)
+          .maybeSingle();
 
       if (userProfile == null) {
         return AuthRoutes.userSetup;
       }
 
-      // Redirect based on user type
-      switch (userProfile['user_type']) {
-        case 'admin':
-          return AdminRoutes.dashboard;
-        case 'coaching_center':
-          return CoachingCenterRoutes.dashboard;
-        case 'faculty':
-          // Add faculty routes when ready
-          return StudentRoutes.home; // Temporary
-        default:
-          return StudentRoutes.home;
+      // Only allow students
+      if (userProfile['user_type'] != 'student') {
+        await Supabase.instance.client.auth.signOut();
+        return onboarding;
       }
-    }
 
-    return null;
+      // Check if onboarding is completed
+      if (!userProfile['onboarding_completed']) {
+        return AuthRoutes.userSetup;
+      }
+
+      // Check if student record exists
+      final studentProfile = await Supabase.instance.client
+          .from('students')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (studentProfile == null) {
+        return AuthRoutes.userSetup;
+      }
+
+      return StudentRoutes.home;
+    } catch (e) {
+      debugPrint('Redirect error: $e');
+      return AuthRoutes.userSetup;
+    }
   }
 }
 
@@ -88,29 +101,4 @@ class SupabaseAuthStateListener extends ChangeNotifier {
       notifyListeners();
     });
   }
-}
-
-// Updated helper function to get user profile
-Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-  try {
-    final response = await Supabase.instance.client
-        .from('user_profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
-
-    return response;
-  } on PostgrestException catch (e) {
-    debugPrint('Profile check error: $e');
-    return null;
-  } catch (e) {
-    debugPrint('Unexpected error: $e');
-    return null;
-  }
-}
-
-// Keep the old function for backward compatibility
-Future<bool> isNewUser(String userId) async {
-  final profile = await getUserProfile(userId);
-  return profile == null;
 }

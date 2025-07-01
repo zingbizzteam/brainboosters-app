@@ -12,8 +12,6 @@ class AuthSelectionPage extends StatefulWidget {
 }
 
 class _AuthSelectionPageState extends State<AuthSelectionPage> {
-  String _selectedUserType = 'student';
-
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 600;
@@ -78,7 +76,7 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Choose your role to get started",
+                "Sign in to your student account",
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
@@ -87,240 +85,54 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
 
               const SizedBox(height: 32),
 
-              // User type selection
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildUserTypeTab(
-                        'Student',
-                        'student',
-                        Icons.school,
-                        const Color(0xFF4AA0E6),
-                      ),
+              // Email sign-in button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.email_outlined, color: Colors.white),
+                  label: const Text("Sign in with Email"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4AA0E6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Expanded(
-                      child: _buildUserTypeTab(
-                        'Faculty',
-                        'faculty',
-                        Icons.person_pin,
-                        const Color(0xFF6C5CE7),
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    Expanded(
-                      child: _buildUserTypeTab(
-                        'Center',
-                        'coaching_center',
-                        Icons.business,
-                        const Color(0xFF00B894),
-                      ),
-                    ),
-                  ],
+                  ),
+                  onPressed: () => context.go(AuthRoutes.emailLogin),
                 ),
               ),
+              const SizedBox(height: 16),
 
-              const SizedBox(height: 32),
+              // Google sign-in button
+              SizedBox(width: double.infinity, child: GoogleAuthButton()),
 
-              // Sign-in options based on user type
-              if (_selectedUserType == 'student') ...[
-                // Email sign-in button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.email_outlined, color: Colors.white),
-                    label: const Text("Sign in with Email"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4AA0E6),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
+              const SizedBox(height: 24),
+
+              // Register link
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Don't have an account? ",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  GestureDetector(
+                    onTap: () => context.go(AuthRoutes.emailRegister),
+                    child: const Text(
+                      "Sign up with email",
+                      style: TextStyle(
+                        color: Color(0xFF4AA0E6),
                         fontWeight: FontWeight.w600,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => context.go(AuthRoutes.emailLogin),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Google sign-in button
-                SizedBox(width: double.infinity, child: GoogleAuthButton()),
-
-                const SizedBox(height: 24),
-
-                // Register link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.go(AuthRoutes.emailRegister),
-                      child: const Text(
-                        "Sign up",
-                        style: TextStyle(
-                          color: Color(0xFF4AA0E6),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              if (_selectedUserType == 'faculty') ...[
-                // Faculty login button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.login, color: Colors.white),
-                    label: const Text("Faculty Login"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C5CE7),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => context.go(AuthRoutes.facultyLogin),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Faculty info
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6C5CE7).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF6C5CE7).withValues(alpha: 0.3),
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: const Color(0xFF6C5CE7),
-                        size: 24,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Faculty Login",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF6C5CE7),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "You'll need your Coaching Center ID, email, and password provided by your institution.",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              if (_selectedUserType == 'coaching_center') ...[
-                // Coaching center login button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.login, color: Colors.white),
-                    label: const Text("Center Login"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00B894),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => context.go(AuthRoutes.coachingCenterLogin),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Register link (instead of button)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    GestureDetector(
-                      onTap: () =>
-                          context.go(AuthRoutes.coachingCenterRegister),
-                      child: const Text(
-                        "Register Center",
-                        style: TextStyle(
-                          color: Color(0xFF00B894),
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Center info
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00B894).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF00B894).withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.business_center,
-                        color: const Color(0xFF00B894),
-                        size: 24,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Join as Coaching Center",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF00B894),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Register your coaching center to manage students, faculty, and courses on our platform.",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
 
               const SizedBox(height: 32),
 
@@ -336,50 +148,6 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserTypeTab(
-    String title,
-    String type,
-    IconData icon,
-    Color color,
-  ) {
-    final isSelected = _selectedUserType == type;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedUserType = type;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? Colors.white : Colors.grey[600],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.grey[600],
-              ),
-            ),
-          ],
         ),
       ),
     );

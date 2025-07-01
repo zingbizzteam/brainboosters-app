@@ -1,4 +1,3 @@
-// screens/authentication/email/email_register_page.dart
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +11,8 @@ class EmailRegisterPage extends StatefulWidget {
 }
 
 class _EmailRegisterPageState extends State<EmailRegisterPage> {
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -21,65 +21,142 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
 
   Future<void> _register() async {
     setState(() => _isLoading = true);
-    final name = _nameController.text.trim();
+    
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    final phone = _phoneController.text.trim();
+    // final phone = _phoneController.text.trim();
 
-    // Capture ScaffoldMessenger before async operations
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    // Validate inputs
+    final validationError = _validateInputs();
+    if (validationError != null) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     try {
-      // Create auth user
+      // Sign up with email verification required
       final response = await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
         data: {
-          'full_name': name,
+          'user_type': 'student',
+          'first_name': firstName,
+          'last_name': lastName,
         },
+        emailRedirectTo: 'https://yourapp.com/auth/callback', // Configure this URL
       );
 
       if (response.user != null) {
-        // Create user profile in user_profiles table
-        await Supabase.instance.client.from('user_profiles').insert({
-          'id': response.user!.id,
-          'email': email,
-          'name': name,
-          'phone': phone.isNotEmpty ? phone : null,
-          'user_type': 'student', // Default to student for email registration
-          'is_active': true,
-          'is_verified': false,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
+        if (!mounted) return;
 
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Registration successful! Please check your email to confirm.',
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Registration successful!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text('Please check your email ($email) and click the verification link to activate your account.'),
+              ],
             ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 6),
+            behavior: SnackBarBehavior.floating,
           ),
         );
 
-        // Only check mounted before navigation
-        if (!mounted) return;
+        // Navigate to login page
         context.go(AuthRoutes.emailLogin);
       }
     } on AuthException catch (e) {
-      // Use captured messenger instead of context
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text(e.message))
+      if (!mounted) return;
+      
+      String errorMessage = 'Registration failed';
+      
+      switch (e.message.toLowerCase()) {
+        case 'user already registered':
+          errorMessage = 'An account with this email already exists';
+          break;
+        case 'password should be at least 6 characters':
+          errorMessage = 'Password must be at least 6 characters long';
+          break;
+        case 'signup is disabled':
+          errorMessage = 'New registrations are currently disabled';
+          break;
+        default:
+          errorMessage = e.message;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
       );
     } catch (e) {
-      // Use captured messenger instead of context
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('Unexpected error occurred'))
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An unexpected error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  String? _validateInputs() {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (firstName.isEmpty) {
+      return 'Please enter your first name';
+    }
+
+    if (lastName.isEmpty) {
+      return 'Please enter your last name';
+    }
+
+    if (email.isEmpty) {
+      return 'Please enter your email';
+    }
+
+    if (!_isValidEmail(email)) {
+      return 'Please enter a valid email address';
+    }
+
+    if (password.isEmpty) {
+      return 'Please enter your password';
+    }
+
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return null;
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   @override
@@ -92,7 +169,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
           if (isDesktop) {
             return Row(
               children: [
-                // Left side - Illustration (same as login)
+                // Left side - Illustration
                 Expanded(
                   flex: 1,
                   child: Container(
@@ -178,6 +255,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
               ),
               const SizedBox(height: 20),
 
+              // Title
               const Text(
                 'Create Account',
                 style: TextStyle(
@@ -189,7 +267,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
               const SizedBox(height: 16),
 
               const Text(
-                'Get started with Brain Boosters',
+                'Join Brain Boosters and start your learning journey',
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(0xFF999999),
@@ -197,11 +275,11 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
               ),
               const SizedBox(height: 40),
 
-              // Name Field
+              // First Name Field
               TextField(
-                controller: _nameController,
+                controller: _firstNameController,
                 decoration: InputDecoration(
-                  labelText: 'Full Name',
+                  labelText: 'First Name',
                   labelStyle: const TextStyle(color: Color(0xFF999999)),
                   border: UnderlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey.shade300),
@@ -215,6 +293,29 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                   prefixIcon: const Icon(Icons.person, color: Color(0xFF999999)),
                 ),
                 textCapitalization: TextCapitalization.words,
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 24),
+
+              // Last Name Field
+              TextField(
+                controller: _lastNameController,
+                decoration: InputDecoration(
+                  labelText: 'Last Name',
+                  labelStyle: const TextStyle(color: Color(0xFF999999)),
+                  border: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF5DADE2)),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF999999)),
+                ),
+                textCapitalization: TextCapitalization.words,
+                enabled: !_isLoading,
               ),
               const SizedBox(height: 24),
 
@@ -236,6 +337,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                   prefixIcon: const Icon(Icons.email, color: Color(0xFF999999)),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                enabled: !_isLoading,
               ),
               const SizedBox(height: 24),
 
@@ -257,6 +359,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                   prefixIcon: const Icon(Icons.phone, color: Color(0xFF999999)),
                 ),
                 keyboardType: TextInputType.phone,
+                enabled: !_isLoading,
               ),
               const SizedBox(height: 24),
 
@@ -289,6 +392,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                     },
                   ),
                 ),
+                enabled: !_isLoading,
               ),
               const SizedBox(height: 32),
 
@@ -326,7 +430,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                             ),
                           )
                         : const Text(
-                            'Sign Up',
+                            'Create Account',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -347,7 +451,7 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
                       style: TextStyle(color: Color(0xFF999999)),
                       children: [
                         TextSpan(
-                          text: 'Login',
+                          text: 'Sign In',
                           style: TextStyle(
                             color: Color(0xFF5DADE2),
                             fontWeight: FontWeight.w500,
@@ -367,7 +471,8 @@ class _EmailRegisterPageState extends State<EmailRegisterPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();

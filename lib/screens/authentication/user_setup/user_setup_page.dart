@@ -3,6 +3,8 @@ import 'package:brainboosters_app/screens/authentication/user_setup/widgets/cour
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/language_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/name_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/personal_info_step.dart';
+import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
+import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,135 +20,389 @@ class UserSetupPage extends StatefulWidget {
 class _UserSetupPageState extends State<UserSetupPage> {
   int _currentStep = 0;
   bool _isLoading = false;
-  final nameController = TextEditingController();
-  final phoneController = TextEditingController();
+  bool _isEditing = false; // Track if editing existing data
 
+  // Controllers
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
+  final phoneController = TextEditingController();
+  final gradeController = TextEditingController();
+  final schoolController = TextEditingController();
+  final parentNameController = TextEditingController();
+  final parentPhoneController = TextEditingController();
+  final parentEmailController = TextEditingController();
+
+  // Data
   String? fullPhoneNumber;
+  String? parentFullPhoneNumber;
   DateTime? selectedDate;
+  String? selectedGender;
   String? selectedLanguage;
   String? avatarUrl;
   File? avatarFile;
   final List<String> selectedCourses = [];
   String phoneIsoCode = 'IN';
+  String parentPhoneIsoCode = 'IN';
+
+  // Original data for comparison
+  String? _originalFirstName;
+  String? _originalLastName;
+  String? _originalAvatarUrl;
 
   @override
   void initState() {
     super.initState();
-    _prefillFromGoogleIfAvailable();
+    _prefillData();
   }
 
-  void _prefillFromGoogleIfAvailable() {
+  Future<void> _prefillData() async {
     final user = Supabase.instance.client.auth.currentUser;
-    final meta = user?.userMetadata;
-    // For Google login, userMetadata may contain full_name and avatar_url
-    if (meta != null) {
-      if (nameController.text.isEmpty && meta['full_name'] != null) {
-        nameController.text = meta['full_name'];
-      }
-      if (avatarUrl == null && meta['avatar_url'] != null) {
-        avatarUrl = meta['avatar_url'];
-      }
-    }
-  }
+    if (user == null) return;
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    phoneController.dispose();
-    super.dispose();
-  }
-
-  Future<String?> _uploadAvatar() async {
-    if (avatarFile == null) return avatarUrl; // Use Google avatar if present
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      final fileName =
-          'avatar_${user!.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await Supabase.instance.client.storage
-          .from('avatars')
-          .upload(fileName, avatarFile!);
-      return Supabase.instance.client.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-    } catch (e) {
-      debugPrint('Avatar upload error: $e');
-      return null;
-    }
-  }
+      // Check if user profile exists
+      final userProfile = await Supabase.instance.client
+          .from('user_profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
 
-  Future<void> _saveUserData() async {
-    setState(() => _isLoading = true);
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
-      if (avatarFile != null) {
-        avatarUrl = await _uploadAvatar();
-      }
-      await Supabase.instance.client.from('profiles').upsert({
-        'id': user.id,
-        'name': nameController.text.trim(),
-        'phone': fullPhoneNumber ?? phoneController.text.trim(),
-        'date_of_birth': selectedDate?.toIso8601String(),
-        'language': selectedLanguage,
-        'avatar_url': avatarUrl,
-        'selected_courses': selectedCourses,
-        'onboarding_completed': true,
-        'created_at': DateTime.now().toIso8601String(),
+      // Check if student record exists
+      final studentProfile = await Supabase.instance.client
+          .from('students')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      setState(() {
+        _isEditing = userProfile != null && studentProfile != null;
       });
+
+      // Prefill from user_profiles table
+      if (userProfile != null) {
+        setState(() {
+          firstNameController.text = userProfile['first_name'] ?? '';
+          lastNameController.text = userProfile['last_name'] ?? '';
+          phoneController.text = userProfile['phone'] ?? '';
+          selectedDate = userProfile['date_of_birth'] != null
+              ? DateTime.parse(userProfile['date_of_birth'])
+              : null;
+          selectedGender = userProfile['gender'];
+          avatarUrl = userProfile['avatar_url'];
+
+          // Store original values for comparison
+          _originalFirstName = userProfile['first_name'];
+          _originalLastName = userProfile['last_name'];
+          _originalAvatarUrl = userProfile['avatar_url'];
+        });
+      }
+
+      // Prefill from student table if exists
+      if (studentProfile != null) {
+        setState(() {
+          gradeController.text = studentProfile['grade_level'] ?? '';
+          schoolController.text = studentProfile['school_name'] ?? '';
+          parentNameController.text = studentProfile['parent_name'] ?? '';
+          parentPhoneController.text = studentProfile['parent_phone'] ?? '';
+          parentEmailController.text = studentProfile['parent_email'] ?? '';
+          selectedLanguage = studentProfile['preferred_learning_style'];
+
+          // Handle learning goals array
+          final goals = studentProfile['learning_goals'];
+          if (goals is List) {
+            selectedCourses.clear();
+            selectedCourses.addAll(goals.cast<String>());
+          }
+        });
+      }
+
+      // Fallback to auth.users metadata (for Google login or missing data)
+      final meta = user.userMetadata;
+      if (meta != null) {
+        // Only use metadata if profile data is empty
+        if (firstNameController.text.isEmpty &&
+            lastNameController.text.isEmpty) {
+          final fullName = meta['full_name'] ?? '';
+          final nameParts = fullName.split(' ');
+          if (nameParts.isNotEmpty) {
+            setState(() {
+              firstNameController.text = nameParts.first;
+              if (nameParts.length > 1) {
+                lastNameController.text = nameParts.skip(1).join(' ');
+              }
+              _originalFirstName = firstNameController.text;
+              _originalLastName = lastNameController.text;
+            });
+          }
+        }
+
+        // Use metadata avatar if no profile avatar
+        if (avatarUrl == null && meta['avatar_url'] != null) {
+          setState(() {
+            avatarUrl = meta['avatar_url'];
+            _originalAvatarUrl = avatarUrl;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error prefilling: $e');
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) context.go(AuthRoutes.authSelection);
+    }
+  }
+
+  Future<void> _saveData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser!;
+
+      // Upload new avatar if selected
+      String? finalAvatarUrl = avatarUrl;
+      if (avatarFile != null) {
+        // Delete all existing avatars for this user first
+        await _deleteAllUserAvatars(user.id);
+
+        // Upload new avatar
+        final fileName =
+            '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        await Supabase.instance.client.storage
+            .from('avatars')
+            .upload(fileName, avatarFile!);
+        finalAvatarUrl = Supabase.instance.client.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+      }
+
+      // Check if name or avatar changed to update auth.users
+      final nameChanged =
+          _originalFirstName != firstNameController.text.trim() ||
+          _originalLastName != lastNameController.text.trim();
+      final avatarChanged = _originalAvatarUrl != finalAvatarUrl;
+
+      // Update auth.users metadata if name or avatar changed
+      if (nameChanged || avatarChanged) {
+        final currentMeta = user.userMetadata ?? {};
+        final updatedMeta = Map<String, dynamic>.from(currentMeta);
+
+        if (nameChanged) {
+          updatedMeta['full_name'] =
+              '${firstNameController.text.trim()} ${lastNameController.text.trim()}';
+          updatedMeta['first_name'] = firstNameController.text.trim();
+          updatedMeta['last_name'] = lastNameController.text.trim();
+        }
+
+        if (avatarChanged && finalAvatarUrl != null) {
+          updatedMeta['avatar_url'] = finalAvatarUrl;
+        }
+
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(data: updatedMeta),
+        );
+      }
+
+      // Get current user_type from existing profile (IMPORTANT!)
+      final currentProfile = await Supabase.instance.client
+          .from('user_profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .single();
+
+      // Update user_profiles table with UPSERT (including user_type)
+      await Supabase.instance.client.from('user_profiles').upsert({
+        'id': user.id,
+        'user_type':
+            currentProfile['user_type'], // ✅ Include existing user_type
+        'first_name': firstNameController.text.trim(),
+        'last_name': lastNameController.text.trim(),
+        'phone': fullPhoneNumber ?? phoneController.text.trim(),
+        'date_of_birth': selectedDate?.toIso8601String().split('T')[0],
+        'gender': selectedGender,
+        'avatar_url': finalAvatarUrl,
+        'email_verified': true,
+        'onboarding_completed': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      // Create or update student record
+      final studentId = _isEditing ? null : await _generateStudentId();
+
+      if (_isEditing) {
+        // Update existing student record
+        await Supabase.instance.client
+            .from('students')
+            .update({
+              'grade_level': gradeController.text.trim().isNotEmpty
+                  ? gradeController.text.trim()
+                  : null,
+              'school_name': schoolController.text.trim().isNotEmpty
+                  ? schoolController.text.trim()
+                  : null,
+              'parent_name': parentNameController.text.trim().isNotEmpty
+                  ? parentNameController.text.trim()
+                  : null,
+              'parent_phone':
+                  parentFullPhoneNumber ??
+                  (parentPhoneController.text.trim().isNotEmpty
+                      ? parentPhoneController.text.trim()
+                      : null),
+              'parent_email': parentEmailController.text.trim().isNotEmpty
+                  ? parentEmailController.text.trim()
+                  : null,
+              'learning_goals': selectedCourses,
+              'preferred_learning_style': selectedLanguage,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('user_id', user.id);
+      } else {
+        // Insert new student record
+        await Supabase.instance.client.from('students').insert({
+          'user_id': user.id,
+          'student_id': studentId,
+          'grade_level': gradeController.text.trim().isNotEmpty
+              ? gradeController.text.trim()
+              : null,
+          'school_name': schoolController.text.trim().isNotEmpty
+              ? schoolController.text.trim()
+              : null,
+          'parent_name': parentNameController.text.trim().isNotEmpty
+              ? parentNameController.text.trim()
+              : null,
+          'parent_phone':
+              parentFullPhoneNumber ??
+              (parentPhoneController.text.trim().isNotEmpty
+                  ? parentPhoneController.text.trim()
+                  : null),
+          'parent_email': parentEmailController.text.trim().isNotEmpty
+              ? parentEmailController.text.trim()
+              : null,
+          'learning_goals': selectedCourses,
+          'preferred_learning_style': selectedLanguage,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Setup completed successfully!')),
+          SnackBar(
+            content: Text(
+              _isEditing
+                  ? 'Profile updated successfully!'
+                  : 'Profile setup completed!',
+            ),
+            backgroundColor: Colors.green,
+          ),
         );
-        context.go('/dashboard');
+        context.go(StudentRoutes.home);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save data: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  bool _validateCurrentStep() {
+  // Simplified delete method - delete all files in user folder
+  Future<void> _deleteAllUserAvatars(String userId) async {
+    try {
+      // List all files in the user's folder
+      final files = await Supabase.instance.client.storage
+          .from('avatars')
+          .list(path: userId);
+
+      if (files.isNotEmpty) {
+        // Get all file paths
+        final filePaths = files.map((file) => '$userId/${file.name}').toList();
+
+        // Delete all files at once
+        await Supabase.instance.client.storage
+            .from('avatars')
+            .remove(filePaths);
+
+        debugPrint(
+          'Deleted ${filePaths.length} old avatar(s) for user $userId',
+        );
+      }
+    } catch (e) {
+      // Don't throw error if deletion fails, just log it
+      debugPrint('Failed to delete old avatars: $e');
+    }
+  }
+
+  Future<String> _generateStudentId() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('students')
+          .select('student_id')
+          .order('created_at', ascending: false)
+          .limit(1);
+
+      int nextNumber = 1;
+      if (response.isNotEmpty) {
+        final lastId = response.first['student_id'] as String;
+        final numberPart = lastId.replaceAll('STU', '');
+        nextNumber = (int.tryParse(numberPart) ?? 0) + 1;
+      }
+      return 'STU${nextNumber.toString().padLeft(3, '0')}';
+    } catch (e) {
+      return 'STU${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    }
+  }
+
+  bool _validateStep() {
     switch (_currentStep) {
       case 0:
-        if (nameController.text.trim().isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter your name')),
-          );
+        if (firstNameController.text.trim().isEmpty ||
+            lastNameController.text.trim().isEmpty) {
+          _showError('Please enter your full name');
           return false;
         }
         break;
       case 1:
-        if (fullPhoneNumber == null || fullPhoneNumber!.length < 6) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter a valid phone number')),
-          );
-          return false;
-        }
-        if (selectedDate == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select your date of birth')),
-          );
+        if (fullPhoneNumber == null ||
+            selectedDate == null ||
+            selectedGender == null) {
+          _showError('Please complete all personal information');
           return false;
         }
         break;
       case 3:
-        if (selectedLanguage == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a language')),
-          );
+        if (gradeController.text.trim().isEmpty) {
+          _showError('Please enter your grade level');
           return false;
         }
         break;
       case 4:
-        if (selectedCourses.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select at least one course')),
-          );
+        if (selectedLanguage == null || selectedCourses.isEmpty) {
+          _showError('Please complete learning preferences');
           return false;
         }
         break;
@@ -154,40 +410,122 @@ class _UserSetupPageState extends State<UserSetupPage> {
     return true;
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Column(
           children: [
-            // Progress bar
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
+            // Header with email and logout
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
               child: Row(
-                children: List.generate(5, (index) {
-                  return Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: index <= _currentStep
-                            ? Colors.blue
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isEditing
+                              ? 'Editing profile for:'
+                              : 'Setting up profile for:',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          user?.email ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, size: 16),
+                    label: const Text('Logout'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  ),
+                ],
+              ),
+            ),
+
+            // Progress
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _isEditing
+                            ? 'Update Your Profile'
+                            : 'Complete Your Profile',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF5DADE2),
+                        ),
+                      ),
+                      Text(
+                        '${_currentStep + 1}/5',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: List.generate(
+                      5,
+                      (index) => Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: index <= _currentStep
+                                ? const Color(0xFF5DADE2)
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
                     ),
-                  );
-                }),
+                  ),
+                ],
               ),
             ),
+
+            // Content
             Expanded(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                child: _buildStepContent(_currentStep),
+                duration: const Duration(milliseconds: 300),
+                child: _buildStep(),
               ),
             ),
+
+            // Navigation
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -196,19 +534,22 @@ class _UserSetupPageState extends State<UserSetupPage> {
                       onPressed: _isLoading
                           ? null
                           : () => setState(() => _currentStep--),
-                      child: const Text('Back', style: TextStyle(fontSize: 16)),
+                      child: const Text(
+                        'Back',
+                        style: TextStyle(color: Color(0xFF5DADE2)),
+                      ),
                     )
                   else
-                    const SizedBox(width: 72),
+                    const SizedBox(),
+
                   _currentStep < 4
                       ? FloatingActionButton(
-                          backgroundColor: Colors.black87,
+                          backgroundColor: const Color(0xFFD4845C),
                           onPressed: _isLoading
                               ? null
                               : () {
-                                  if (_validateCurrentStep()) {
+                                  if (_validateStep())
                                     setState(() => _currentStep++);
-                                  }
                                 },
                           child: const Icon(
                             Icons.arrow_forward,
@@ -217,29 +558,27 @@ class _UserSetupPageState extends State<UserSetupPage> {
                         )
                       : ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: const Color(0xFFD4845C),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 32,
                               vertical: 16,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
                           ),
-                          onPressed: _isLoading ? null : _saveUserData,
+                          onPressed: _isLoading ? null : _saveData,
                           child: _isLoading
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
                                     color: Colors.white,
+                                    strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
-                                  'Finish',
-                                  style: TextStyle(fontSize: 18),
+                              : Text(
+                                  _isEditing
+                                      ? 'Update Profile'
+                                      : 'Complete Setup',
                                 ),
                         ),
                 ],
@@ -251,50 +590,134 @@ class _UserSetupPageState extends State<UserSetupPage> {
     );
   }
 
-  Widget _buildStepContent(int step) {
-    switch (step) {
+  Widget _buildStep() {
+    switch (_currentStep) {
       case 0:
-        return buildNameStep(nameController);
+        return NameStep(
+          firstNameController: firstNameController,
+          lastNameController: lastNameController,
+        );
       case 1:
         return PersonalInfoStep(
           fullPhoneNumber: fullPhoneNumber,
           phoneIsoCode: phoneIsoCode,
           selectedDate: selectedDate,
+          selectedGender: selectedGender,
           onPhoneChanged: (val) => setState(() => fullPhoneNumber = val),
           onIsoCodeChanged: (val) => setState(() => phoneIsoCode = val),
           onDateChanged: (date) => setState(() => selectedDate = date),
+          onGenderChanged: (gender) => setState(() => selectedGender = gender),
         );
       case 2:
         return AvatarStep(
           avatarFile: avatarFile,
           avatarUrl: avatarUrl,
-          onImagePicked: (file) {
-            setState(() {
-              avatarFile = file;
-              avatarUrl = null;
-            });
-          },
+          onImagePicked: (file) => setState(() {
+            avatarFile = file;
+            avatarUrl = null;
+          }),
         );
       case 3:
-        return LanguageStep(
-          selectedLanguage: selectedLanguage,
-          onChanged: (val) => setState(() => selectedLanguage = val),
-        );
+        return _buildAcademicStep();
       case 4:
-        return CourseSelectionStep(
-          selectedCourses: selectedCourses,
-          onCourseToggle: (courseName) {
-            setState(() {
-              if (selectedCourses.contains(courseName)) {
-                selectedCourses.remove(courseName);
-              } else {
-                selectedCourses.add(courseName);
-              }
-            });
-          },
-        );
+        return _buildPreferencesStep();
       default:
-        return const SizedBox.shrink();
+        return const SizedBox();
     }
+  }
+
+  Widget _buildAcademicStep() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'Academic Information',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          ),
+          const SizedBox(height: 32),
+          TextField(
+            controller: gradeController,
+            decoration: InputDecoration(
+              labelText: 'Grade Level (e.g., 12th Grade, College)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.school),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: schoolController,
+            decoration: InputDecoration(
+              labelText: 'School/College Name (Optional)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.location_city),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreferencesStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          // Header
+          const Text(
+            'Learning Preferences',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+
+          // Language selection
+          LanguageStep(
+            selectedLanguage: selectedLanguage,
+            onChanged: (val) => setState(() => selectedLanguage = val),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Course selection - Fixed height container
+          SizedBox(
+            height: 500, // Fixed height to prevent overflow
+            child: CourseSelectionStep(
+              selectedCourses: selectedCourses,
+              onCourseToggle: (courseName) => setState(() {
+                selectedCourses.contains(courseName)
+                    ? selectedCourses.remove(courseName)
+                    : selectedCourses.add(courseName);
+              }),
+            ),
+          ),
+
+          // Bottom padding to account for navigation buttons
+          const SizedBox(height: 200),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    phoneController.dispose();
+    gradeController.dispose();
+    schoolController.dispose();
+    parentNameController.dispose();
+    parentPhoneController.dispose();
+    parentEmailController.dispose();
+    super.dispose();
   }
 }

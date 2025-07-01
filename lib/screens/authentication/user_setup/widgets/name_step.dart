@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 
-Widget buildNameStep(TextEditingController nameController) {
+class NameStep extends StatelessWidget {
+  final TextEditingController firstNameController;
+  final TextEditingController lastNameController;
+
+  const NameStep({
+    super.key,
+    required this.firstNameController,
+    required this.lastNameController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -13,19 +24,32 @@ Widget buildNameStep(TextEditingController nameController) {
           ),
           const SizedBox(height: 32),
           TextField(
-            controller: nameController,
+            controller: firstNameController,
             decoration: InputDecoration(
-              labelText: 'Full Name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              labelText: 'First Name',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               filled: true,
               fillColor: Colors.white,
               prefixIcon: const Icon(Icons.person),
             ),
             style: const TextStyle(fontSize: 18),
+            textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: lastNameController,
+            decoration: InputDecoration(
+              labelText: 'Last Name',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.person_outline),
+            ),
+            style: const TextStyle(fontSize: 18),
+            textCapitalization: TextCapitalization.words,
           ),
         ],
       ),
     );
   }
+}

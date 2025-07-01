@@ -7,6 +7,7 @@ environment:
   sdk: ^3.8.1
 
 dependencies:
+  chewie: ^1.11.3
   file_picker: ^10.2.0
   flutter:
     sdk: flutter
@@ -17,10 +18,7 @@ dependencies:
   intl_phone_field: ^3.2.0
   provider: ^6.1.5
   supabase_flutter: ^2.3.4
-  media_kit: ^1.1.11 # Primary package.
-  media_kit_video: ^1.2.5 # For video rendering.
-  media_kit_libs_video: ^1.0.5 # Native video dependencies.
-  awesome_video_player: ^1.0.5
+  video_player: ^2.10.0
 
 dev_dependencies:
   flutter_test:
