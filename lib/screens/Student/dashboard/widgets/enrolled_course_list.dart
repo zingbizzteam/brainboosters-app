@@ -1,51 +1,65 @@
-// widgets/enrolled_course_list.dart
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../common/courses/data/course_dummy_data.dart';
 
 class EnrolledCourseList extends StatelessWidget {
-  const EnrolledCourseList({super.key});
+  final List<Map<String, dynamic>> enrolledCourses;
+  final bool loading;
+
+  const EnrolledCourseList({
+    super.key,
+    required this.enrolledCourses,
+    this.loading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final enrolledCourses = CourseDummyData.getEnrolledCourses();
-
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (enrolledCourses.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Column(
       children: enrolledCourses.map((course) {
+        final courseData = course['courses'] ?? {};
+        // Accept int or double, but always use integer for display
+        final progressRaw = course['progress_percentage'] ?? 0;
+        final progress = (progressRaw is int)
+            ? progressRaw.clamp(0, 100)
+            : (progressRaw is double)
+            ? progressRaw.round().clamp(0, 100)
+            : 0;
+        final totalLessons = courseData['total_lessons'] ?? 0;
+        final duration = courseData['duration_hours'] != null
+            ? "${courseData['duration_hours']} hrs"
+            : '';
+        final category = courseData['category'] ?? '';
+        final level = courseData['level'] ?? '';
+        final totalTimeSpent = course['total_time_spent'] ?? 0; // in minutes
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: GestureDetector(
             onTap: () {
-              // Navigate to course detail page
-              context.push(CommonRoutes.getCourseDetailRoute(course.id));
+              context.go(
+                CommonRoutes.getCourseDetailRoute(course['course_id']),
+              );
             },
             child: Row(
               children: [
-                // ... rest of your existing widget code
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    course.imageUrl,
+                    courseData['thumbnail_url'] ?? '',
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: 56,
-                        height: 56,
-                        color: Colors.grey[300],
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         width: 56,
                         height: 56,
-                        color: Colors.grey[400],
+                        color: Colors.grey,
                         child: const Icon(
                           Icons.book,
                           color: Colors.white,
@@ -61,7 +75,7 @@ class EnrolledCourseList extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        course.title,
+                        courseData['title'] ?? '',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -71,57 +85,72 @@ class EnrolledCourseList extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "By ${course.academy}",
+                        "$category • $level",
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "${(course.progress * 100).toInt()}% Complete",
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                "${course.formattedDuration} • ${course.totalLessons} lessons",
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            height: 4,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
+                          Text(
+                            "$progress% Complete",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
                             ),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: course.progress,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4AA0E6),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            "$duration • $totalLessons lessons",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 4),
+                      // Progress bar: always show full gray, blue overlay only if >0%
+                      Stack(
+                        children: [
+                          Container(
+                            height: 4,
+                            margin: const EdgeInsets.only(right: 60),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          if (progress > 0)
+                            Container(
+                              height: 4,
+                              margin: const EdgeInsets.only(right: 60),
+                              width:
+                                  ((progress / 100) *
+                                          (MediaQuery.of(context).size.width -
+                                              120))
+                                      .clamp(0.0, double.infinity),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4AA0E6),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (totalTimeSpent > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            "Time spent: ${totalTimeSpent ~/ 60}h ${totalTimeSpent % 60}m",
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),

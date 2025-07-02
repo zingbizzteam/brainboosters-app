@@ -1,5 +1,5 @@
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/avatar_step.dart';
-import 'package:brainboosters_app/screens/authentication/user_setup/widgets/course_selection_step.dart';
+import 'package:brainboosters_app/screens/authentication/user_setup/widgets/goal_selection_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/language_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/name_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/personal_info_step.dart';
@@ -40,7 +40,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
   String? selectedLanguage;
   String? avatarUrl;
   File? avatarFile;
-  final List<String> selectedCourses = [];
+  final List<String> selectedGoals = [];
   String phoneIsoCode = 'IN';
   String parentPhoneIsoCode = 'IN';
 
@@ -48,6 +48,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
   String? _originalFirstName;
   String? _originalLastName;
   String? _originalAvatarUrl;
+  String? _existingStudentId;
 
   @override
   void initState() {
@@ -75,7 +76,10 @@ class _UserSetupPageState extends State<UserSetupPage> {
           .maybeSingle();
 
       setState(() {
-        _isEditing = userProfile != null && studentProfile != null;
+        _isEditing =
+            userProfile != null &&
+            userProfile['onboarding_completed'] == true &&
+            studentProfile != null;
       });
 
       // Prefill from user_profiles table
@@ -84,6 +88,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
           firstNameController.text = userProfile['first_name'] ?? '';
           lastNameController.text = userProfile['last_name'] ?? '';
           phoneController.text = userProfile['phone'] ?? '';
+          fullPhoneNumber = userProfile['phone'];
           selectedDate = userProfile['date_of_birth'] != null
               ? DateTime.parse(userProfile['date_of_birth'])
               : null;
@@ -100,18 +105,20 @@ class _UserSetupPageState extends State<UserSetupPage> {
       // Prefill from student table if exists
       if (studentProfile != null) {
         setState(() {
+          _existingStudentId = studentProfile['student_id'];
           gradeController.text = studentProfile['grade_level'] ?? '';
           schoolController.text = studentProfile['school_name'] ?? '';
           parentNameController.text = studentProfile['parent_name'] ?? '';
           parentPhoneController.text = studentProfile['parent_phone'] ?? '';
+          parentFullPhoneNumber = studentProfile['parent_phone'];
           parentEmailController.text = studentProfile['parent_email'] ?? '';
           selectedLanguage = studentProfile['preferred_learning_style'];
 
           // Handle learning goals array
           final goals = studentProfile['learning_goals'];
           if (goals is List) {
-            selectedCourses.clear();
-            selectedCourses.addAll(goals.cast<String>());
+            selectedGoals.clear();
+            selectedGoals.addAll(goals.cast<String>());
           }
         });
       }
@@ -123,17 +130,27 @@ class _UserSetupPageState extends State<UserSetupPage> {
         if (firstNameController.text.isEmpty &&
             lastNameController.text.isEmpty) {
           final fullName = meta['full_name'] ?? '';
-          final nameParts = fullName.split(' ');
-          if (nameParts.isNotEmpty) {
-            setState(() {
+          final firstName = meta['first_name'] ?? '';
+          final lastName = meta['last_name'] ?? '';
+
+          setState(() {
+            if (firstName.isNotEmpty) {
+              firstNameController.text = firstName;
+            } else if (fullName.isNotEmpty) {
+              final nameParts = fullName.split(' ');
               firstNameController.text = nameParts.first;
               if (nameParts.length > 1) {
                 lastNameController.text = nameParts.skip(1).join(' ');
               }
-              _originalFirstName = firstNameController.text;
-              _originalLastName = lastNameController.text;
-            });
-          }
+            }
+
+            if (lastName.isNotEmpty) {
+              lastNameController.text = lastName;
+            }
+
+            _originalFirstName = firstNameController.text;
+            _originalLastName = lastNameController.text;
+          });
         }
 
         // Use metadata avatar if no profile avatar
@@ -224,112 +241,87 @@ class _UserSetupPageState extends State<UserSetupPage> {
         );
       }
 
-      // Get current user_type from existing profile (IMPORTANT!)
-      final currentProfile = await Supabase.instance.client
-          .from('user_profiles')
-          .select('user_type')
-          .eq('id', user.id)
-          .single();
-
-      // Update user_profiles table with UPSERT (including user_type)
-      await Supabase.instance.client.from('user_profiles').upsert({
-        'id': user.id,
-        'user_type':
-            currentProfile['user_type'], // ✅ Include existing user_type
-        'first_name': firstNameController.text.trim(),
-        'last_name': lastNameController.text.trim(),
-        'phone': fullPhoneNumber ?? phoneController.text.trim(),
-        'date_of_birth': selectedDate?.toIso8601String().split('T')[0],
-        'gender': selectedGender,
-        'avatar_url': finalAvatarUrl,
-        'email_verified': true,
-        'onboarding_completed': true,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-
-      // Create or update student record
-      final studentId = _isEditing ? null : await _generateStudentId();
-
-      if (_isEditing) {
-        // Update existing student record
-        await Supabase.instance.client
-            .from('students')
-            .update({
-              'grade_level': gradeController.text.trim().isNotEmpty
-                  ? gradeController.text.trim()
-                  : null,
-              'school_name': schoolController.text.trim().isNotEmpty
-                  ? schoolController.text.trim()
-                  : null,
-              'parent_name': parentNameController.text.trim().isNotEmpty
-                  ? parentNameController.text.trim()
-                  : null,
-              'parent_phone':
-                  parentFullPhoneNumber ??
-                  (parentPhoneController.text.trim().isNotEmpty
-                      ? parentPhoneController.text.trim()
-                      : null),
-              'parent_email': parentEmailController.text.trim().isNotEmpty
-                  ? parentEmailController.text.trim()
-                  : null,
-              'learning_goals': selectedCourses,
-              'preferred_learning_style': selectedLanguage,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('user_id', user.id);
-      } else {
-        // Insert new student record
-        await Supabase.instance.client.from('students').insert({
-          'user_id': user.id,
-          'student_id': studentId,
-          'grade_level': gradeController.text.trim().isNotEmpty
-              ? gradeController.text.trim()
-              : null,
-          'school_name': schoolController.text.trim().isNotEmpty
-              ? schoolController.text.trim()
-              : null,
-          'parent_name': parentNameController.text.trim().isNotEmpty
-              ? parentNameController.text.trim()
-              : null,
-          'parent_phone':
-              parentFullPhoneNumber ??
-              (parentPhoneController.text.trim().isNotEmpty
-                  ? parentPhoneController.text.trim()
-                  : null),
-          'parent_email': parentEmailController.text.trim().isNotEmpty
-              ? parentEmailController.text.trim()
-              : null,
-          'learning_goals': selectedCourses,
-          'preferred_learning_style': selectedLanguage,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditing
-                  ? 'Profile updated successfully!'
-                  : 'Profile setup completed!',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.go(StudentRoutes.home);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      // Get or set user_type (default to student if not exists)
+    String userType = 'student';
+    final currentProfile = await Supabase.instance.client
+        .from('user_profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .maybeSingle();
+    if (currentProfile != null && currentProfile['user_type'] != null) {
+      userType = currentProfile['user_type'];
     }
-  }
 
+    // Upsert user_profiles (safe)
+    await Supabase.instance.client.from('user_profiles').upsert({
+      'id': user.id,
+      'user_type': userType,
+      'first_name': firstNameController.text.trim(),
+      'last_name': lastNameController.text.trim(),
+      'phone': fullPhoneNumber ?? phoneController.text.trim(),
+      'date_of_birth': selectedDate?.toIso8601String().split('T')[0],
+      'gender': selectedGender,
+      'avatar_url': avatarUrl,
+      'email_verified': true,
+      'onboarding_completed': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+
+    // --- STUDENT LOGIC ---
+    // Check if student exists
+    final studentRecord = await Supabase.instance.client
+        .from('students')
+        .select('id,student_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    // Prepare student data
+    final studentData = {
+      'user_id': user.id,
+      'grade_level': gradeController.text.trim().isNotEmpty ? gradeController.text.trim() : null,
+      'school_name': schoolController.text.trim().isNotEmpty ? schoolController.text.trim() : null,
+      'parent_name': parentNameController.text.trim().isNotEmpty ? parentNameController.text.trim() : null,
+      'parent_phone': parentFullPhoneNumber ?? (parentPhoneController.text.trim().isNotEmpty ? parentPhoneController.text.trim() : null),
+      'parent_email': parentEmailController.text.trim().isNotEmpty ? parentEmailController.text.trim() : null,
+      'learning_goals': selectedGoals,
+      'preferred_learning_style': selectedLanguage,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    if (studentRecord != null) {
+      // Update existing student
+      await Supabase.instance.client
+          .from('students')
+          .update(studentData)
+          .eq('user_id', user.id);
+    } else {
+      // Insert new student
+      studentData['created_at'] = DateTime.now().toIso8601String();
+      studentData['student_id'] = await _generateStudentId();
+      await Supabase.instance.client.from('students').insert(studentData);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isEditing ? 'Profile updated successfully!' : 'Profile setup completed!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      context.go(StudentRoutes.home);
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+    debugPrint('Save error: $e');
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+  }
+  
   // Simplified delete method - delete all files in user folder
   Future<void> _deleteAllUserAvatars(String userId) async {
     try {
@@ -373,6 +365,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
       }
       return 'STU${nextNumber.toString().padLeft(3, '0')}';
     } catch (e) {
+      // Fallback to timestamp-based ID
       return 'STU${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     }
   }
@@ -401,7 +394,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
         }
         break;
       case 4:
-        if (selectedLanguage == null || selectedCourses.isEmpty) {
+        if (selectedLanguage == null || selectedGoals.isEmpty) {
           _showError('Please complete learning preferences');
           return false;
         }
@@ -662,6 +655,52 @@ class _UserSetupPageState extends State<UserSetupPage> {
               prefixIcon: const Icon(Icons.location_city),
             ),
           ),
+          const SizedBox(height: 24),
+          const Text(
+            'Parent/Guardian Information (Optional)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: parentNameController,
+            decoration: InputDecoration(
+              labelText: 'Parent/Guardian Name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.person),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: parentPhoneController,
+            decoration: InputDecoration(
+              labelText: 'Parent/Guardian Phone',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.phone),
+            ),
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: parentEmailController,
+            decoration: InputDecoration(
+              labelText: 'Parent/Guardian Email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.email),
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
         ],
       ),
     );
@@ -691,12 +730,12 @@ class _UserSetupPageState extends State<UserSetupPage> {
           // Course selection - Fixed height container
           SizedBox(
             height: 500, // Fixed height to prevent overflow
-            child: CourseSelectionStep(
-              selectedCourses: selectedCourses,
+            child: GoalSelectionStep(
+              selectedGoals: selectedGoals,
               onCourseToggle: (courseName) => setState(() {
-                selectedCourses.contains(courseName)
-                    ? selectedCourses.remove(courseName)
-                    : selectedCourses.add(courseName);
+                selectedGoals.contains(courseName)
+                    ? selectedGoals.remove(courseName)
+                    : selectedGoals.add(courseName);
               }),
             ),
           ),

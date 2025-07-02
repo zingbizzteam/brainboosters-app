@@ -463,6 +463,7 @@ CREATE TABLE live_classes (
     max_participants INTEGER DEFAULT 100,
     current_participants INTEGER DEFAULT 0,
     meeting_url TEXT,
+    thumbnail_url TEXT,
     meeting_id VARCHAR(100),
     meeting_password VARCHAR(50),
     price DECIMAL(10,2) DEFAULT 0.00,
@@ -575,6 +576,7 @@ CREATE TABLE lesson_progress (
 -- Live Class Enrollments Table
 CREATE TABLE live_class_enrollments (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    thumbnail_url TEXT,
     student_id UUID REFERENCES students(id) ON DELETE CASCADE,
     live_class_id UUID REFERENCES live_classes(id) ON DELETE CASCADE,
     enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -590,6 +592,19 @@ INSERT INTO course_enrollments (id, student_id, course_id, progress_percentage, 
 ('ff0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440001', '990e8400-e29b-41d4-a716-446655440001', 65.5, 890, NOW() - INTERVAL '2 hours', 5, 'Excellent course with clear explanations'),
 ('ff0e8400-e29b-41d4-a716-446655440002', '880e8400-e29b-41d4-a716-446655440002', '990e8400-e29b-41d4-a716-446655440002', 23.0, 420, NOW() - INTERVAL '1 day', 4, 'Good content but could use more examples');
 
+-- Sample Data for Live Class Enrollments
+INSERT INTO live_class_enrollments (
+    id, thumbnail_url, student_id, live_class_id, enrolled_at,
+    attended, attendance_duration, rating, feedback
+) VALUES
+-- Entry for Student 1
+('220e8400-e29b-41d4-a716-446655440001', 'https://example.com/thumb1.jpg', '880e8400-e29b-41d4-a716-446655440001',
+ 'aa0e8400-e29b-41d4-a716-446655440001', NOW() - INTERVAL '3 days', true, 60, 5, 'Very informative and engaging live session'),
+
+-- Entry for Student 2
+('220e8400-e29b-41d4-a716-446655440002', 'https://example.com/thumb2.jpg', '880e8400-e29b-41d4-a716-446655440002',
+ 'aa0e8400-e29b-41d4-a716-446655440002', NOW() - INTERVAL '1 day', false, 0, NULL, NULL);
+ 
 INSERT INTO lesson_progress (id, student_id, lesson_id, course_id, completed_at, time_spent, progress_percentage, is_completed) VALUES
 ('110e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440001', 'bb0e8400-e29b-41d4-a716-446655440001', '990e8400-e29b-41d4-a716-446655440001', NOW() - INTERVAL '3 days', 900, 100.0, true),
 ('110e8400-e29b-41d4-a716-446655440002', '880e8400-e29b-41d4-a716-446655440001', 'bb0e8400-e29b-41d4-a716-446655440002', '990e8400-e29b-41d4-a716-446655440001', NOW() - INTERVAL '2 days', 1200, 100.0, true);
@@ -653,6 +668,33 @@ CREATE TABLE reviews (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(student_id, course_id)
 );
+-- This function keeps courses.rating and courses.total_reviews in sync with the reviews table:
+CREATE OR REPLACE FUNCTION update_course_rating()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE courses
+  SET
+    rating = COALESCE((
+      SELECT ROUND(AVG(rating)::numeric, 2)
+      FROM reviews
+      WHERE course_id = NEW.course_id AND is_published = true
+    ), 0.0),
+    total_reviews = (
+      SELECT COUNT(*)
+      FROM reviews
+      WHERE course_id = NEW.course_id AND is_published = true
+    )
+  WHERE id = NEW.course_id;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Call this function after INSERT, UPDATE, DELETE on reviews
+DROP TRIGGER IF EXISTS trg_update_course_rating ON reviews;
+CREATE TRIGGER trg_update_course_rating
+AFTER INSERT OR UPDATE OR DELETE ON reviews
+FOR EACH ROW
+EXECUTE FUNCTION update_course_rating();
 
 -- Sample Data
 INSERT INTO reviews (id, student_id, course_id, teacher_id, rating, review_text, pros, cons, is_verified_purchase, helpful_count) VALUES

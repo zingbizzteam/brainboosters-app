@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class Course {
+class Goal {
   final String name;
   final IconData icon;
   final Color color;
 
-  Course(this.name, this.icon, this.color);
+  Goal(this.name, this.icon, this.color);
 }
 
-class CourseSelectionStep extends StatefulWidget {
-  final List<String> selectedCourses;
+class GoalSelectionStep extends StatefulWidget {
+  final List<String> selectedGoals;
   final void Function(String courseName) onCourseToggle;
 
-  const CourseSelectionStep({
+  const GoalSelectionStep({
     super.key,
-    required this.selectedCourses,
+    required this.selectedGoals,
     required this.onCourseToggle,
   });
 
   @override
-  State<CourseSelectionStep> createState() => _CourseSelectionStepState();
+  State<GoalSelectionStep> createState() => _CourseSelectionStepState();
 }
 
-class _CourseSelectionStepState extends State<CourseSelectionStep> {
+class _CourseSelectionStepState extends State<GoalSelectionStep> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  List<Course> _courses = [];
+  List<Goal> _courses = [];
   bool _isLoading = true;
 
   // Dynamic icon mapping based on keywords
@@ -111,7 +111,7 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
         _courses = courseNames.asMap().entries.map((entry) {
           final index = entry.key;
           final name = entry.value;
-          return Course(
+          return Goal(
             name,
             _getIconForCourse(name),
             _colors[index % _colors.length],
@@ -124,14 +124,14 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
       // Fallback to default courses
       setState(() {
         _courses = [
-          Course('Web Development', Icons.web, const Color(0xFFFF9800)),
-          Course(
+          Goal('Web Development', Icons.web, const Color(0xFFFF9800)),
+          Goal(
             'Mobile Development',
             Icons.phone_android,
             const Color(0xFF009688),
           ),
-          Course('Data Science', Icons.analytics, const Color(0xFF2196F3)),
-          Course('Machine Learning', Icons.psychology, const Color(0xFF3F51B5)),
+          Goal('Data Science', Icons.analytics, const Color(0xFF2196F3)),
+          Goal('Machine Learning', Icons.psychology, const Color(0xFF3F51B5)),
         ];
         _isLoading = false;
       });
@@ -159,7 +159,7 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
     super.dispose();
   }
 
-  List<Course> get _filteredCourses {
+  List<Goal> get _filteredCourses {
     if (_searchQuery.isEmpty) return _courses;
     return _courses
         .where(
@@ -225,7 +225,7 @@ class _CourseSelectionStepState extends State<CourseSelectionStep> {
                   spacing: 12,
                   runSpacing: 12,
                   children: _filteredCourses.map((course) {
-                    final isSelected = widget.selectedCourses.contains(
+                    final isSelected = widget.selectedGoals.contains(
                       course.name,
                     );
                     return SizedBox(

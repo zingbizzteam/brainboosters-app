@@ -13,7 +13,7 @@ class AppRouter {
 
   static final router = GoRouter(
     refreshListenable: _authStateListener,
-    debugLogDiagnostics: true,
+    // debugLogDiagnostics: true,
     redirect: _redirectLogic,
     routes: [
       GoRoute(
@@ -52,18 +52,25 @@ class AppRouter {
     return null; // No redirect needed
   }
 
-  static Future<String> _getRedirectForLoggedInUser(String userId) async {
+  static Future<String?> _getRedirectForLoggedInUser(String userId) async {
     try {
-      // Check if user profile exists
+      // Fetch user_profile and student in a single go
       final userProfile = await Supabase.instance.client
           .from('user_profiles')
-          .select('user_type, onboarding_completed')
+          .select(
+            'user_type, onboarding_completed, first_name, last_name, phone, gender, date_of_birth',
+          )
           .eq('id', userId)
           .maybeSingle();
 
-      if (userProfile == null) {
-        return AuthRoutes.userSetup;
-      }
+      final studentProfile = await Supabase.instance.client
+          .from('students')
+          .select('id, grade_level, learning_goals, preferred_learning_style')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      // If missing profile, must setup
+      if (userProfile == null) return AuthRoutes.userSetup;
 
       // Only allow students
       if (userProfile['user_type'] != 'student') {
@@ -71,21 +78,40 @@ class AppRouter {
         return onboarding;
       }
 
-      // Check if onboarding is completed
-      if (!userProfile['onboarding_completed']) {
+      // If missing student record, must setup
+      if (studentProfile == null) return AuthRoutes.userSetup;
+
+      // Check for required fields in user_profiles
+      final requiredUserFields = [
+        userProfile['first_name'],
+        userProfile['last_name'],
+        userProfile['phone'],
+        userProfile['gender'],
+        userProfile['date_of_birth'],
+      ];
+      if (requiredUserFields.any(
+        (f) => f == null || (f is String && f.trim().isEmpty),
+      )) {
         return AuthRoutes.userSetup;
       }
 
-      // Check if student record exists
-      final studentProfile = await Supabase.instance.client
-          .from('students')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (studentProfile == null) {
+      // Check for required fields in students
+      final requiredStudentFields = [
+        studentProfile['grade_level'],
+        studentProfile['learning_goals'],
+        studentProfile['preferred_learning_style'],
+      ];
+      if (requiredStudentFields.any(
+        (f) =>
+            f == null ||
+            (f is String && f.trim().isEmpty) ||
+            (f is List && f.isEmpty),
+      )) {
         return AuthRoutes.userSetup;
       }
+
+      // Finally, check onboarding_completed
+      if (!userProfile['onboarding_completed']) return AuthRoutes.userSetup;
 
       return StudentRoutes.home;
     } catch (e) {
