@@ -19,7 +19,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   bool _obscurePassword = true;
   bool _rememberPassword = false;
   bool _isResendingEmail = false;
-  
+
   // Email verification resend tracking
   int _resendCount = 0;
   DateTime? _lastResendTime;
@@ -36,7 +36,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toIso8601String().split('T')[0];
     final savedDate = prefs.getString('resend_date') ?? '';
-    
+
     if (savedDate == today) {
       _resendCount = prefs.getInt('resend_count') ?? 0;
       final lastResendString = prefs.getString('last_resend_time');
@@ -59,14 +59,17 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     await prefs.setString('resend_date', today);
     await prefs.setInt('resend_count', _resendCount);
     if (_lastResendTime != null) {
-      await prefs.setString('last_resend_time', _lastResendTime!.toIso8601String());
+      await prefs.setString(
+        'last_resend_time',
+        _lastResendTime!.toIso8601String(),
+      );
     }
   }
 
   bool get _canResendEmail {
     if (_resendCount >= maxResendPerDay) return false;
     if (_lastResendTime == null) return true;
-    
+
     final timeDiff = DateTime.now().difference(_lastResendTime!);
     return timeDiff.inMinutes >= resendCooldownMinutes;
   }
@@ -76,7 +79,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       return 'Daily limit reached';
     }
     if (_lastResendTime != null && !_canResendEmail) {
-      final remaining = resendCooldownMinutes - DateTime.now().difference(_lastResendTime!).inMinutes;
+      final remaining =
+          resendCooldownMinutes -
+          DateTime.now().difference(_lastResendTime!).inMinutes;
       return 'Resend in ${remaining}m';
     }
     return 'Resend verification email';
@@ -99,16 +104,16 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         // Check if email is verified
         if (response.user!.emailConfirmedAt == null) {
           await Supabase.instance.client.auth.signOut();
-          
+
           if (!mounted) return;
-          
+
           _showEmailVerificationDialog(email);
           return;
         }
 
         // Get user profile to check user type
         final userProfile = await _getUserProfile(response.user!.id);
-        
+
         if (userProfile == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please complete your profile setup')),
@@ -120,9 +125,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         // Check if user is a student
         if (userProfile['user_type'] != 'student') {
           await Supabase.instance.client.auth.signOut();
-          
+
           if (!mounted) return;
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -141,9 +146,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Login successful!')));
 
         // Navigate based on profile completion
         if (studentProfile == null || !userProfile['onboarding_completed']) {
@@ -154,9 +159,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       }
     } on AuthException catch (e) {
       if (!mounted) return;
-      
+
       String errorMessage = 'Login failed';
-      
+
       switch (e.message.toLowerCase()) {
         case 'invalid login credentials':
           errorMessage = 'Invalid email or password';
@@ -173,14 +178,11 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('An unexpected error occurred. Please try again.'),
@@ -310,10 +312,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     try {
       final response = await Supabase.instance.client
           .from('user_profiles')
-          .select('user_type, first_name, last_name, onboarding_completed, is_active')
+          .select(
+            'user_type, first_name, last_name, onboarding_completed, is_active',
+          )
           .eq('id', userId)
           .single();
-      
+
       return response;
     } catch (e) {
       print('Error fetching user profile: $e');
@@ -328,7 +332,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
           .select('*')
           .eq('user_id', userId)
           .maybeSingle();
-      
+
       return response;
     } catch (e) {
       print('Error fetching student profile: $e');
@@ -495,14 +499,18 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     'Don\'t have an account? ',
                     style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
                   ),
-                  GestureDetector(
-                    onTap: () => context.go(AuthRoutes.emailRegister),
-                    child: const Text(
-                      'Create Account',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF5DADE2),
-                        fontWeight: FontWeight.w500,
+                  IgnorePointer(
+                    child: GestureDetector(
+                      onTap: () => context.go(AuthRoutes.emailRegister),
+                      child: Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: 14,
+                          // color: Color(0xFF5DADE2),
+                          color: Colors.grey[400], // Changed to grey
+
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -614,11 +622,13 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 children: [
                   Checkbox(
                     value: _rememberPassword,
-                    onChanged: _isLoading ? null : (value) {
-                      setState(() {
-                        _rememberPassword = value ?? false;
-                      });
-                    },
+                    onChanged: _isLoading
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _rememberPassword = value ?? false;
+                            });
+                          },
                     activeColor: const Color(0xFF5DADE2),
                   ),
                   const Text(
@@ -631,7 +641,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
               // Forgot Password Link
               GestureDetector(
-                onTap: _isLoading ? null : () => context.go(AuthRoutes.emailResetPassword),
+                onTap: _isLoading
+                    ? null
+                    : () => context.go(AuthRoutes.emailResetPassword),
                 child: Text(
                   'Forgot Password?',
                   style: TextStyle(

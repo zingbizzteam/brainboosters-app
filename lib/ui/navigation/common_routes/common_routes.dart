@@ -1,35 +1,128 @@
 // common_routes/common_routes.dart
-import 'package:brainboosters_app/screens/common/settings/profile_page.dart';
+
+import 'package:brainboosters_app/screens/common/coaching_centers/teachers/teacher_details/teacher_details_page.dart';
 import 'package:brainboosters_app/screens/common/settings/settings_page.dart';
-import 'package:brainboosters_app/screens/common/view_coaching_centers/coaching_centers_page.dart';
-import 'package:brainboosters_app/screens/common/view_coaching_centers/coaching_center_details_page.dart';
+import 'package:brainboosters_app/screens/common/coaching_centers/coaching_centers_page.dart';
+import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_details/coaching_center_details_page.dart';
+import 'package:brainboosters_app/screens/common/coaching_centers/teachers/coaching_center_teachers_page.dart';
 import 'package:brainboosters_app/screens/common/courses/courses_page.dart';
-import 'package:brainboosters_app/screens/common/courses/course_intro_page.dart';
-import 'package:brainboosters_app/screens/common/search/search_page.dart';
+import 'package:brainboosters_app/screens/common/courses/coures_intro/course_intro_page.dart';
 import 'package:brainboosters_app/screens/common/live_class/live_classes_page.dart';
-import 'package:brainboosters_app/screens/common/live_class/live_class_intro_page.dart';
+import 'package:brainboosters_app/screens/common/live_class/live_class_intro/live_class_intro_page.dart';
 import 'package:brainboosters_app/screens/common/notifications/notifications_page.dart';
 import 'package:go_router/go_router.dart';
 
 class CommonRoutes {
-  // Route paths
+  // Main navigation routes
   static const String courses = '/courses';
-  static const String courseDetail = '/courses/:courseId';
+  static const String courseDetail = '/course/:courseId';
   static const String searchCourses = '/search-courses';
   static const String notifications = '/notifications';
   static const String liveClasses = '/live-classes';
-  static const String liveClassDetail = '/live-classes/:liveClassId';
+  static const String liveClassDetail = '/live-class/:liveClassId';
   static const String coachingCenters = '/coaching-centers';
-  static const String coachingCenterDetail = '/coaching-centers/:centerId';
+  static const String coachingCenterDetail = '/coaching-center/:centerId';
   static const String settings = '/settings';
 
-  // Helper methods to generate dynamic routes
-  static String getCourseDetailRoute(String courseId) => '/courses/$courseId';
-  static String getLiveClassDetailRoute(String liveClassId) => '/live-classes/$liveClassId';
-  static String getCoachingCenterDetailRoute(String centerId) => '/coaching-centers/$centerId';
-  static String getSearchCoursesRoute(String query) => '/search-courses?q=${Uri.encodeComponent(query)}';
+  // NEW: Teacher routes nested under coaching centers
+  static const String coachingCenterTeachers = '/coaching-center/:centerId/teachers';
+  static const String coachingCenterTeacherDetail = '/coaching-center/:centerId/teacher/:teacherId';
 
-  // Create StatefulShellBranch routes for navigation
+  // Helper methods for generating routes
+  static String getCourseDetailRoute(String courseId) => '/course/$courseId';
+  static String getLiveClassDetailRoute(String liveClassId) => '/live-class/$liveClassId';
+  static String getCoachingCenterDetailRoute(String centerId) => '/coaching-center/$centerId';
+  static String getSearchCoursesRoute(String query) => '/search-courses?q=${Uri.encodeComponent(query)}';
+  
+  // NEW: Helper methods for teacher routes
+  static String getCoachingCenterTeachersRoute(String centerId) => '/coaching-center/$centerId/teachers';
+  static String getCoachingCenterTeacherDetailRoute(String centerId, String teacherId) => '/coaching-center/$centerId/teacher/$teacherId';
+
+  // Complete routes configuration
+  static List<RouteBase> getAllRoutes() {
+    return [
+      // Courses routes
+      GoRoute(
+        path: courses,
+        builder: (context, state) => const CoursesPage(),
+      ),
+      GoRoute(
+        path: '/course/:courseId',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return CourseIntroPage(courseId: courseId);
+        },
+      ),
+
+      // Live Classes routes
+      GoRoute(
+        path: liveClasses,
+        builder: (context, state) => const LiveClassesPage(),
+      ),
+      GoRoute(
+        path: '/live-class/:liveClassId',
+        builder: (context, state) {
+          final liveClassId = state.pathParameters['liveClassId']!;
+          return LiveClassIntroPage(liveClassId: liveClassId);
+        },
+      ),
+
+      // Coaching Centers routes with nested teacher routes
+      GoRoute(
+        path: coachingCenters,
+        builder: (context, state) => const CoachingCentersPage(),
+      ),
+      GoRoute(
+        path: '/coaching-center/:centerId',
+        builder: (context, state) {
+          final centerId = state.pathParameters['centerId']!;
+          return CoachingCenterDetailPage(centerId: centerId);
+        },
+        routes: [
+          // Teachers list for this coaching center
+          GoRoute(
+            path: 'teachers',
+            builder: (context, state) {
+              final centerId = state.pathParameters['centerId']!;
+              return CoachingCenterTeachersPage(centerId: centerId);
+            },
+          ),
+          // Individual teacher detail within this coaching center
+          GoRoute(
+            path: 'teacher/:teacherId',
+            builder: (context, state) {
+              final centerId = state.pathParameters['centerId']!;
+              final teacherId = state.pathParameters['teacherId']!;
+              return TeacherDetailPage(
+                teacherId: teacherId,
+                centerId: centerId, // Pass center context
+              );
+            },
+          ),
+        ],
+      ),
+
+      // Settings routes
+      GoRoute(
+        path: settings,
+        builder: (context, state) => const SettingsPage(),
+        routes: [
+          // GoRoute(
+          //   path: 'profile',
+          //   builder: (context, state) => const ProfilePage(),
+          // ),
+        ],
+      ),
+
+      // Notifications route
+      GoRoute(
+        path: notifications,
+        builder: (context, state) => const NotificationsPage(),
+      ),
+    ];
+  }
+
+  // Navigation branches for StatefulShellRoute (if needed)
   static List<StatefulShellBranch> createNavigationBranches() {
     return [
       // Branch for Courses
@@ -50,6 +143,7 @@ class CommonRoutes {
           ),
         ],
       ),
+
       // Branch for Live Classes
       StatefulShellBranch(
         routes: [
@@ -68,7 +162,8 @@ class CommonRoutes {
           ),
         ],
       ),
-      // Branch for Coaching Centers
+
+      // Branch for Coaching Centers (with nested teacher routes)
       StatefulShellBranch(
         routes: [
           GoRoute(
@@ -81,11 +176,34 @@ class CommonRoutes {
                   final centerId = state.pathParameters['centerId']!;
                   return CoachingCenterDetailPage(centerId: centerId);
                 },
+                routes: [
+                  // Teachers list route
+                  GoRoute(
+                    path: 'teachers',
+                    builder: (context, state) {
+                      final centerId = state.pathParameters['centerId']!;
+                      return CoachingCenterTeachersPage(centerId: centerId);
+                    },
+                  ),
+                  // Individual teacher route
+                  GoRoute(
+                    path: 'teacher/:teacherId',
+                    builder: (context, state) {
+                      final centerId = state.pathParameters['centerId']!;
+                      final teacherId = state.pathParameters['teacherId']!;
+                      return TeacherDetailPage(
+                        teacherId: teacherId,
+                        centerId: centerId,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
         ],
       ),
+
       // Branch for Settings
       StatefulShellBranch(
         routes: [
@@ -93,32 +211,13 @@ class CommonRoutes {
             path: settings,
             builder: (context, state) => const SettingsPage(),
             routes: [
-              GoRoute(
-                path: 'profile',
-                builder: (context, state) => const ProfilePage(),
-              ),
+              // GoRoute(
+              //   path: 'profile',
+              //   builder: (context, state) => const ProfilePage(),
+              // ),
             ],
           ),
         ],
-      ),
-    ];
-  }
-
-  // Additional routes that are not part of main navigation but accessible
-  static List<RouteBase> getAdditionalRoutes() {
-    return [
-      // Notifications route
-      GoRoute(
-        path: notifications,
-        builder: (context, state) => const NotificationsPage(),
-      ),
-      // Search route
-      GoRoute(
-        path: searchCourses,
-        builder: (context, state) {
-          final query = state.uri.queryParameters['q'] ?? '';
-          return SearchPage(query: query);
-        },
       ),
     ];
   }

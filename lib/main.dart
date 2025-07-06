@@ -1,13 +1,13 @@
 import 'package:brainboosters_app/ui/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_quill/flutter_quill.dart';                 // Provides [Player], [Media], [Playlist] etc.
+import 'package:flutter_quill/flutter_quill.dart';
 
 Future<void> main() async {
   await Supabase.initialize(
-    url: 'https://bmeenapoxjxhbsmydsyf.supabase.co',
+    url: 'https://fsajdylrjyhatgqecfoc.supabase.co',
     anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZWVuYXBveGp4aGJzbXlkc3lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyOTkxNDksImV4cCI6MjA2Njg3NTE0OX0.KmEr9MuD47koGvjyFFvn9fC_0wThb9rayTBrkR-2vCA',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYWpkeWxyanloYXRncWVjZm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MzA4NDYsImV4cCI6MjA2NzMwNjg0Nn0.0cG_QK0f9v8p4Z6V-qKE5ZB5UMhB7dX4PpvnRtHJsDU',
   );
   runApp(MainApp());
 }

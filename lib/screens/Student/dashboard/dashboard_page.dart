@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:brainboosters_app/screens/Student/dashboard/widgets/enrolled_live_class_list.dart';
+import 'package:brainboosters_app/screens/common/courses/widgets/course_card.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/dashboard_top_bar.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/enrolled_course_list.dart';
+import 'package:brainboosters_app/screens/common/live_class/widgets/live_class_card.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/stat_card.dart';
-import 'package:brainboosters_app/screens/student/dashboard/widgets/course_card.dart';
-import 'package:brainboosters_app/screens/student/dashboard/widgets/live_class_card.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -42,29 +40,48 @@ class _DashboardPageState extends State<DashboardPage> {
         .select()
         .eq('user_id', user.id)
         .maybeSingle();
-    final testLive = await Supabase.instance.client
-        .from('live_classes')
-        .select(
-          'id, title, description, scheduled_at, status, price, thumbnail_url, duration_minutes',
-        );
-    print('testLive type: ${testLive.runtimeType}');
-    print('testLive JSON: ${jsonEncode(testLive)}');
+
     if (studentRes == null) {
       // Not enrolled, show suggestions only (only ongoing/upcoming)
       final allCourses = await Supabase.instance.client
           .from('courses')
-          .select(
-            'id, title, thumbnail_url, category, level, price, is_published, rating',
-          )
+          .select('''
+          id, 
+          title, 
+          thumbnail_url, 
+          category, 
+          level, 
+          price, 
+          original_price,
+          is_published, 
+          rating,
+          total_lessons,
+          duration_hours,
+          enrollment_count,
+          total_reviews,
+          coaching_centers(center_name)
+        ''')
           .eq('is_published', true)
           .order('enrollment_count', ascending: false)
           .limit(5);
 
       final allLive = await Supabase.instance.client
           .from('live_classes')
-          .select(
-            'id, title, description, scheduled_at, status, price, thumbnail_url, duration_minutes',
-          )
+          .select('''
+      id, 
+      title, 
+      description, 
+      scheduled_at, 
+      status, 
+      price, 
+      thumbnail_url, 
+      duration_minutes,
+      teachers(
+        user_id,
+        user_profiles(first_name, last_name)
+      ),
+      coaching_centers(center_name)
+    ''')
           .inFilter('status', ['scheduled', 'live'])
           .order('scheduled_at', ascending: true)
           .limit(5);
@@ -82,12 +99,33 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final studentId = studentRes['id'];
 
-    // Enrolled courses
+    // Enrolled courses - FIXED QUERY
     final coursesRes = await Supabase.instance.client
         .from('course_enrollments')
-        .select(
-          'course_id, courses(id, title, thumbnail_url, category, level, price, total_lessons, duration_hours, rating)',
-        )
+        .select('''
+      course_id,
+      progress_percentage,
+      total_time_spent,
+      lessons_completed,
+      total_lessons_in_course,
+      last_accessed_at,
+      enrolled_at,
+      courses(
+        id, 
+        title, 
+        thumbnail_url, 
+        category, 
+        level, 
+        price, 
+        original_price,
+        total_lessons, 
+        duration_hours, 
+        rating,
+        enrollment_count,
+        total_reviews,
+        coaching_centers(center_name)
+      )
+    ''')
         .eq('student_id', studentId)
         .eq('is_active', true);
 
@@ -95,15 +133,27 @@ class _DashboardPageState extends State<DashboardPage> {
     final liveRes = await Supabase.instance.client
         .from('live_class_enrollments')
         .select('''
-          live_class_id,
-          attended,
-          attendance_duration,
-          rating,
-          feedback,
-          live_classes(
-            id, title, description, scheduled_at, status, price, thumbnail_url, duration_minutes
-          )
-        ''')
+      live_class_id,
+      attended,
+      attendance_duration,
+      rating,
+      feedback,
+      live_classes(
+        id, 
+        title, 
+        description, 
+        scheduled_at, 
+        status, 
+        price, 
+        thumbnail_url, 
+        duration_minutes,
+        teachers(
+          user_id,
+          user_profiles(first_name, last_name)
+        ),
+        coaching_centers(center_name)
+      )
+    ''')
         .eq('student_id', studentId)
         .inFilter('live_classes.status', ['scheduled', 'live']);
 
@@ -114,15 +164,28 @@ class _DashboardPageState extends State<DashboardPage> {
         .map((e) => e['live_class_id'])
         .toSet();
 
-    // SUGGESTED COURSES LOGIC
+    // SUGGESTED COURSES LOGIC - FIXED QUERIES
     List<Map<String, dynamic>> suggestedCourses = [];
     final goals = List<String>.from(studentRes['learning_goals'] ?? []);
     if (goals.isNotEmpty) {
       final goalCourses = await Supabase.instance.client
           .from('courses')
-          .select(
-            'id, title, thumbnail_url, category, level, price, is_published, rating',
-          )
+          .select('''
+          id, 
+          title, 
+          thumbnail_url, 
+          category, 
+          level, 
+          price, 
+          original_price,
+          is_published, 
+          rating,
+          total_lessons,
+          duration_hours,
+          enrollment_count,
+          total_reviews,
+          coaching_centers(center_name)
+        ''')
           .contains('tags', goals)
           .eq('is_published', true)
           .order('enrollment_count', ascending: false)
@@ -141,9 +204,22 @@ class _DashboardPageState extends State<DashboardPage> {
       };
       final fillCourses = await Supabase.instance.client
           .from('courses')
-          .select(
-            'id, title, thumbnail_url, category, level, price, is_published, rating',
-          )
+          .select('''
+          id, 
+          title, 
+          thumbnail_url, 
+          category, 
+          level, 
+          price, 
+          original_price,
+          is_published, 
+          rating,
+          total_lessons,
+          duration_hours,
+          enrollment_count,
+          total_reviews,
+          coaching_centers(center_name)
+        ''')
           .eq('is_published', true)
           .order('enrollment_count', ascending: false)
           .limit(15);
@@ -153,15 +229,28 @@ class _DashboardPageState extends State<DashboardPage> {
           .toList();
       suggestedCourses.addAll(fillList);
     }
-    
+
     // SUGGESTED LIVE CLASSES LOGIC (only ongoing/upcoming)
     List<Map<String, dynamic>> suggestedLive = [];
     if (goals.isNotEmpty) {
       final goalLive = await Supabase.instance.client
           .from('live_classes')
-          .select(
-            'id, title, description, scheduled_at, status, price, thumbnail_url, course_id, duration_minutes',
-          )
+          .select('''
+      id, 
+      title, 
+      description, 
+      scheduled_at, 
+      status, 
+      price, 
+      thumbnail_url, 
+      course_id, 
+      duration_minutes,
+      teachers(
+        user_id,
+        user_profiles(first_name, last_name)
+      ),
+      coaching_centers(center_name)
+    ''')
           .inFilter('status', ['scheduled', 'live'])
           .order('scheduled_at', ascending: true)
           .limit(15);
@@ -188,9 +277,21 @@ class _DashboardPageState extends State<DashboardPage> {
       };
       final fillLive = await Supabase.instance.client
           .from('live_classes')
-          .select(
-            'id, title, description, scheduled_at, status, price, thumbnail_url, duration_minutes',
-          )
+          .select('''
+      id, 
+      title, 
+      description, 
+      scheduled_at, 
+      status, 
+      price, 
+      thumbnail_url, 
+      duration_minutes,
+      teachers(
+        user_id,
+        user_profiles(first_name, last_name)
+      ),
+      coaching_centers(center_name)
+    ''')
           .inFilter('status', ['scheduled', 'live'])
           .order('scheduled_at', ascending: true)
           .limit(15);
@@ -361,6 +462,32 @@ class _DashboardPageState extends State<DashboardPage> {
                                     ),
                             SizedBox(height: isWide ? 32 : 20),
 
+                            if (_enrolledCourses.isNotEmpty) ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Enrolled Courses",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => context.go('/courses'),
+                                    child: const Text('See all'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              EnrolledCourseList(
+                                enrolledCourses: _enrolledCourses,
+                                loading: _loading,
+                              ),
+                              SizedBox(height: isWide ? 24 : 16),
+                            ],
+
                             // Enrolled Live Classes (only ongoing/upcoming)
                             if (filteredLiveClasses.isNotEmpty) ...[
                               Row(
@@ -389,34 +516,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               SizedBox(height: isWide ? 24 : 16),
                             ],
 
-                            // Enrolled Courses
-                            if (_enrolledCourses.isNotEmpty) ...[
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Enrolled Courses",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => context.go('/courses'),
-                                    child: const Text('See all'),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              EnrolledCourseList(
-                                enrolledCourses: _enrolledCourses,
-                                loading: _loading,
-                              ),
-                              SizedBox(height: isWide ? 24 : 16),
-                            ],
-
-                            // Suggested Live Classes (horizontal scroll)
+                            // Suggested Live Classes (horizontal scroll) - FIXED
                             if (_suggestedLiveClasses.isNotEmpty) ...[
                               Row(
                                 mainAxisAlignment:
@@ -437,19 +537,31 @@ class _DashboardPageState extends State<DashboardPage> {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              SizedBox(
-                                height: 240,
+                              Container(
+                                constraints: const BoxConstraints(
+                                  minHeight: 200, // Minimum height
+                                  maxHeight:
+                                      300, // Maximum height to prevent excessive growth
+                                ),
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _suggestedLiveClasses.length,
                                   itemBuilder: (context, idx) {
                                     final liveClass =
                                         _suggestedLiveClasses[idx];
-                                    return LiveClassCard(
-                                      liveClass: liveClass,
-                                      onTap: () => context.go(
-                                        CommonRoutes.getLiveClassDetailRoute(
-                                          liveClass['id'],
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        left: idx == 0
+                                            ? 0
+                                            : 8, // No left padding for first item
+                                        right: 8, // Right padding for all items
+                                      ),
+                                      child: LiveClassCard(
+                                        liveClass: liveClass,
+                                        onTap: () => context.go(
+                                          CommonRoutes.getLiveClassDetailRoute(
+                                            liveClass['id'],
+                                          ),
                                         ),
                                       ),
                                     );
@@ -459,7 +571,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               SizedBox(height: isWide ? 24 : 16),
                             ],
 
-                            // Suggested Courses (horizontal scroll)
+                            // Suggested Courses (horizontal scroll) - FIXED
                             if (_suggestedCourses.isNotEmpty) ...[
                               Row(
                                 mainAxisAlignment:
@@ -479,19 +591,32 @@ class _DashboardPageState extends State<DashboardPage> {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              SizedBox(
-                                height: 240,
+                              Container(
+                                constraints: const BoxConstraints(
+                                  minHeight: 200, // Minimum height
+                                  maxHeight:
+                                      300, // Maximum height to prevent excessive growth
+                                ),
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _suggestedCourses.length,
                                   itemBuilder: (context, idx) {
                                     final course = _suggestedCourses[idx];
-                                    return CourseCard(
-                                      course: course,
-                                      onTap: () => context.go(
-                                        CommonRoutes.getCourseDetailRoute(
-                                          course['id'],
-                                        ),
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        left: idx == 0 ? 0 : 8,
+                                        right: 8,
+                                      ),
+                                      child: CourseCard(
+                                        course: course,
+                                        onTap: () {
+                                          final courseSlug =
+                                              course['id']?.toString();
+                                          if (courseSlug != null &&
+                                              courseSlug.isNotEmpty) {
+                                            context.go('/course/$courseSlug');
+                                          }
+                                        },
                                       ),
                                     );
                                   },

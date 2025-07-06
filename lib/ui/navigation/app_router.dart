@@ -1,4 +1,5 @@
 // app_router.dart
+
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
@@ -13,7 +14,7 @@ class AppRouter {
 
   static final router = GoRouter(
     refreshListenable: _authStateListener,
-    // debugLogDiagnostics: true,
+    // debugLogDiagnostics: true, // Enable for debugging
     redirect: _redirectLogic,
     routes: [
       GoRoute(
@@ -22,10 +23,12 @@ class AppRouter {
       ),
       ...AuthRoutes.routes,
       StudentRoutes.statefulRoute,
-      ...CommonRoutes.getAdditionalRoutes(),
+      // FIXED: Include all common routes including detail pages
+      ...CommonRoutes.getAllRoutes(),
     ],
   );
 
+  // ... rest of your redirect logic remains the same
   static Future<String?> _redirectLogic(
     BuildContext context,
     GoRouterState state,

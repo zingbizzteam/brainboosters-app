@@ -174,23 +174,9 @@ class CourseHeroSection extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             // Python logo representation
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.yellow,
-                borderRadius: BorderRadius.circular(60),
-              ),
-              child: const Center(
-                child: Text(
-                  'Python',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            Image.network(
+              "https://images.icon-icons.com/2699/PNG/512/python_logo_icon_168886.png",
+              width: 150,
             ),
           ],
         ),

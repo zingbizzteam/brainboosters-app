@@ -49,7 +49,6 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4AA0E6).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Image.asset(
@@ -82,10 +81,18 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
+              Text(
+                "Note: Backend under process, so we disabled new user registration",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                  fontSize: 10,
+                ),
+                textAlign: TextAlign.center,
+              ),
 
               const SizedBox(height: 32),
 
-              // Email sign-in button
+              // Email sign-in button (ENABLED)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -108,12 +115,21 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
               ),
               const SizedBox(height: 16),
 
-              // Google sign-in button
-              SizedBox(width: double.infinity, child: GoogleAuthButton()),
+              // Google sign-in button (DISABLED)
+              SizedBox(
+                width: double.infinity,
+                child: Opacity(
+                  opacity: 0.5, // Visual indication it's disabled
+                  child: IgnorePointer(
+                    // Prevents tap interactions
+                    child: GoogleAuthButton(),
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 24),
 
-              // Register link
+              // Register link (DISABLED)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -121,13 +137,16 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
                     "Don't have an account? ",
                     style: TextStyle(color: Colors.grey[600]),
                   ),
-                  GestureDetector(
-                    onTap: () => context.go(AuthRoutes.emailRegister),
-                    child: const Text(
-                      "Sign up with email",
-                      style: TextStyle(
-                        color: Color(0xFF4AA0E6),
-                        fontWeight: FontWeight.w600,
+                  Opacity(
+                    opacity: 0.5, // Visual indication it's disabled
+                    child: IgnorePointer(
+                      // Prevents tap interactions
+                      child: Text(
+                        "Sign up with email",
+                        style: TextStyle(
+                          color: Colors.grey[400], // Changed to grey
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),

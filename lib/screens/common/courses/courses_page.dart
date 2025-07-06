@@ -1,346 +1,364 @@
 // screens/common/courses/courses_page.dart
 import 'package:brainboosters_app/screens/common/courses/widgets/course_footer_section.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'data/course_dummy_data.dart';
-import 'models/course_model.dart';
-import '../../../ui/navigation/common_routes/common_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/course_hero_section.dart';
 import 'widgets/course_categories_section.dart';
-import 'widgets/coaching_centers_section.dart';
 import 'widgets/app_promotion_section.dart';
+import 'widgets/horizontal_course_list.dart';
+import 'widgets/all_courses_grid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-class CoursesPage extends StatelessWidget {
+class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
+
+  @override
+  State<CoursesPage> createState() => _CoursesPageState();
+}
+
+class _CoursesPageState extends State<CoursesPage> {
+  // State for horizontal lists
+  List<Map<String, dynamic>> _suggestedCourses = [];
+  List<Map<String, dynamic>> _topRatedCourses = [];
+  bool _loadingFeatured = true;
+
+  // State for the main infinite scroll grid
+  final _scrollController = ScrollController();
+  List<Map<String, dynamic>> _allCourses = [];
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _page = 1;
+  static const int _pageSize = 8;
+
+  // Add error state tracking
+  String? _errorMessage;
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInitialData();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final position = _scrollController.position;
+    final threshold = position.maxScrollExtent - 300;
+
+    if (position.pixels >= threshold &&
+        !_loadingMore &&
+        _hasMore &&
+        _errorMessage == null &&
+        _allCourses.isNotEmpty) {
+      debugPrint('Scroll threshold reached, loading more courses...');
+      _fetchAllCourses();
+    }
+  }
+
+  Future<void> _fetchInitialData() async {
+    setState(() {
+      _loadingFeatured = true;
+      _errorMessage = null;
+    });
+
+    await Future.wait([_fetchFeaturedCourses(), _fetchAllCourses()]);
+  }
+
+  // FIXED: Complete query with all required fields
+  Future<void> _fetchAllCourses() async {
+    if (_loadingMore) return;
+
+    setState(() {
+      _loadingMore = true;
+      _errorMessage = null;
+    });
+
+    try {
+      debugPrint('Fetching courses - Page: $_page, PageSize: $_pageSize');
+
+      final startIndex = (_page - 1) * _pageSize;
+      final endIndex = startIndex + _pageSize - 1;
+
+      final response = await Supabase.instance.client
+          .from('courses')
+          .select('''
+          id, 
+          title, 
+          thumbnail_url, 
+          category, 
+          level, 
+          price, 
+          original_price,
+          rating, 
+          total_reviews, 
+          total_lessons,
+          duration_hours,
+          enrollment_count,
+          coaching_center_id, 
+          coaching_centers(center_name)
+        ''')
+          .eq('is_published', true)
+          .order('created_at', ascending: false)
+          .range(startIndex, endIndex)
+          .timeout(const Duration(seconds: 15));
+
+      final newCourses = List<Map<String, dynamic>>.from(response);
+
+      debugPrint('Fetched ${newCourses.length} courses for page $_page');
+
+      if (mounted) {
+        setState(() {
+          if (_page == 1) {
+            _allCourses = newCourses;
+          } else {
+            _allCourses.addAll(newCourses);
+          }
+
+          _hasMore = newCourses.length == _pageSize;
+
+          if (_hasMore) {
+            _page++;
+          }
+
+          _loadingMore = false;
+          _retryCount = 0;
+        });
+
+        debugPrint('Total courses loaded: ${_allCourses.length}');
+        debugPrint('Has more: $_hasMore');
+        debugPrint('Next page: $_page');
+      }
+    } catch (e) {
+      debugPrint('Error fetching courses: $e');
+
+      if (mounted) {
+        setState(() {
+          _loadingMore = false;
+          _errorMessage = 'Failed to load courses: ${e.toString()}';
+        });
+
+        if (_page == 1) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load courses. Please try again.'),
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: () {
+                  if (_retryCount < _maxRetries) {
+                    _retryCount++;
+                    _fetchAllCourses();
+                  }
+                },
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // FIXED: Complete query with all required fields
+  Future<void> _fetchFeaturedCourses() async {
+    try {
+      // Top rated courses with complete data
+      final topRatedResponse = await Supabase.instance.client
+          .from('courses')
+          .select('''
+          id, 
+          title, 
+          thumbnail_url, 
+          category, 
+          level, 
+          price, 
+          original_price,
+          rating,
+          total_reviews, 
+          total_lessons,
+          duration_hours,
+          enrollment_count,
+          coaching_center_id,
+          coaching_centers(center_name)
+        ''')
+          .eq('is_published', true)
+          .gte('rating', 4.0)
+          .order('rating', ascending: false)
+          .limit(8)
+          .timeout(const Duration(seconds: 10));
+
+      final topRated =
+          (topRatedResponse as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+      List<Map<String, dynamic>> suggested = [];
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user != null) {
+        try {
+          final studentData = await Supabase.instance.client
+              .from('students')
+              .select('learning_goals')
+              .eq('user_id', user.id)
+              .maybeSingle()
+              .timeout(const Duration(seconds: 5));
+
+          List<String> userGoals = [];
+          if (studentData != null && studentData['learning_goals'] != null) {
+            userGoals = List<String>.from(
+              studentData['learning_goals'] as List,
+            );
+          }
+
+          if (userGoals.isNotEmpty) {
+            // Suggested courses with complete data
+            final suggestedResponse = await Supabase.instance.client
+                .from('courses')
+                .select('''
+                id, 
+                title, 
+                thumbnail_url, 
+                category, 
+                level, 
+                price, 
+                original_price,
+                rating,
+                total_reviews, 
+                total_lessons,
+                duration_hours,
+                enrollment_count,
+                coaching_center_id,
+                coaching_centers(center_name)
+              ''')
+                .eq('is_published', true)
+                .overlaps('tags', userGoals)
+                .order('rating', ascending: false)
+                .limit(8)
+                .timeout(const Duration(seconds: 10));
+
+            suggested =
+                (suggestedResponse as List?)?.cast<Map<String, dynamic>>() ??
+                [];
+          }
+        } catch (e) {
+          debugPrint('Error fetching personalized courses: $e');
+        }
+      }
+
+      // Fallback to popular courses with complete data
+      if (suggested.isEmpty) {
+        try {
+          final popularResponse = await Supabase.instance.client
+              .from('courses')
+              .select('''
+              id, 
+              title, 
+              thumbnail_url, 
+              category, 
+              level, 
+              price, 
+              original_price,
+              rating,
+              total_reviews, 
+              total_lessons,
+              duration_hours,
+              enrollment_count,
+              coaching_center_id,
+              coaching_centers(center_name)
+            ''')
+              .eq('is_published', true)
+              .order('enrollment_count', ascending: false)
+              .limit(8)
+              .timeout(const Duration(seconds: 10));
+
+          suggested =
+              (popularResponse as List?)?.cast<Map<String, dynamic>>() ?? [];
+        } catch (e) {
+          debugPrint('Error fetching popular courses: $e');
+        }
+      }
+
+      debugPrint('Top rated courses fetched: ${topRated.length}');
+      debugPrint('Suggested courses fetched: ${suggested.length}');
+
+      if (mounted) {
+        setState(() {
+          _topRatedCourses = topRated;
+          _suggestedCourses = suggested;
+          _loadingFeatured = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error in _fetchFeaturedCourses: $e');
+      if (mounted) {
+        setState(() {
+          _loadingFeatured = false;
+          _topRatedCourses = [];
+          _suggestedCourses = [];
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Hero Section
-            const CourseHeroSection(),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _page = 1;
+          _hasMore = true;
+          await _fetchInitialData();
+        },
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          child: Column(
+            children: [
+              const CourseHeroSection(),
+              const CourseCategoriesSection(),
 
-            // Course Categories
-            const CourseCategoriesSection(),
-
-            // Coaching Centers
-            const CoachingCentersSection(),
-
-            // Featured Courses (Dynamic)
-            _buildFeaturedCoursesSection(context),
-
-            // Top Rated Courses (Dynamic)
-            _buildTopRatedCoursesSection(context),
-
-            // App Promotion - Only on Web
-            if (kIsWeb) const AppPromotionSection(),
-
-            // Footer - Only on Web
-            if (kIsWeb) const CourseFooterSection(),
-
-            // Footer spacing for mobile
-            if (!kIsWeb) const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturedCoursesSection(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 768;
-    final isTablet = screenWidth >= 768 && screenWidth < 1200;
-
-    // Get featured courses (first 8 courses)
-    final featuredCourses = CourseDummyData.courses.take(8).toList();
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
-        vertical: 40,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Featured Courses in Python',
-            style: TextStyle(
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Explore a diverse landscape that caters to all learning preferences',
-            style: TextStyle(
-              fontSize: isMobile ? 14 : 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Dynamic Course Grid
-          _buildDynamicCourseGrid(context, featuredCourses, isMobile, isTablet),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopRatedCoursesSection(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 768;
-    final isTablet = screenWidth >= 768 && screenWidth < 1200;
-
-    // Get top rated courses (rating >= 4.5)
-    final topRatedCourses = CourseDummyData.courses
-        .where((course) => course.rating >= 4.5)
-        .take(8)
-        .toList();
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
-        vertical: 40,
-      ),
-      color: Colors.grey[50],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Top Rated Courses in Python',
-            style: TextStyle(
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Highest rated courses by our students',
-            style: TextStyle(
-              fontSize: isMobile ? 14 : 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Dynamic Course Grid
-          _buildDynamicCourseGrid(context, topRatedCourses, isMobile, isTablet),
-
-          const SizedBox(height: 32),
-
-          // View All Button
-          Center(
-            child: OutlinedButton(
-              onPressed: () {
-                // Navigate to all courses page
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.blue,
-                side: const BorderSide(color: Colors.blue),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              // Suggested Courses Section
+              HorizontalCourseList(
+                title: 'Suggested For You',
+                subtitle: 'Courses based on your learning goals and interests',
+                courses: _suggestedCourses,
+                loading: _loadingFeatured,
               ),
-              child: const Text(
-                'View All Courses',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+
+              // Top Rated Courses Section
+              HorizontalCourseList(
+                title: 'Top Rated Courses',
+                subtitle: 'Highest rated courses by our students',
+                courses: _topRatedCourses,
+                loading: _loadingFeatured,
               ),
-            ),
+
+              // All Courses Grid with proper error handling
+              AllCoursesGrid(
+                courses: _allCourses,
+                loading: _loadingMore && _page == 1,
+                loadingMore: _loadingMore && _page > 1,
+                hasMore: _hasMore,
+                errorMessage: _errorMessage,
+                onRetry: () {
+                  if (_retryCount < _maxRetries) {
+                    _retryCount++;
+                    _fetchAllCourses();
+                  }
+                },
+              ),
+
+              if (kIsWeb) const AppPromotionSection(),
+              if (kIsWeb) const CourseFooterSection(),
+              if (!kIsWeb) const SizedBox(height: 40),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDynamicCourseGrid(
-    BuildContext context,
-    List<Course> courses,
-    bool isMobile,
-    bool isTablet,
-  ) {
-    int crossAxisCount;
-    if (isMobile) {
-      crossAxisCount = 1;
-    } else if (isTablet) {
-      crossAxisCount = 2;
-    } else {
-      crossAxisCount = 4;
-    }
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: isMobile ? 1.2 : 0.75,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: courses.length,
-      itemBuilder: (context, index) {
-        return _buildDynamicCourseCard(context, courses[index], isMobile);
-      },
-    );
-  }
-
-  Widget _buildDynamicCourseCard(
-    BuildContext context,
-    Course course,
-    bool isMobile,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to course detail page
-        context.push(CommonRoutes.getCourseDetailRoute(course.id));
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Course Image
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                child: Image.network(
-                  course.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.book,
-                        color: Colors.grey,
-                        size: 40,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            // Course Info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Course Title
-                    Text(
-                      course.title,
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      maxLines: 2, // Allow 2 lines for title
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Academy Name
-                    Text(
-                      course.academy,
-                      style: TextStyle(
-                        fontSize: isMobile ? 12 : 14,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    const Spacer(),
-
-                    // Rating and Price Row (keep this as the bottom element)
-                    Row(
-                      children: [
-                        // Rating
-                        Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: isMobile ? 14 : 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          course.rating.toStringAsFixed(1),
-                          style: TextStyle(
-                            fontSize: isMobile ? 12 : 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        // Price
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min, // Add this
-                          children: [
-                            if (course.hasDiscount)
-                              Text(
-                                '₹${course.originalPrice.toStringAsFixed(0)}',
-                                style: TextStyle(
-                                  fontSize: isMobile ? 10 : 12,
-                                  color: Colors.grey[500],
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                            Text(
-                              course.formattedPrice,
-                              style: TextStyle(
-                                fontSize: isMobile ? 14 : 16,
-                                fontWeight: FontWeight.bold,
-                                color: course.isFree
-                                    ? Colors.green
-                                    : Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
