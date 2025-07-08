@@ -1,7 +1,8 @@
-// screens/common/courses/courses_page.dart
+// screens/common/courses/courses_page.dart - UPDATED
+
+import 'package:brainboosters_app/screens/common/courses/course_repository.dart';
 import 'package:brainboosters_app/screens/common/courses/widgets/course_footer_section.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/course_hero_section.dart';
 import 'widgets/course_categories_section.dart';
 import 'widgets/app_promotion_section.dart';
@@ -35,6 +36,14 @@ class _CoursesPageState extends State<CoursesPage> {
   int _retryCount = 0;
   static const int _maxRetries = 3;
 
+  // NEW: Refresh coordination
+  bool _isRefreshing = false;
+  bool _categoriesRefreshTrigger = false;
+  int _refreshCompletedComponents = 0;
+  bool _heroRefreshTrigger = false;
+  static const int _totalRefreshComponents =
+      3; // categories, featured, all courses
+
   @override
   void initState() {
     super.initState();
@@ -52,9 +61,51 @@ class _CoursesPageState extends State<CoursesPage> {
         !_loadingMore &&
         _hasMore &&
         _errorMessage == null &&
-        _allCourses.isNotEmpty) {
+        _allCourses.isNotEmpty &&
+        !_isRefreshing) {
+      // NEW: Don't load more during refresh
       debugPrint('Scroll threshold reached, loading more courses...');
       _fetchAllCourses();
+    }
+  }
+
+  // NEW: Enhanced refresh with coordination
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+    print('DEBUG: Starting coordinated refresh...');
+
+    setState(() {
+      _isRefreshing = true;
+      _refreshCompletedComponents = 0;
+      _categoriesRefreshTrigger = true;
+      _heroRefreshTrigger = true; // NEW: Trigger hero refresh
+      _page = 1;
+      _hasMore = true;
+    });
+
+    CourseRepository.clearCache();
+
+    await Future.wait([
+      _fetchFeaturedCourses(isRefresh: true),
+      _fetchAllCourses(isRefresh: true),
+    ]);
+    // Categories and hero will complete separately via callbacks
+  }
+
+  // NEW: Handle component refresh completion
+  void _onComponentRefreshComplete() {
+    _refreshCompletedComponents++;
+    print(
+      'DEBUG: Component refresh completed ($_refreshCompletedComponents/$_totalRefreshComponents)',
+    );
+
+    if (_refreshCompletedComponents >= _totalRefreshComponents) {
+      setState(() {
+        _isRefreshing = false;
+        _categoriesRefreshTrigger = false;
+        _heroRefreshTrigger = false; // NEW: Reset hero trigger
+      });
+      print('DEBUG: All components refresh completed');
     }
   }
 
@@ -63,13 +114,11 @@ class _CoursesPageState extends State<CoursesPage> {
       _loadingFeatured = true;
       _errorMessage = null;
     });
-
     await Future.wait([_fetchFeaturedCourses(), _fetchAllCourses()]);
   }
 
-  // FIXED: Complete query with all required fields
-  Future<void> _fetchAllCourses() async {
-    if (_loadingMore) return;
+  Future<void> _fetchAllCourses({bool isRefresh = false}) async {
+    if (_loadingMore && !isRefresh) return;
 
     setState(() {
       _loadingMore = true;
@@ -77,49 +126,24 @@ class _CoursesPageState extends State<CoursesPage> {
     });
 
     try {
-      debugPrint('Fetching courses - Page: $_page, PageSize: $_pageSize');
+      print('DEBUG: ${isRefresh ? "Refreshing" : "Loading"} all courses...');
 
-      final startIndex = (_page - 1) * _pageSize;
-      final endIndex = startIndex + _pageSize - 1;
-
-      final response = await Supabase.instance.client
-          .from('courses')
-          .select('''
-          id, 
-          title, 
-          thumbnail_url, 
-          category, 
-          level, 
-          price, 
-          original_price,
-          rating, 
-          total_reviews, 
-          total_lessons,
-          duration_hours,
-          enrollment_count,
-          coaching_center_id, 
-          coaching_centers(center_name)
-        ''')
-          .eq('is_published', true)
-          .order('created_at', ascending: false)
-          .range(startIndex, endIndex)
-          .timeout(const Duration(seconds: 15));
-
-      final newCourses = List<Map<String, dynamic>>.from(response);
-
-      debugPrint('Fetched ${newCourses.length} courses for page $_page');
+      final result = await CourseRepository.getCourses(
+        limit: _pageSize,
+        offset: (_page - 1) * _pageSize,
+        sortBy: CourseSortBy.newest,
+      );
 
       if (mounted) {
         setState(() {
-          if (_page == 1) {
-            _allCourses = newCourses;
+          if (_page == 1 || isRefresh) {
+            _allCourses = result.courses;
           } else {
-            _allCourses.addAll(newCourses);
+            _allCourses.addAll(result.courses);
           }
 
-          _hasMore = newCourses.length == _pageSize;
-
-          if (_hasMore) {
+          _hasMore = result.hasMore;
+          if (_hasMore && !isRefresh) {
             _page++;
           }
 
@@ -127,175 +151,72 @@ class _CoursesPageState extends State<CoursesPage> {
           _retryCount = 0;
         });
 
-        debugPrint('Total courses loaded: ${_allCourses.length}');
-        debugPrint('Has more: $_hasMore');
-        debugPrint('Next page: $_page');
+        print('DEBUG: All courses loaded: ${_allCourses.length} total');
+
+        // Notify refresh completion if this was a refresh
+        if (isRefresh) {
+          _onComponentRefreshComplete();
+        }
       }
     } catch (e) {
-      debugPrint('Error fetching courses: $e');
+      print('ERROR: Failed to fetch all courses: $e');
 
       if (mounted) {
         setState(() {
           _loadingMore = false;
-          _errorMessage = 'Failed to load courses: ${e.toString()}';
+          _errorMessage = 'Failed to load courses: $e';
         });
 
-        if (_page == 1) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to load courses. Please try again.'),
-              action: SnackBarAction(
-                label: 'Retry',
-                onPressed: () {
-                  if (_retryCount < _maxRetries) {
-                    _retryCount++;
-                    _fetchAllCourses();
-                  }
-                },
-              ),
-            ),
-          );
+        if (isRefresh) {
+          _onComponentRefreshComplete();
         }
       }
     }
   }
 
-  // FIXED: Complete query with all required fields
-  Future<void> _fetchFeaturedCourses() async {
+  Future<void> _fetchFeaturedCourses({bool isRefresh = false}) async {
     try {
-      // Top rated courses with complete data
-      final topRatedResponse = await Supabase.instance.client
-          .from('courses')
-          .select('''
-          id, 
-          title, 
-          thumbnail_url, 
-          category, 
-          level, 
-          price, 
-          original_price,
-          rating,
-          total_reviews, 
-          total_lessons,
-          duration_hours,
-          enrollment_count,
-          coaching_center_id,
-          coaching_centers(center_name)
-        ''')
-          .eq('is_published', true)
-          .gte('rating', 4.0)
-          .order('rating', ascending: false)
-          .limit(8)
-          .timeout(const Duration(seconds: 10));
-
-      final topRated =
-          (topRatedResponse as List?)?.cast<Map<String, dynamic>>() ?? [];
-
-      List<Map<String, dynamic>> suggested = [];
-      final user = Supabase.instance.client.auth.currentUser;
-
-      if (user != null) {
-        try {
-          final studentData = await Supabase.instance.client
-              .from('students')
-              .select('learning_goals')
-              .eq('user_id', user.id)
-              .maybeSingle()
-              .timeout(const Duration(seconds: 5));
-
-          List<String> userGoals = [];
-          if (studentData != null && studentData['learning_goals'] != null) {
-            userGoals = List<String>.from(
-              studentData['learning_goals'] as List,
-            );
-          }
-
-          if (userGoals.isNotEmpty) {
-            // Suggested courses with complete data
-            final suggestedResponse = await Supabase.instance.client
-                .from('courses')
-                .select('''
-                id, 
-                title, 
-                thumbnail_url, 
-                category, 
-                level, 
-                price, 
-                original_price,
-                rating,
-                total_reviews, 
-                total_lessons,
-                duration_hours,
-                enrollment_count,
-                coaching_center_id,
-                coaching_centers(center_name)
-              ''')
-                .eq('is_published', true)
-                .overlaps('tags', userGoals)
-                .order('rating', ascending: false)
-                .limit(8)
-                .timeout(const Duration(seconds: 10));
-
-            suggested =
-                (suggestedResponse as List?)?.cast<Map<String, dynamic>>() ??
-                [];
-          }
-        } catch (e) {
-          debugPrint('Error fetching personalized courses: $e');
-        }
+      if (!isRefresh) {
+        setState(() {
+          _loadingFeatured = true;
+        });
       }
 
-      // Fallback to popular courses with complete data
-      if (suggested.isEmpty) {
-        try {
-          final popularResponse = await Supabase.instance.client
-              .from('courses')
-              .select('''
-              id, 
-              title, 
-              thumbnail_url, 
-              category, 
-              level, 
-              price, 
-              original_price,
-              rating,
-              total_reviews, 
-              total_lessons,
-              duration_hours,
-              enrollment_count,
-              coaching_center_id,
-              coaching_centers(center_name)
-            ''')
-              .eq('is_published', true)
-              .order('enrollment_count', ascending: false)
-              .limit(8)
-              .timeout(const Duration(seconds: 10));
+      print(
+        'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} featured courses...',
+      );
 
-          suggested =
-              (popularResponse as List?)?.cast<Map<String, dynamic>>() ?? [];
-        } catch (e) {
-          debugPrint('Error fetching popular courses: $e');
-        }
-      }
-
-      debugPrint('Top rated courses fetched: ${topRated.length}');
-      debugPrint('Suggested courses fetched: ${suggested.length}');
+      final featured = await CourseRepository.getFeaturedCourses(limit: 8);
 
       if (mounted) {
         setState(() {
-          _topRatedCourses = topRated;
-          _suggestedCourses = suggested;
+          _topRatedCourses = featured.topRated;
+          _suggestedCourses = featured.suggested;
           _loadingFeatured = false;
         });
+
+        print('DEBUG: Featured courses loaded:');
+        print('  - Top rated: ${_topRatedCourses.length} courses');
+        print('  - Suggested: ${_suggestedCourses.length} courses');
+
+        // Notify refresh completion if this was a refresh
+        if (isRefresh) {
+          _onComponentRefreshComplete();
+        }
       }
     } catch (e) {
-      debugPrint('Error in _fetchFeaturedCourses: $e');
+      print('ERROR: Failed to fetch featured courses: $e');
+
       if (mounted) {
         setState(() {
           _loadingFeatured = false;
           _topRatedCourses = [];
           _suggestedCourses = [];
         });
+
+        if (isRefresh) {
+          _onComponentRefreshComplete();
+        }
       }
     }
   }
@@ -311,17 +232,27 @@ class _CoursesPageState extends State<CoursesPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: RefreshIndicator(
-        onRefresh: () async {
-          _page = 1;
-          _hasMore = true;
-          await _fetchInitialData();
-        },
+        onRefresh: _handleRefresh,
+        color: Colors.blue,
+        backgroundColor: Colors.white,
+        strokeWidth: 2.5,
+        displacement: 40.0,
         child: SingleChildScrollView(
           controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              const CourseHeroSection(),
-              const CourseCategoriesSection(),
+              CourseHeroSection(
+                courseId: "990e8400-e29b-41d4-a716-446655440001",
+                forceRefresh: _heroRefreshTrigger, // NEW
+                onRefreshComplete: _onComponentRefreshComplete, // NEW
+              ),
+
+              // NEW: Categories with refresh coordination
+              CourseCategoriesSection(
+                forceRefresh: _categoriesRefreshTrigger,
+                onRefreshComplete: _onComponentRefreshComplete,
+              ),
 
               // Suggested Courses Section
               HorizontalCourseList(
@@ -342,8 +273,8 @@ class _CoursesPageState extends State<CoursesPage> {
               // All Courses Grid with proper error handling
               AllCoursesGrid(
                 courses: _allCourses,
-                loading: _loadingMore && _page == 1,
-                loadingMore: _loadingMore && _page > 1,
+                loading: (_loadingMore && _page == 1) || _isRefreshing,
+                loadingMore: _loadingMore && _page > 1 && !_isRefreshing,
                 hasMore: _hasMore,
                 errorMessage: _errorMessage,
                 onRetry: () {

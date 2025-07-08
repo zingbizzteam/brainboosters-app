@@ -33,7 +33,7 @@ final _navItems = [
     color: const Color(0xFFF9B857),
   ),
   _NavItem(
-    route: CommonRoutes.settings,
+    route: StudentRoutes.settings,
     label: 'Settings',
     icon: Icons.settings,
     color: const Color(0xFF5873ff),
@@ -82,7 +82,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
         currentLocation == CommonRoutes.courses ||
         currentLocation == CommonRoutes.liveClasses ||
         currentLocation == CommonRoutes.coachingCenters ||
-        currentLocation == CommonRoutes.settings;
+        currentLocation == StudentRoutes.settings;
   }
 
   @override

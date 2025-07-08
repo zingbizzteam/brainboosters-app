@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../course_repository.dart';
+import '../course_intro_repository.dart';
 import '../../../widgets/pricing_action_widget.dart';
 
 class CourseInfoWidget extends StatefulWidget {
@@ -284,7 +284,7 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
 
     setState(() => _isEnrolling = true);
     try {
-      final success = await CourseRepository.enrollInCourse(course['id']);
+      final success = await CourseIntroRepository.enrollInCourse(course['id']);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Successfully enrolled!')),

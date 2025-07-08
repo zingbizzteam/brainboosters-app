@@ -23,7 +23,8 @@ class AppRouter {
       ),
       ...AuthRoutes.routes,
       StudentRoutes.statefulRoute,
-      // FIXED: Include all common routes including detail pages
+      // Include additional student routes
+      ...StudentRoutes.getAdditionalRoutes(),
       ...CommonRoutes.getAllRoutes(),
     ],
   );

@@ -2,10 +2,18 @@ import 'package:brainboosters_app/screens/common/coaching_centers/teachers/teach
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../ui/navigation/common_routes/common_routes.dart';
 
 class FeaturedInstructorsSection extends StatefulWidget {
-  const FeaturedInstructorsSection({super.key});
+  final bool forceRefresh; // NEW: External refresh trigger
+  final VoidCallback? onRefreshComplete; // NEW: Refresh completion callback
+
+  const FeaturedInstructorsSection({
+    super.key,
+    this.forceRefresh = false,
+    this.onRefreshComplete,
+  });
 
   @override
   State<FeaturedInstructorsSection> createState() =>
@@ -179,39 +187,41 @@ class _FeaturedInstructorsSectionState
     );
   }
 
-  // FIXED: Dynamic cross axis count
   int _getCrossAxisCount(bool isMobile, bool isTablet) {
     if (isMobile) return 1;
     if (isTablet) return 2;
     return 4;
   }
 
-  // FIXED: Dynamic aspect ratio based on screen size
   double _getChildAspectRatio(bool isMobile, bool isSmallMobile) {
     if (isMobile) {
       return isSmallMobile ? 2.5 : 3.0;
     }
-    return 0.90; // FIXED: Increased from 0.85 to 0.90 for more height
+    return 0.90;
   }
 
   Widget _buildSkeletonCard(bool isMobile, bool isSmallMobile) {
-    return Container(
-      padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: isMobile
+            ? _buildMobileSkeletonLayout(isSmallMobile)
+            : _buildDesktopSkeletonLayout(),
       ),
-      child: isMobile
-          ? _buildMobileSkeletonLayout(isSmallMobile)
-          : _buildDesktopSkeletonLayout(),
     );
   }
 
@@ -224,7 +234,7 @@ class _FeaturedInstructorsSectionState
           width: avatarSize,
           height: avatarSize,
           decoration: BoxDecoration(
-            color: Colors.grey[300],
+            color: Colors.white,
             borderRadius: BorderRadius.circular(avatarSize / 2),
           ),
         ),
@@ -237,19 +247,28 @@ class _FeaturedInstructorsSectionState
               Container(
                 height: isSmallMobile ? 14 : 16,
                 width: double.infinity,
-                color: Colors.grey[300],
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               SizedBox(height: isSmallMobile ? 6 : 8),
               Container(
                 height: isSmallMobile ? 12 : 14,
                 width: 120,
-                color: Colors.grey[300],
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               SizedBox(height: isSmallMobile ? 6 : 8),
               Container(
                 height: isSmallMobile ? 10 : 12,
                 width: 80,
-                color: Colors.grey[300],
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ],
           ),
@@ -265,20 +284,55 @@ class _FeaturedInstructorsSectionState
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.grey[300],
+            color: Colors.white,
             borderRadius: BorderRadius.circular(40),
           ),
         ),
         const SizedBox(height: 12),
-        Container(height: 16, width: double.infinity, color: Colors.grey[300]),
+        Container(
+          height: 16,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
         const SizedBox(height: 6),
-        Container(height: 14, width: 100, color: Colors.grey[300]),
+        Container(
+          height: 14,
+          width: 100,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
         const SizedBox(height: 6),
-        Container(height: 12, width: 80, color: Colors.grey[300]),
+        Container(
+          height: 12,
+          width: 80,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
         const SizedBox(height: 8),
-        Container(height: 12, width: 60, color: Colors.grey[300]),
+        Container(
+          height: 12,
+          width: 60,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
         const SizedBox(height: 8),
-        Container(height: 12, width: 70, color: Colors.grey[300]),
+        Container(
+          height: 12,
+          width: 70,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
       ],
     );
   }
@@ -336,63 +390,47 @@ class _FeaturedInstructorsSectionState
     Map<String, dynamic> teacher,
     bool isSmallMobile,
   ) {
-    final avatarSize = isSmallMobile
-        ? 45.0
-        : 55.0; // FIXED: Reduced avatar size
+    final avatarSize = isSmallMobile ? 45.0 : 55.0;
 
     return IntrinsicHeight(
-      // FIXED: Ensures proper height calculation
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // FIXED: Align to top
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Instructor Image - Fixed size
           ClipRRect(
             borderRadius: BorderRadius.circular(avatarSize / 2),
             child: _buildTeacherAvatar(teacher, avatarSize),
           ),
-          SizedBox(width: isSmallMobile ? 12 : 16), // FIXED: Responsive spacing
-          // Instructor Info - Flexible to prevent overflow
+          SizedBox(width: isSmallMobile ? 12 : 16),
           Expanded(
-            // FIXED: Ensures content doesn't overflow horizontally
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize:
-                  MainAxisSize.min, // FIXED: Prevents vertical overflow
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Teacher Name
                 Text(
                   _getTeacherName(teacher),
                   style: TextStyle(
-                    fontSize: isSmallMobile
-                        ? 13
-                        : 15, // FIXED: Smaller font for small screens
+                    fontSize: isSmallMobile ? 13 : 15,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
-                  maxLines: 2, // FIXED: Allow 2 lines for longer names
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: isSmallMobile ? 2 : 3),
-
-                // Expertise
                 Text(
                   _getTeacherExpertise(teacher),
                   style: TextStyle(
-                    fontSize: isSmallMobile ? 11 : 13, // FIXED: Smaller font
+                    fontSize: isSmallMobile ? 11 : 13,
                     color: Colors.grey[600],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: isSmallMobile ? 2 : 3),
-
-                // Coaching Center
                 Text(
                   _getCoachingCenterName(teacher),
                   style: TextStyle(
-                    fontSize: isSmallMobile
-                        ? 9
-                        : 11, // FIXED: Much smaller font
+                    fontSize: isSmallMobile ? 9 : 11,
                     color: Colors.blue[600],
                     fontWeight: FontWeight.w500,
                   ),
@@ -400,10 +438,7 @@ class _FeaturedInstructorsSectionState
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: isSmallMobile ? 4 : 6),
-
-                // Rating and Verification - Flexible layout
                 Flexible(
-                  // FIXED: Prevents overflow in bottom section
                   child: _buildMobileBottomSection(teacher, isSmallMobile),
                 ),
               ],
@@ -414,38 +449,33 @@ class _FeaturedInstructorsSectionState
     );
   }
 
-  // FIXED: Separate method for mobile bottom section with overflow protection
   Widget _buildMobileBottomSection(
     Map<String, dynamic> teacher,
     bool isSmallMobile,
   ) {
     return Wrap(
-      // FIXED: Allows wrapping to next line if needed
       spacing: 6,
       runSpacing: 2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        // Rating
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.star,
               color: Colors.amber,
-              size: isSmallMobile ? 12 : 14, // FIXED: Smaller icon
+              size: isSmallMobile ? 12 : 14,
             ),
             const SizedBox(width: 2),
             Text(
               _getTeacherRating(teacher),
               style: TextStyle(
-                fontSize: isSmallMobile ? 11 : 13, // FIXED: Smaller font
+                fontSize: isSmallMobile ? 11 : 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-
-        // Verification badge - Only show if verified and space allows
         if (_isVerified(teacher) && !isSmallMobile)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
@@ -466,18 +496,15 @@ class _FeaturedInstructorsSectionState
     );
   }
 
-  // FIXED: Desktop layout with proper spacing and no Spacer()
   Widget _buildDesktopInstructorLayout(Map<String, dynamic> teacher) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculate available height and distribute spacing accordingly
         final availableHeight = constraints.maxHeight;
         final baseSpacing = availableHeight < 200 ? 4.0 : 8.0;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Instructor Image with verified badge
             Stack(
               children: [
                 ClipRRect(
@@ -503,8 +530,7 @@ class _FeaturedInstructorsSectionState
                   ),
               ],
             ),
-            SizedBox(height: baseSpacing), // FIXED: Adaptive spacing
-            // Instructor Info - Using Flexible widgets
+            SizedBox(height: baseSpacing),
             Flexible(
               child: Text(
                 _getTeacherName(teacher),
@@ -518,8 +544,7 @@ class _FeaturedInstructorsSectionState
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            SizedBox(height: baseSpacing * 0.5), // FIXED: Proportional spacing
-
+            SizedBox(height: baseSpacing * 0.5),
             Flexible(
               child: Text(
                 _getTeacherExpertise(teacher),
@@ -530,7 +555,6 @@ class _FeaturedInstructorsSectionState
               ),
             ),
             SizedBox(height: baseSpacing * 0.5),
-
             Flexible(
               child: Text(
                 _getCoachingCenterName(teacher),
@@ -545,7 +569,6 @@ class _FeaturedInstructorsSectionState
               ),
             ),
             SizedBox(height: baseSpacing * 0.5),
-
             Text(
               '${_getExperienceYears(teacher)}+ years exp',
               style: TextStyle(
@@ -554,8 +577,6 @@ class _FeaturedInstructorsSectionState
                 fontWeight: FontWeight.w600,
               ),
             ),
-
-            // FIXED: Use Expanded to fill remaining space
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -574,7 +595,7 @@ class _FeaturedInstructorsSectionState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2), // FIXED: Minimal spacing
+                  const SizedBox(height: 2),
                   Text(
                     '${_getTotalReviews(teacher)} reviews',
                     style: TextStyle(fontSize: 12, color: Colors.grey[500]),

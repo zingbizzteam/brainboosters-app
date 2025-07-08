@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DashboardTopBar extends StatefulWidget {
   const DashboardTopBar({super.key});
@@ -19,24 +20,41 @@ class _DashboardTopBarState extends State<DashboardTopBar> {
   }
 
   Future<void> _fetchProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        setState(() {
+          name = 'Guest';
+          isLoading = false;
+        });
+        return;
+      }
 
-    // Use user_profiles table (the new model)
-    final data = await Supabase.instance.client
-        .from('user_profiles')
-        .select('first_name, last_name')
-        .eq('id', user.id)
-        .maybeSingle();
+      // Use user_profiles table (the new model)
+      final data = await Supabase.instance.client
+          .from('user_profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .maybeSingle();
 
-    setState(() {
-      name = (data != null && data['first_name'] != null)
-          ? '${data['first_name'] ?? ''} ${data['last_name'] ?? ''}'.trim()
-          : user.userMetadata?['full_name'] ??
-                user.email?.split('@').first ??
-                'User';
-      isLoading = false;
-    });
+      if (mounted) {
+        setState(() {
+          name = (data != null && data['first_name'] != null)
+              ? '${data['first_name'] ?? ''} ${data['last_name'] ?? ''}'.trim()
+              : user.userMetadata?['full_name'] ??
+                    user.email?.split('@').first ??
+                    'User';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          name = 'User';
+          isLoading = false;
+        });
+      }
+    }
   }
 
   String _getGreeting() {
@@ -51,6 +69,7 @@ class _DashboardTopBarState extends State<DashboardTopBar> {
     if (isLoading) {
       return const DashboardTopBarSkeleton();
     }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -60,6 +79,7 @@ class _DashboardTopBarState extends State<DashboardTopBar> {
             children: [
               FittedBox(
                 fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
                 child: Text(
                   "Hi ${name ?? ''},",
                   style: const TextStyle(
@@ -72,6 +92,7 @@ class _DashboardTopBarState extends State<DashboardTopBar> {
               const SizedBox(height: 4),
               FittedBox(
                 fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
                 child: Text(
                   _getGreeting(),
                   style: const TextStyle(fontSize: 20, color: Colors.black87),
@@ -90,36 +111,74 @@ class DashboardTopBarSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use Container with grey color to simulate skeleton loading
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 180,
-                height: 36,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(6),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    final isSmallMobile = screenWidth < 360;
+
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name skeleton - responsive width
+                Container(
+                  width: _getNameSkeletonWidth(isMobile, isSmallMobile),
+                  height: _getNameSkeletonHeight(isMobile, isSmallMobile),
+                  margin: const EdgeInsets.symmetric(vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: 120,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(6),
+                const SizedBox(height: 4),
+
+                // Greeting skeleton - responsive width
+                Container(
+                  width: _getGreetingSkeletonWidth(isMobile, isSmallMobile),
+                  height: _getGreetingSkeletonHeight(isMobile, isSmallMobile),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  // Responsive width for name skeleton
+  double _getNameSkeletonWidth(bool isMobile, bool isSmallMobile) {
+    if (isSmallMobile) return 140.0;
+    if (isMobile) return 180.0;
+    return 220.0;
+  }
+
+  // Responsive height for name skeleton
+  double _getNameSkeletonHeight(bool isMobile, bool isSmallMobile) {
+    if (isSmallMobile) return 24.0;
+    if (isMobile) return 28.0;
+    return 36.0;
+  }
+
+  // Responsive width for greeting skeleton
+  double _getGreetingSkeletonWidth(bool isMobile, bool isSmallMobile) {
+    if (isSmallMobile) return 100.0;
+    if (isMobile) return 120.0;
+    return 140.0;
+  }
+
+  // Responsive height for greeting skeleton
+  double _getGreetingSkeletonHeight(bool isMobile, bool isSmallMobile) {
+    if (isSmallMobile) return 16.0;
+    if (isMobile) return 20.0;
+    return 24.0;
   }
 }

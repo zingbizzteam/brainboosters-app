@@ -2,17 +2,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CourseCard extends StatelessWidget {
-  final Map course;
+  final Map? course;
   final VoidCallback? onTap;
   final bool showFullDetails;
+  final bool isLoading; // NEW: Loading state support
+  final double? fixedWidth; // NEW: Fixed width for grid layouts
 
   const CourseCard({
     super.key,
-    required this.course,
+    this.course,
     this.onTap,
     this.showFullDetails = true,
+    this.isLoading = false,
+    this.fixedWidth,
   });
 
   @override
@@ -25,9 +30,11 @@ class CourseCard extends StatelessWidget {
     final isTablet = screenWidth >= 768 && screenWidth < 1024;
     final isDesktop = screenWidth >= 1024;
 
-    // Dynamic card width based on screen size
+    // Dynamic card width based on screen size or fixed width
     double cardWidth;
-    if (isSmallMobile) {
+    if (fixedWidth != null) {
+      cardWidth = fixedWidth!;
+    } else if (isSmallMobile) {
       cardWidth = screenWidth * 0.75;
     } else if (isMobile) {
       cardWidth = screenWidth * 0.60;
@@ -35,6 +42,11 @@ class CourseCard extends StatelessWidget {
       cardWidth = 300;
     } else {
       cardWidth = 320;
+    }
+
+    // NEW: Show shimmer when loading or course is null
+    if (isLoading || course == null) {
+      return _buildShimmerCard(cardWidth, isSmallMobile, isMobile, isTablet);
     }
 
     return Container(
@@ -59,7 +71,7 @@ class CourseCard extends StatelessWidget {
           onTap:
               onTap ??
               () {
-                final courseSlug = course['id']?.toString();
+                final courseSlug = course!['id']?.toString();
                 if (courseSlug != null && courseSlug.isNotEmpty) {
                   context.go('/course/$courseSlug');
                 }
@@ -77,10 +89,162 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail(double cardWidth) {
-    final thumbnailUrl = course['thumbnail_url']?.toString();
+  // NEW: Shimmer card for loading states
+  Widget _buildShimmerCard(
+    double cardWidth,
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+  ) {
+    final thumbnailHeight = cardWidth * (9 / 16);
+    final adaptivePadding = cardWidth < 200
+        ? 8.0
+        : (isSmallMobile ? 10.0 : 12.0);
 
-    // Calculate 16:9 aspect ratio height
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: cardWidth,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Card(
+          elevation: 0,
+          color: Colors.transparent,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Thumbnail shimmer
+              ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(5)),
+                child: Container(
+                  height: thumbnailHeight,
+                  width: double.infinity,
+                  color: Colors.white,
+                ),
+              ),
+
+              // Content shimmer
+              Padding(
+                padding: EdgeInsets.all(adaptivePadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Academy name shimmer
+                    Container(
+                      height: 12,
+                      width: cardWidth * 0.6,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    SizedBox(height: isSmallMobile ? 3 : 4),
+
+                    // Title shimmer
+                    Container(
+                      height: isSmallMobile ? 14 : 16,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      height: isSmallMobile ? 14 : 16,
+                      width: cardWidth * 0.7,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    SizedBox(height: isSmallMobile ? 4 : 6),
+
+                    // Stats shimmer (only for wider cards)
+                    if (cardWidth >= 200) ...[
+                      Row(
+                        children: [
+                          Container(
+                            height: 10,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Container(
+                            height: 10,
+                            width: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: isSmallMobile ? 4 : 6),
+                    ],
+
+                    // Category shimmer (only for wider cards)
+                    if (cardWidth >= 180) ...[
+                      Container(
+                        height: 20,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      SizedBox(height: isSmallMobile ? 6 : 8),
+                    ],
+
+                    // Bottom row shimmer
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          height: 12,
+                          width: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        Container(
+                          height: 12,
+                          width: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(double cardWidth) {
+    final thumbnailUrl = course!['thumbnail_url']?.toString();
     final thumbnailHeight = cardWidth * (9 / 16);
 
     return Stack(
@@ -214,7 +378,6 @@ class CourseCard extends StatelessWidget {
     bool isTablet,
     double cardWidth,
   ) {
-    // CRITICAL FIX: Adaptive padding based on card width
     final adaptivePadding = cardWidth < 200
         ? 8.0
         : (isSmallMobile ? 10.0 : 12.0);
@@ -234,7 +397,7 @@ class CourseCard extends StatelessWidget {
                 isSmallMobile,
                 isMobile,
                 isTablet,
-                8, // Reduced for small cards
+                8,
                 9,
                 10,
                 11,
@@ -246,12 +409,10 @@ class CourseCard extends StatelessWidget {
           ),
           SizedBox(height: cardWidth < 200 ? 2 : (isSmallMobile ? 3 : 4)),
 
-          // Course title - CRITICAL FIX: Constrained height
+          // Course title
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: cardWidth < 200
-                  ? 32
-                  : (isSmallMobile ? 36 : 40), // Limit title height
+              maxHeight: cardWidth < 200 ? 32 : (isSmallMobile ? 36 : 40),
             ),
             child: Text(
               _getCourseTitle(),
@@ -260,14 +421,14 @@ class CourseCard extends StatelessWidget {
                   isSmallMobile,
                   isMobile,
                   isTablet,
-                  13, // Reduced for small cards
+                  13,
                   14,
                   15,
                   16,
                 ),
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
-                height: 1.1, // Tighter line height
+                height: 1.1,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -275,8 +436,8 @@ class CourseCard extends StatelessWidget {
           ),
           SizedBox(height: cardWidth < 200 ? 3 : (isSmallMobile ? 4 : 6)),
 
-          // Course stats row - CRITICAL FIX: Conditional display
-          if (cardWidth >= 200) // Only show stats on wider cards
+          // Course stats row
+          if (cardWidth >= 200)
             Column(
               children: [
                 Row(
@@ -333,8 +494,8 @@ class CourseCard extends StatelessWidget {
               ],
             ),
 
-          // Category - CRITICAL FIX: Simplified for small cards
-          if (cardWidth >= 180) // Only show category on wider cards
+          // Category
+          if (cardWidth >= 180)
             Column(
               children: [
                 Align(
@@ -370,7 +531,7 @@ class CourseCard extends StatelessWidget {
               ],
             ),
 
-          // Rating and enrollment - CRITICAL FIX: Simplified layout
+          // Rating and enrollment
           _buildBottomRow(isSmallMobile, isMobile, isTablet, cardWidth),
         ],
       ),
@@ -386,15 +547,9 @@ class CourseCard extends StatelessWidget {
     final rating = _getRating();
     final enrollmentCount = _getEnrollmentCount();
 
-    // For very small cards, show only rating or enrollment count
     if (cardWidth < 160) {
       if (rating > 0) {
-        return _buildRating(
-          isSmallMobile,
-          isMobile,
-          isTablet,
-          true,
-        ); // Compact version
+        return _buildRating(isSmallMobile, isMobile, isTablet, true);
       } else if (enrollmentCount > 0) {
         return _buildEnrollmentCount(isSmallMobile, isMobile, isTablet);
       } else {
@@ -402,7 +557,6 @@ class CourseCard extends StatelessWidget {
       }
     }
 
-    // For wider cards, show both
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -506,7 +660,7 @@ class CourseCard extends StatelessWidget {
     if (enrollmentCount == 0) return const SizedBox.shrink();
 
     return Text(
-      '${enrollmentCount}+',
+      '${enrollmentCount}+ Enrolled',
       style: TextStyle(
         fontSize: _getResponsiveFontSize(
           isSmallMobile,
@@ -523,7 +677,6 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  // Helper method for responsive font sizes
   double _getResponsiveFontSize(
     bool isSmallMobile,
     bool isMobile,
@@ -539,13 +692,13 @@ class CourseCard extends StatelessWidget {
     return desktopSize;
   }
 
-  // Safe getter methods with fallbacks (unchanged)
+  // Safe getter methods with fallbacks
   String _getCourseTitle() {
-    return course['title']?.toString() ?? 'Untitled Course';
+    return course!['title']?.toString() ?? 'Untitled Course';
   }
 
   String _getCoachingCenterName() {
-    final centers = course['coaching_centers'];
+    final centers = course!['coaching_centers'];
     if (centers is Map) {
       return centers['center_name']?.toString() ?? 'Unknown Academy';
     }
@@ -553,52 +706,52 @@ class CourseCard extends StatelessWidget {
   }
 
   String _getCategory() {
-    return course['category']?.toString() ?? 'General';
+    return course!['category']?.toString() ?? 'General';
   }
 
   String _getLevel() {
-    final level = course['level']?.toString() ?? 'beginner';
+    final level = course!['level']?.toString() ?? 'beginner';
     return level[0].toUpperCase() + level.substring(1);
   }
 
   double _getRating() {
-    final rating = course['rating'];
+    final rating = course!['rating'];
     if (rating is num) return rating.toDouble();
     return 0.0;
   }
 
   int _getTotalReviews() {
-    final reviews = course['total_reviews'];
+    final reviews = course!['total_reviews'];
     if (reviews is num) return reviews.toInt();
     return 0;
   }
 
   double _getPrice() {
-    final price = course['price'];
+    final price = course!['price'];
     if (price is num) return price.toDouble();
     return 0.0;
   }
 
   double _getOriginalPrice() {
-    final originalPrice = course['original_price'];
+    final originalPrice = course!['original_price'];
     if (originalPrice is num) return originalPrice.toDouble();
     return _getPrice();
   }
 
   int _getTotalLessons() {
-    final lessons = course['total_lessons'];
+    final lessons = course!['total_lessons'];
     if (lessons is num) return lessons.toInt();
     return 0;
   }
 
   double _getDurationHours() {
-    final duration = course['duration_hours'];
+    final duration = course!['duration_hours'];
     if (duration is num) return duration.toDouble();
     return 0.0;
   }
 
   int _getEnrollmentCount() {
-    final count = course['enrollment_count'];
+    final count = course!['enrollment_count'];
     if (count is num) return count.toInt();
     return 0;
   }

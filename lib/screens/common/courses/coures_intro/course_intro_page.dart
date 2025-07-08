@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
-import 'course_repository.dart';
+import 'course_intro_repository.dart';
 import '../../widgets/breadcrumb_widget.dart';
 import '../../widgets/hero_image_widget.dart';
 import '../../widgets/stats_widget.dart';
@@ -53,8 +53,8 @@ class _CourseIntroPageState extends State<CourseIntroPage>
       }
 
       final results = await Future.wait([
-        CourseRepository.getCourseById(widget.courseId),
-        CourseRepository.getCourseReviews(widget.courseId),
+        CourseIntroRepository.getCourseById(widget.courseId),
+        CourseIntroRepository.getCourseReviews(widget.courseId),
       ]);
 
       final courseData = results[0] as Map<String, dynamic>?;

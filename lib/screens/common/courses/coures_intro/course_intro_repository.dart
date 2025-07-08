@@ -2,7 +2,7 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class CourseRepository {
+class CourseIntroRepository {
   static final SupabaseClient _client = Supabase.instance.client;
   static String? get currentUserId => _client.auth.currentUser?.id;
   static bool get isAuthenticated => _client.auth.currentUser != null;

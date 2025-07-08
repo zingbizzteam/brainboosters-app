@@ -2,7 +2,9 @@ import 'package:brainboosters_app/screens/common/coaching_centers/coaching_cente
 import 'package:brainboosters_app/screens/common/coaching_centers/widgets/coaching_center_hero_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../ui/navigation/common_routes/common_routes.dart';
 import 'widgets/coaching_center_card.dart';
 import '../courses/widgets/app_promotion_section.dart';
@@ -25,6 +27,7 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
   List<Map<String, dynamic>> allCoachingCenters = [];
   bool isLoading = true;
   bool isLoadingMore = false;
+  bool isLoadingHorizontalSections = true;
   String? error;
 
   // Pagination
@@ -33,10 +36,16 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
   bool hasMoreData = true;
   final ScrollController _scrollController = ScrollController();
 
+  // Flag to prevent multiple simultaneous loads
+  bool _isLoadingInProgress = false;
+
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    // Use post-frame callback to avoid build-during-build issues
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
     _scrollController.addListener(_onScroll);
   }
 
@@ -47,10 +56,14 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
   }
 
   Future<void> _loadInitialData() async {
+    if (_isLoadingInProgress) return;
+
     try {
       setState(() {
         isLoading = true;
+        isLoadingHorizontalSections = true;
         error = null;
+        _isLoadingInProgress = true;
       });
 
       final results = await Future.wait([
@@ -60,27 +73,36 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
         CoachingCenterRepository.getCoachingCenters(limit: pageSize, offset: 0),
       ]);
 
-      setState(() {
-        nearbyCoachingCenters = results[0];
-        topCoachingCenters = results[1];
-        mostLovedCoachingCenters = results[2];
-        allCoachingCenters = results[3];
-        isLoading = false;
-        hasMoreData = results[3].length == pageSize;
-      });
+      if (mounted) {
+        setState(() {
+          nearbyCoachingCenters = results[0];
+          topCoachingCenters = results[1];
+          mostLovedCoachingCenters = results[2];
+          allCoachingCenters = results[3];
+          isLoading = false;
+          isLoadingHorizontalSections = false;
+          hasMoreData = results[3].length == pageSize;
+          _isLoadingInProgress = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        error = 'Failed to load coaching centers: $e';
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          error = 'Failed to load coaching centers: $e';
+          isLoading = false;
+          isLoadingHorizontalSections = false;
+          _isLoadingInProgress = false;
+        });
+      }
     }
   }
 
   Future<void> _loadMoreData() async {
-    if (isLoadingMore || !hasMoreData) return;
+    if (isLoadingMore || !hasMoreData || _isLoadingInProgress) return;
 
     setState(() {
       isLoadingMore = true;
+      _isLoadingInProgress = true;
     });
 
     try {
@@ -89,25 +111,34 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
         offset: allCoachingCenters.length,
       );
 
-      setState(() {
-        allCoachingCenters.addAll(newData);
-        hasMoreData = newData.length == pageSize;
-        isLoadingMore = false;
-      });
+      if (mounted) {
+        setState(() {
+          allCoachingCenters.addAll(newData);
+          hasMoreData = newData.length == pageSize;
+          isLoadingMore = false;
+          _isLoadingInProgress = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoadingMore = false;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load more data: $e')));
+      if (mounted) {
+        setState(() {
+          isLoadingMore = false;
+          _isLoadingInProgress = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load more data: $e')));
+      }
     }
   }
 
   void _onScroll() {
+    // Use post-frame callback to avoid setState during build
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      _loadMoreData();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _loadMoreData();
+      });
     }
   }
 
@@ -123,23 +154,29 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
             children: [
               // Hero Section
               const CoachingCenterHeroSection(),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
+
               // Horizontal Scroll Sections
-              if (!isLoading) ...[
+              if (isLoadingHorizontalSections) ...[
+                _buildHorizontalSectionShimmer(
+                  context,
+                  'Coaching Centers Near You',
+                ),
+                _buildHorizontalSectionShimmer(context, 'Top Coaching Centers'),
+                _buildHorizontalSectionShimmer(context, 'Most Loved Centers'),
+              ] else ...[
                 _buildHorizontalSection(
                   context,
                   'Coaching Centers Near You',
                   'Find quality education close to your location',
                   nearbyCoachingCenters,
                 ),
-
                 _buildHorizontalSection(
                   context,
                   'Top Coaching Centers',
                   'Most popular centers with highest enrollments',
                   topCoachingCenters,
                 ),
-
                 _buildHorizontalSection(
                   context,
                   'Most Loved Centers',
@@ -161,6 +198,182 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
               if (!kIsWeb) const SizedBox(height: 40),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHorizontalSectionShimmer(BuildContext context, String title) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    final isTablet = screenWidth >= 768 && screenWidth < 1200;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    height: isMobile ? 20 : 24,
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    height: isMobile ? 14 : 16,
+                    width: 300,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: isMobile ? 280 : 320,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16 : (isTablet ? 40 : 80),
+              ),
+              itemCount: 3,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: isMobile ? 280 : 320,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: _buildCoachingCenterCardShimmer(isMobile),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoachingCenterCardShimmer(bool isMobile) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header shimmer
+            Container(
+              height: isMobile ? 110 : 120,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+            ),
+            // Content shimmer
+            // Content shimmer with overflow protection
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize
+                      .min, // NEW: Prevent column from taking full height
+                  children: [
+                    Container(
+                      height: 18,
+                      width: double.infinity,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 14,
+                      width: double.infinity,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 4),
+                    Container(height: 14, width: 200, color: Colors.white),
+                    const SizedBox(height: 12),
+                    // Wrap the Row in Flexible to prevent overflow
+                    Flexible(
+                      child: Row(
+                        children: [
+                          Container(
+                            height: 24,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            height: 24,
+                            width: 90,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Footer shimmer
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(height: 12, width: 120, color: Colors.white),
+                  Container(
+                    height: 28,
+                    width: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -277,14 +490,8 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
           ),
           const SizedBox(height: 32),
 
-          // Rest of your existing code remains the same
           if (isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(40),
-                child: CircularProgressIndicator(),
-              ),
-            )
+            _buildGridShimmer(context, isMobile, isTablet)
           else if (error != null)
             Center(
               child: Padding(
@@ -331,6 +538,32 @@ class _CoachingCentersPageState extends State<CoachingCentersPage> {
             _buildCoachingCentersGrid(context, isMobile, isTablet),
         ],
       ),
+    );
+  }
+
+  Widget _buildGridShimmer(BuildContext context, bool isMobile, bool isTablet) {
+    int crossAxisCount;
+    if (isMobile) {
+      crossAxisCount = 1;
+    } else if (isTablet) {
+      crossAxisCount = 2;
+    } else {
+      crossAxisCount = 3;
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: isMobile ? 1.1 : 0.9,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: 6, // Show 6 shimmer items
+      itemBuilder: (context, index) {
+        return _buildCoachingCenterCardShimmer(isMobile);
+      },
     );
   }
 

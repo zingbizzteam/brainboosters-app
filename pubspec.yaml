@@ -20,6 +20,7 @@ dependencies:
   provider: ^6.1.5
   rename_app: ^1.6.5
   shared_preferences: ^2.5.3
+  shimmer: ^3.0.0
   supabase_flutter: ^2.3.4
 
 dev_dependencies:

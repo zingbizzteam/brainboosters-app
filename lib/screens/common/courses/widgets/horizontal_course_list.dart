@@ -1,5 +1,6 @@
 // screens/common/courses/widgets/horizontal_course_list.dart
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'course_card.dart';
 
 class HorizontalCourseList extends StatelessWidget {
@@ -49,16 +50,15 @@ class HorizontalCourseList extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          // CRITICAL FIX: Proper state handling
-          _buildContent(isMobile),
+          _buildContent(isMobile, isTablet),
         ],
       ),
     );
   }
 
-  Widget _buildContent(bool isMobile) {
+  Widget _buildContent(bool isMobile, bool isTablet) {
     if (loading) {
-      return _buildLoadingState(isMobile);
+      return _buildLoadingState(isMobile, isTablet);
     }
 
     if (courses.isEmpty) {
@@ -68,12 +68,22 @@ class HorizontalCourseList extends StatelessWidget {
     return _buildCoursesList();
   }
 
-  Widget _buildLoadingState(bool isMobile) {
+  Widget _buildLoadingState(bool isMobile, bool isTablet) {
+    // Optimize skeleton count based on screen size
+    int skeletonCount;
+    if (isMobile) {
+      skeletonCount = 3;
+    } else if (isTablet) {
+      skeletonCount = 4;
+    } else {
+      skeletonCount = 5;
+    }
+
     return SizedBox(
       height: 280,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: 4, // Show 4 skeleton cards
+        itemCount: skeletonCount,
         itemBuilder: (context, index) {
           return Container(
             width: isMobile ? 280 : 320,
@@ -86,38 +96,59 @@ class HorizontalCourseList extends StatelessWidget {
   }
 
   Widget _buildSkeletonCard() {
-    return Card(
-      elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(8),
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Card(
+        elevation: 2,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 16,
-                  width: double.infinity,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 8),
-                Container(height: 14, width: 150, color: Colors.grey[300]),
-                const SizedBox(height: 8),
-                Container(height: 14, width: 100, color: Colors.grey[300]),
-              ],
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 16,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 14,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 14,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -164,7 +195,6 @@ class HorizontalCourseList extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: courses.length,
         itemBuilder: (context, index) {
-          // CRITICAL: Null safety check
           final course = courses[index];
           if (course == null) {
             return const SizedBox.shrink();
@@ -177,7 +207,7 @@ class HorizontalCourseList extends StatelessWidget {
   }
 }
 
-// NEW: Safe wrapper for CourseCard
+// Enhanced SafeCourseCard with shimmer for error states
 class SafeCourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
 
@@ -186,21 +216,18 @@ class SafeCourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     try {
-      // Validate required fields before rendering
       if (!_isValidCourse(course)) {
         return _buildErrorCard();
       }
 
       return CourseCard(course: course);
     } catch (e) {
-      // Catch any remaining null reference errors
       debugPrint('Error rendering course card: $e');
       return _buildErrorCard();
     }
   }
 
   bool _isValidCourse(Map<String, dynamic> course) {
-    // Check for required fields
     return course['id'] != null &&
         course['title'] != null &&
         course['title'].toString().isNotEmpty;
@@ -221,7 +248,7 @@ class SafeCourseCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Course data unavailable',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ],

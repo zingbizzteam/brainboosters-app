@@ -1,5 +1,6 @@
 // screens/common/courses/widgets/all_courses_grid.dart
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'course_card.dart';
 
 class AllCoursesGrid extends StatelessWidget {
@@ -137,61 +138,65 @@ class AllCoursesGrid extends StatelessWidget {
   }
 
   Widget _buildSkeletonCard() {
-    return Card(
-      elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(8),
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Card(
+        elevation: 2,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 16,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 16,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 14,
-                    width: 150,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 14,
+                      width: 150,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    height: 14,
-                    width: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4),
+                    const Spacer(),
+                    Container(
+                      height: 14,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -230,49 +235,52 @@ class AllCoursesGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildCoursesGrid(bool isMobile, bool isTablet) {
-    final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 3);
+ // Update your all_courses_grid.dart to pass loading state
 
-    return Column(
-      children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: isMobile ? 1.2 : 0.8,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: courses.length,
-          itemBuilder: (context, index) {
-            final course = courses[index];
-            return CourseCard(course: course);
-          },
+Widget _buildCoursesGrid(bool isMobile, bool isTablet) {
+  final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 3);
+
+  return Column(
+    children: [
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: isMobile ? 1.2 : 0.8,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: loading ? 6 : courses.length, // Show 6 shimmer cards when loading
+        itemBuilder: (context, index) {
+          return CourseCard(
+            course: loading ? null : courses[index],
+            isLoading: loading,
+            fixedWidth: null, // Let card calculate its own width in grid
+          );
+        },
+      ),
+
+      // Loading indicator for pagination
+      if (loadingMore)
+        const Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
         ),
 
-        // Loading more indicator
-        if (loadingMore) ...[
-          const SizedBox(height: 20),
-          const Center(child: CircularProgressIndicator()),
-          const SizedBox(height: 20),
-        ],
-
-        // No more courses indicator
-        if (!hasMore && courses.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Center(
-            child: Text(
-              'No more courses to load',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: isMobile ? 14 : 16,
-              ),
-            ),
+      // Load more button (fallback)
+      if (!loadingMore && hasMore)
+        Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: OutlinedButton(
+            onPressed: () {
+              // Trigger load more
+            },
+            child: const Text('Load More'),
           ),
-          const SizedBox(height: 20),
-        ],
-      ],
-    );
-  }
+        ),
+    ],
+  );
+}
+
 }
