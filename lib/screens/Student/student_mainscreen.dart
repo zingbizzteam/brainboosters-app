@@ -24,19 +24,19 @@ final _navItems = [
     route: CommonRoutes.liveClasses,
     label: 'Live',
     icon: Icons.live_tv,
-    color: const Color(0xFFF76B6A),
+    color: Colors.red,
   ),
   _NavItem(
     route: CommonRoutes.coachingCenters,
     label: 'Coaching',
-    icon: Icons.school,
+    icon: Icons.apartment,
     color: const Color(0xFFF9B857),
   ),
   _NavItem(
-    route: StudentRoutes.settings,
-    label: 'Settings',
-    icon: Icons.settings,
-    color: const Color(0xFF5873ff),
+    route: StudentRoutes.profile,
+    label: 'Profile',
+    icon: Icons.person,
+    color: Colors.blueGrey,
   ),
 ];
 
@@ -61,34 +61,58 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
   Future<void> _fetchProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
+
     final profile = await Supabase.instance.client
         .from('user_profiles')
         .select()
         .eq('id', user.id)
         .maybeSingle();
-    if (mounted) setState(() {
-      _profile = profile;
-      _loading = false;
-    });
+
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+        _loading = false;
+      });
+    }
   }
 
   void _onNavTap(int index) => widget.shell.goBranch(index);
 
   bool _shouldShowAppBar(BuildContext context) {
     final currentLocation = GoRouterState.of(context).uri.toString();
-    final pathSegments = currentLocation.split('/').where((s) => s.isNotEmpty).toList();
+    final pathSegments = currentLocation
+        .split('/')
+        .where((s) => s.isNotEmpty)
+        .toList();
+
     return pathSegments.length <= 1 ||
         currentLocation == StudentRoutes.home ||
         currentLocation == CommonRoutes.courses ||
-        currentLocation == CommonRoutes.liveClasses ||
         currentLocation == CommonRoutes.coachingCenters ||
-        currentLocation == StudentRoutes.settings;
+        currentLocation == StudentRoutes.settings ||
+        currentLocation == StudentRoutes.profile ||
+        currentLocation == CommonRoutes.liveClasses ||
+        currentLocation.startsWith('/live-class/');
+  }
+
+  // ADD THIS: Method to determine correct navigation index for live classes
+  int _getSelectedIndex(BuildContext context) {
+    final currentLocation = GoRouterState.of(context).uri.toString();
+
+    // If on live classes, don't highlight any bottom nav item
+    if (currentLocation == CommonRoutes.liveClasses ||
+        currentLocation.startsWith('/live-class/')) {
+      return -1; // No selection
+    }
+
+    // Otherwise use the shell's current index
+    return widget.shell.currentIndex;
   }
 
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 900;
-    final selectedIndex = widget.shell.currentIndex;
+    final selectedIndex = _getSelectedIndex(context); // Use custom method
     final showAppBar = _shouldShowAppBar(context);
 
     return Scaffold(
@@ -101,7 +125,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
                 selectedIndex: selectedIndex,
                 onItemSelected: _onNavTap,
                 items: _navItems,
-                profile: _profile, // pass profile data
+                profile: _profile,
                 loading: _loading,
               ),
             Expanded(
@@ -138,6 +162,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
               selectedIndex: selectedIndex,
               onItemSelected: _onNavTap,
               items: _navItems,
+              avatarUrl: _profile?['avatar_url'],
             ),
     );
   }
@@ -148,6 +173,7 @@ class _NavItem {
   final String label;
   final IconData icon;
   final Color color;
+
   const _NavItem({
     required this.route,
     required this.label,

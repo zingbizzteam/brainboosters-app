@@ -1,6 +1,5 @@
-// screens/common/courses/widgets/course_info_widget.dart
-
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../course_intro_repository.dart';
 import '../../../widgets/pricing_action_widget.dart';
@@ -60,8 +59,9 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
 
         // Course description
         Text(
-          course['short_description']?.toString() ?? 
-          course['description']?.toString() ?? '',
+          course['short_description']?.toString() ??
+              course['description']?.toString() ??
+              '',
           style: TextStyle(
             fontSize: isMobile ? 14 : 16,
             color: Colors.grey[600],
@@ -78,8 +78,8 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
           const SizedBox(height: 16),
         ],
 
-        // Action button based on enrollment status
-        _buildActionButton(course, isMobile),
+        // Smart action button based on enrollment status and progress
+        _buildSmartActionButton(course, isMobile),
         const SizedBox(height: 16),
 
         // Analytics
@@ -91,23 +91,50 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
             const SizedBox(width: 16),
             Icon(Icons.star, size: 16, color: Colors.amber),
             const SizedBox(width: 4),
-            Text('${(course['rating'] as num?)?.toStringAsFixed(1) ?? '0.0'} rating'),
+            Text(
+              '${(course['rating'] as num?)?.toStringAsFixed(1) ?? '0.0'} rating',
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildActionButton(Map<String, dynamic> course, bool isMobile) {
+  Widget _buildSmartActionButton(Map<String, dynamic> course, bool isMobile) {
     if (widget.isEnrolled) {
+      final enrollment = course['enrollment'] as Map<String, dynamic>?;
+      final progressPercentage =
+          (enrollment?['progress_percentage'] as num?)?.toDouble() ?? 0.0;
+      final hasStarted = progressPercentage > 0;
+
+      String buttonText;
+      IconData buttonIcon;
+      Color buttonColor;
+
+      if (progressPercentage >= 100) {
+        buttonText = 'Review Course';
+        buttonIcon = Icons.replay;
+        buttonColor = Colors.amber;
+      } else if (hasStarted) {
+        buttonText = 'Continue Learning';
+        buttonIcon = Icons.play_arrow;
+        buttonColor = Colors.green;
+      } else {
+        buttonText = 'Start Learning';
+        buttonIcon = Icons.play_arrow;
+        buttonColor = Colors.blue;
+      }
+
       return SizedBox(
         width: double.infinity,
         height: isMobile ? 48 : 56,
         child: ElevatedButton.icon(
-          onPressed: _isEnrolling ? null : () => _navigateToCourseContent(),
-          icon: const Icon(Icons.play_arrow, color: Colors.white),
+          onPressed: _isEnrolling
+              ? null
+              : () => _navigateToCoursePlayer(course),
+          icon: Icon(buttonIcon, color: Colors.white),
           label: Text(
-            'Continue Learning',
+            buttonText,
             style: TextStyle(
               fontSize: isMobile ? 16 : 18,
               fontWeight: FontWeight.bold,
@@ -115,7 +142,7 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
+            backgroundColor: buttonColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -125,7 +152,7 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
     } else {
       return PricingActionWidget(
         price: _getFormattedPrice(course),
-        originalPrice: _hasDiscount(course) 
+        originalPrice: _hasDiscount(course)
             ? '₹${(course['original_price'] as num?)?.toStringAsFixed(0) ?? '0'}'
             : null,
         buttonText: 'Enroll Now',
@@ -137,17 +164,22 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
     }
   }
 
-  Widget _buildEnrollmentStatus(Map<String, dynamic> enrollment, bool isMobile) {
-    final progressPercentage = (enrollment['progress_percentage'] as num?)?.toDouble() ?? 0.0;
+  Widget _buildEnrollmentStatus(
+    Map<String, dynamic> enrollment,
+    bool isMobile,
+  ) {
+    final progressPercentage =
+        (enrollment['progress_percentage'] as num?)?.toDouble() ?? 0.0;
     final totalTimeSpent = enrollment['total_time_spent'] as int? ?? 0;
-    final lastAccessedAt = enrollment['last_accessed_at'] as String?;
+    final lessonsCompleted = enrollment['lessons_completed'] as int? ?? 0;
+    final totalLessons = enrollment['total_lessons_in_course'] as int? ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +189,7 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
               Icon(Icons.check_circle, color: Colors.green, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Enrolled',
+                progressPercentage == 0 ? 'Just Enrolled!' : 'Enrolled',
                 style: TextStyle(
                   color: Colors.green,
                   fontWeight: FontWeight.bold,
@@ -166,91 +198,101 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
 
-          // Progress bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Progress',
-                    style: TextStyle(
-                      fontSize: isMobile ? 12 : 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  Text(
-                    '${progressPercentage.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontSize: isMobile ? 12 : 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              LinearProgressIndicator(
-                value: progressPercentage / 100,
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation(Colors.green),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Additional stats
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          if (progressPercentage > 0) ...[
+            const SizedBox(height: 12),
+            // Progress bar
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Time Spent',
+                      'Progress',
                       style: TextStyle(
-                        fontSize: isMobile ? 10 : 12,
+                        fontSize: isMobile ? 12 : 14,
                         color: Colors.grey[600],
                       ),
                     ),
                     Text(
-                      '${(totalTimeSpent / 60).toStringAsFixed(1)} hrs',
+                      '${progressPercentage.toStringAsFixed(1)}%',
                       style: TextStyle(
                         fontSize: isMobile ? 12 : 14,
                         fontWeight: FontWeight.bold,
+                        color: Colors.green,
                       ),
                     ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Last Accessed',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    Text(
-                      lastAccessedAt != null
-                          ? _formatDate(DateTime.parse(lastAccessedAt))
-                          : 'Never',
-                      style: TextStyle(
-                        fontSize: isMobile ? 12 : 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                LinearProgressIndicator(
+                  value: progressPercentage / 100,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation(Colors.green),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Lessons progress
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lessons',
+                        style: TextStyle(
+                          fontSize: isMobile ? 10 : 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        '$lessonsCompleted / $totalLessons',
+                        style: TextStyle(
+                          fontSize: isMobile ? 12 : 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Time Spent',
+                        style: TextStyle(
+                          fontSize: isMobile ? 10 : 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        '${(totalTimeSpent / 60).toStringAsFixed(1)} hrs',
+                        style: TextStyle(
+                          fontSize: isMobile ? 12 : 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Text(
+              'Ready to start your learning journey!',
+              style: TextStyle(
+                fontSize: isMobile ? 12 : 14,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
               ),
-            ],
-          ),
+            ),
+          ],
 
           if (progressPercentage >= 100) ...[
             const SizedBox(height: 12),
@@ -259,7 +301,7 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
                 Icon(Icons.emoji_events, color: Colors.amber, size: 16),
                 const SizedBox(width: 4),
                 Text(
-                  'Course Completed!',
+                  'Course Completed! 🎉',
                   style: TextStyle(
                     color: Colors.amber,
                     fontWeight: FontWeight.bold,
@@ -276,9 +318,9 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
 
   Future<void> _handleEnrollment(Map<String, dynamic> course) async {
     if (!isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to enroll')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please login to enroll')));
       return;
     }
 
@@ -286,31 +328,43 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
     try {
       final success = await CourseIntroRepository.enrollInCourse(course['id']);
       if (success) {
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully enrolled!')),
+          const SnackBar(
+            content: Text('Successfully enrolled! Ready to start learning?'),
+            backgroundColor: Colors.green,
+          ),
         );
         widget.onEnrollmentChanged?.call();
       } else {
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to enroll. Please try again.')),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isEnrolling = false);
     }
   }
 
-  void _navigateToCourseContent() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigating to course content...')),
-    );
+  void _navigateToCoursePlayer(Map<String, dynamic> course) {
+    final courseId = course['id'];
+
+    try {
+      // Navigate to the course player using the correct route structure
+      context.go('/courses/$courseId/player');
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Navigation error: $e')));
+    }
   }
 
-  // Helper methods
+  // Helper methods remain the same...
   String _getCoachingCenterName(Map<String, dynamic> course) {
     final coachingCenters = course['coaching_centers'] as Map<String, dynamic>?;
     return coachingCenters?['center_name']?.toString() ?? 'Unknown Academy';
@@ -326,19 +380,5 @@ class _CourseInfoWidgetState extends State<CourseInfoWidget> {
     final price = (course['price'] as num?)?.toDouble() ?? 0.0;
     final originalPrice = (course['original_price'] as num?)?.toDouble() ?? 0.0;
     return originalPrice > price && originalPrice > 0;
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    if (difference.inDays > 7) {
-      return '${date.day}/${date.month}/${date.year}';
-    } else if (difference.inDays > 0) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hours ago';
-    } else {
-      return 'Recently';
-    }
   }
 }

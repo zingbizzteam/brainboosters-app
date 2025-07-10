@@ -1,5 +1,6 @@
 // lib/screens/common/live_class/live_class_repository.dart
 
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LiveClassRepository {
@@ -100,7 +101,7 @@ class LiveClassRepository {
 
       return filteredLiveClasses;
     } catch (e) {
-      print('Error fetching live classes: $e');
+      debugPrint('Error fetching live classes: $e');
       return [];
     }
   }
@@ -204,7 +205,7 @@ class LiveClassRepository {
 
       return response;
     } catch (e) {
-      print('Error fetching live class: $e');
+      debugPrint('Error fetching live class: $e');
       return null;
     }
   }
@@ -231,7 +232,7 @@ class LiveClassRepository {
 
       return true;
     } catch (e) {
-      print('Error enrolling in live class: $e');
+      debugPrint('Error enrolling in live class: $e');
       return false;
     }
   }
@@ -256,7 +257,7 @@ class LiveClassRepository {
           .take(limit)
           .toList();
     } catch (e) {
-      print('Error fetching live classes by category: $e');
+      debugPrint('Error fetching live classes by category: $e');
       return [];
     }
   }
@@ -268,7 +269,7 @@ class LiveClassRepository {
     try {
       return await getLiveClasses(status: 'scheduled', limit: limit);
     } catch (e) {
-      print('Error fetching upcoming live classes: $e');
+      debugPrint('Error fetching upcoming live classes: $e');
       return [];
     }
   }

@@ -349,6 +349,7 @@ class _LiveClassInfoWidgetState extends State<LiveClassInfoWidget> {
       );
       
       if (success) {
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Successfully enrolled in live class!'),
@@ -363,6 +364,7 @@ class _LiveClassInfoWidgetState extends State<LiveClassInfoWidget> {
               (widget.liveClass['current_participants'] ?? 0) + 1;
         });
       } else {
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to enroll. Please try again.'),

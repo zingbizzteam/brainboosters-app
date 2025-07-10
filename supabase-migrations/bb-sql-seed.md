@@ -883,27 +883,27 @@ INSERT INTO review_helpful_votes (
 -- Step 18: Notifications
 INSERT INTO notifications (
     id, user_id, title, message, notification_type, reference_id, reference_type,
-    is_read, priority, scheduled_at, expires_at
+    is_read, priority, scheduled_at
 ) VALUES
 ('aa0e8400-e29b-41d4-a716-446655440031', '550e8400-e29b-41d4-a716-446655440007',
  'New Lesson Available', 'Chapter 3: React Frontend Development - New lesson "Component State Management" is now available',
  'course_update', '990e8400-e29b-41d4-a716-446655440001', 'course',
- false, 'medium', NOW() - INTERVAL '2 hours', NOW() + INTERVAL '7 days'),
+ false, 'medium', NOW() - INTERVAL '2 hours'),
 
 ('bb0e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440008',
  'Live Class Reminder', 'Your live class "Machine Learning Model Deployment Workshop" starts in 24 hours',
  'live_class_reminder', 'ee0e8400-e29b-41d4-a716-446655440002', 'live_class',
- false, 'high', NOW() - INTERVAL '1 hour', NOW() + INTERVAL '2 days'),
+ false, 'high', NOW() - INTERVAL '1 hour'),
 
 ('cc0e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440007',
  'Assignment Due Soon', 'Your assignment for "HTML & CSS Fundamentals Quiz" is due in 3 days',
  'assignment_due', 'aa0e8400-e29b-41d4-a716-446655440001', 'test',
- true, 'medium', NOW() - INTERVAL '4 hours', NOW() + INTERVAL '3 days'),
+ true, 'medium', NOW() - INTERVAL '4 hours'),
 
 ('dd0e8400-e29b-41d4-a716-446655440034', '550e8400-e29b-41d4-a716-446655440004',
  'New Student Enrollment', 'Alex Wilson has enrolled in your course "Complete Full Stack Web Development Bootcamp"',
  'enrollment', '990e8400-e29b-41d4-a716-446655440001', 'course',
- false, 'low', NOW() - INTERVAL '2 months', NOW() + INTERVAL '30 days');
+ false, 'low', NOW() - INTERVAL '2 months');
 
 -- Step 19: Certificates
 INSERT INTO certificates (

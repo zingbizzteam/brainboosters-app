@@ -185,7 +185,7 @@ class EnrolledLiveClassList extends StatelessWidget {
                             children: [
                               if (attended)
                                 Text(
-                                  "Attended (${attendanceDuration} min)",
+                                  "Attended ($attendanceDuration min)",
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.green,

@@ -1,5 +1,6 @@
 // lib/coaching_centers/teacher/teacher_repository.dart
 
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TeacherRepository {
@@ -42,7 +43,7 @@ class TeacherRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching teachers: $e');
+      debugPrint('Error fetching teachers: $e');
       return [];
     }
   }
@@ -87,7 +88,7 @@ class TeacherRepository {
 
       return response;
     } catch (e) {
-      print('Error fetching teacher: $e');
+      debugPrint('Error fetching teacher: $e');
       return null;
     }
   }
@@ -127,7 +128,7 @@ class TeacherRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching teacher courses: $e');
+      debugPrint('Error fetching teacher courses: $e');
       return [];
     }
   }
@@ -165,7 +166,7 @@ class TeacherRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching teacher reviews: $e');
+      debugPrint('Error fetching teacher reviews: $e');
       return [];
     }
   }
@@ -278,7 +279,7 @@ class TeacherRepository {
 
       return List<Map<String, dynamic>>.from(fallbackResponse);
     } catch (e) {
-      print('Error fetching featured teachers: $e');
+      debugPrint('Error fetching featured teachers: $e');
       return [];
     }
   }
@@ -314,7 +315,7 @@ class TeacherRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error searching teachers: $e');
+      debugPrint('Error searching teachers: $e');
       return [];
     }
   }

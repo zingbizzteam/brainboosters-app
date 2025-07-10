@@ -10,7 +10,6 @@ class NotificationModel {
   final bool isRead;
   final NotificationPriority priority;
   final DateTime scheduledAt;
-  final DateTime? expiresAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,7 +24,6 @@ class NotificationModel {
     required this.isRead,
     required this.priority,
     required this.scheduledAt,
-    this.expiresAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -42,13 +40,11 @@ class NotificationModel {
       isRead: json['is_read'] ?? false,
       priority: NotificationPriority.fromString(json['priority']),
       scheduledAt: DateTime.parse(json['scheduled_at']),
-      expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at']) : null,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 
-  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 }
 
 enum NotificationType {

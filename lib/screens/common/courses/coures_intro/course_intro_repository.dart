@@ -1,5 +1,6 @@
 // lib/screen/common/courses/courses_intro/course_repository.dart
 
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CourseIntroRepository {
@@ -82,7 +83,7 @@ class CourseIntroRepository {
           .maybeSingle();
 
       if (courseResponse == null) {
-        print('Course not found with ID: $courseId');
+        debugPrint('Course not found with ID: $courseId');
         return null;
       }
 
@@ -127,62 +128,11 @@ class CourseIntroRepository {
 
       return result;
     } catch (e) {
-      print('Error fetching course: $e');
+      debugPrint('Error fetching course: $e');
       return null;
     }
   }
 
-  // Helper methods for generating meaningful chapter/lesson titles
-  static String _getChapterTitle(int chapterIndex) {
-    final titles = [
-      'Getting Started',
-      'Core Concepts',
-      'Advanced Topics',
-      'Practical Applications',
-      'Final Projects',
-    ];
-    return chapterIndex < titles.length
-        ? titles[chapterIndex]
-        : 'Chapter ${chapterIndex + 1}';
-  }
-
-  static String _getLessonTitle(int chapterIndex, int lessonNumber) {
-    final lessonTitles = {
-      0: ['Introduction', 'Setup', 'Basic Concepts', 'First Steps', 'Overview'],
-      1: [
-        'Fundamentals',
-        'Key Principles',
-        'Core Features',
-        'Best Practices',
-        'Implementation',
-      ],
-      2: [
-        'Advanced Techniques',
-        'Complex Scenarios',
-        'Optimization',
-        'Performance',
-        'Debugging',
-      ],
-      3: [
-        'Real-world Examples',
-        'Case Studies',
-        'Integration',
-        'Deployment',
-        'Testing',
-      ],
-      4: [
-        'Final Project',
-        'Portfolio Building',
-        'Presentation',
-        'Review',
-        'Next Steps',
-      ],
-    };
-
-    final titles = lessonTitles[chapterIndex] ?? ['Lesson Content'];
-    final titleIndex = (lessonNumber - 1) % titles.length;
-    return titles[titleIndex];
-  }
 
   // Get course reviews
   static Future<List<Map<String, dynamic>>> getCourseReviews(
@@ -213,7 +163,7 @@ class CourseIntroRepository {
 
       return (response as List).cast<Map<String, dynamic>>();
     } catch (e) {
-      print('Error fetching reviews: $e');
+      debugPrint('Error fetching reviews: $e');
       return [];
     }
   }
@@ -254,7 +204,7 @@ class CourseIntroRepository {
 
       return true;
     } catch (e) {
-      print('Error enrolling in course: $e');
+      debugPrint('Error enrolling in course: $e');
       return false;
     }
   }
@@ -283,7 +233,7 @@ class CourseIntroRepository {
 
       return enrollmentResponse != null;
     } catch (e) {
-      print('Error checking enrollment: $e');
+      debugPrint('Error checking enrollment: $e');
       return false;
     }
   }

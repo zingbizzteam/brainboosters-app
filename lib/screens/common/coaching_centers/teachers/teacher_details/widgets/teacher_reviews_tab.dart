@@ -55,7 +55,7 @@ class TeacherReviewsTab extends StatelessWidget {
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -91,10 +91,7 @@ class TeacherReviewsTab extends StatelessWidget {
                     ),
                     Text(
                       _getFormattedDate(review['created_at']),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -103,9 +100,7 @@ class TeacherReviewsTab extends StatelessWidget {
               Row(
                 children: List.generate(5, (index) {
                   return Icon(
-                    index < _getRating(review)
-                        ? Icons.star
-                        : Icons.star_border,
+                    index < _getRating(review) ? Icons.star : Icons.star_border,
                     color: Colors.amber,
                     size: 16,
                   );
@@ -114,7 +109,7 @@ class TeacherReviewsTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Course name
           if (review['courses'] != null) ...[
             Container(
@@ -134,7 +129,7 @@ class TeacherReviewsTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          
+
           // Review text
           if (_getReviewText(review).isNotEmpty) ...[
             Text(
@@ -143,7 +138,7 @@ class TeacherReviewsTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          
+
           // Pros and Cons
           if (_getPros(review).isNotEmpty || _getCons(review).isNotEmpty) ...[
             Row(
@@ -156,7 +151,11 @@ class TeacherReviewsTab extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.thumb_up, size: 14, color: Colors.green[600]),
+                            Icon(
+                              Icons.thumb_up,
+                              size: 14,
+                              color: Colors.green[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Pros',
@@ -185,7 +184,11 @@ class TeacherReviewsTab extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.thumb_down, size: 14, color: Colors.red[600]),
+                            Icon(
+                              Icons.thumb_down,
+                              size: 14,
+                              color: Colors.red[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Cons',
@@ -218,7 +221,7 @@ class TeacherReviewsTab extends StatelessWidget {
     final student = review['students'];
     final userProfile = student?['user_profiles'];
     if (userProfile == null) return 'Anonymous';
-    
+
     final firstName = userProfile['first_name']?.toString() ?? '';
     final lastName = userProfile['last_name']?.toString() ?? '';
     return '$firstName $lastName'.trim();
@@ -248,7 +251,7 @@ class TeacherReviewsTab extends StatelessWidget {
 
   String _getFormattedDate(dynamic date) {
     if (date == null) return '';
-    
+
     try {
       final dateTime = DateTime.parse(date.toString());
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';

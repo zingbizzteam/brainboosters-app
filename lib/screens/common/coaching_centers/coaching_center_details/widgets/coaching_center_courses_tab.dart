@@ -148,7 +148,7 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -417,7 +417,7 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
         vertical: isSmallMobile ? 2 : 3,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

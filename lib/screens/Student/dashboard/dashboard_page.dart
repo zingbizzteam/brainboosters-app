@@ -1,8 +1,8 @@
 import 'package:brainboosters_app/screens/Student/dashboard/widgets/enrolled_live_class_list.dart';
+import 'package:brainboosters_app/screens/common/live_class/widgets/live_class_card.dart';
 import 'package:brainboosters_app/screens/common/courses/widgets/course_card.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/dashboard_top_bar.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/enrolled_course_list.dart';
-import 'package:brainboosters_app/screens/common/live_class/widgets/live_class_card.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/stat_card.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
@@ -135,8 +135,8 @@ class _DashboardPageState extends State<DashboardPage> {
             _studentStats = null;
             _enrolledCourses = [];
             _liveClasses = [];
-            _suggestedCourses = List<Map<String, dynamic>>.from(allCourses ?? []);
-            _suggestedLiveClasses = List<Map<String, dynamic>>.from(allLive ?? []);
+            _suggestedCourses = List<Map<String, dynamic>>.from(allCourses??[]);
+            _suggestedLiveClasses = List<Map<String, dynamic>>.from(allLive);
             _loading = false;
             _error = null;
           });
@@ -204,17 +204,17 @@ class _DashboardPageState extends State<DashboardPage> {
           .eq('student_id', studentId)
           .inFilter('live_classes.status', ['scheduled', 'live']);
 
-      final enrolledCourseIds = (coursesRes ?? [])
+      final enrolledCourseIds = (coursesRes )
           .map((e) => e['course_id'])
           .toSet();
 
-      final enrolledLiveIds = (liveRes ?? [])
+      final enrolledLiveIds = (liveRes )
           .map((e) => e['live_class_id'])
           .toSet();
 
       // SUGGESTED COURSES LOGIC - FIXED QUERIES
       List<Map<String, dynamic>> suggestedCourses = [];
-      final goals = List.from(studentRes['learning_goals'] ?? []);
+      final goals = List.from(studentRes['learning_goals'] );
 
       if (goals.isNotEmpty) {
         final goalCourses = await Supabase.instance.client
@@ -240,7 +240,7 @@ class _DashboardPageState extends State<DashboardPage> {
             .order('enrollment_count', ascending: false)
             .limit(15);
 
-        suggestedCourses = List<Map<String, dynamic>>.from(goalCourses ?? []);
+        suggestedCourses = List<Map<String, dynamic>>.from(goalCourses );
       }
 
       suggestedCourses = suggestedCourses
@@ -276,7 +276,7 @@ class _DashboardPageState extends State<DashboardPage> {
             .order('enrollment_count', ascending: false)
             .limit(15);
 
-        final fillList = List<Map<String, dynamic>>.from(fillCourses ?? [])
+        final fillList = List<Map<String, dynamic>>.from(fillCourses )
             .where((c) => !excludeIds.contains(c['id']))
             .take(5 - suggestedCourses.length)
             .toList();
@@ -309,7 +309,7 @@ class _DashboardPageState extends State<DashboardPage> {
             .order('scheduled_at', ascending: true)
             .limit(15);
 
-        suggestedLive = List<Map<String, dynamic>>.from(goalLive ?? []).where((l) {
+        suggestedLive = List<Map<String, dynamic>>.from(goalLive ).where((l) {
           if (l['course_id'] != null) return true;
           return goals.any(
             (g) => (l['title'] ?? '').toString().toLowerCase().contains(
@@ -351,7 +351,7 @@ class _DashboardPageState extends State<DashboardPage> {
             .order('scheduled_at', ascending: true)
             .limit(15);
 
-        final fillList = List<Map<String, dynamic>>.from(fillLive ?? [])
+        final fillList = List<Map<String, dynamic>>.from(fillLive )
             .where((l) => !excludeIds.contains(l['id']))
             .take(5 - suggestedLive.length)
             .toList();
@@ -362,8 +362,8 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) {
         setState(() {
           _studentStats = studentRes;
-          _enrolledCourses = List<Map<String, dynamic>>.from(coursesRes ?? []);
-          _liveClasses = List<Map<String, dynamic>>.from(liveRes ?? []);
+          _enrolledCourses = List<Map<String, dynamic>>.from(coursesRes );
+          _liveClasses = List<Map<String, dynamic>>.from(liveRes );
           _suggestedCourses = suggestedCourses;
           _suggestedLiveClasses = suggestedLive;
           _loading = false;

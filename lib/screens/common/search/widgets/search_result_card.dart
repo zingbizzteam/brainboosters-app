@@ -17,9 +17,7 @@ class SearchResultCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -69,7 +67,8 @@ class SearchResultCard extends StatelessWidget {
               child: Image.network(
                 result.imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholder(),
               ),
             )
           : _buildPlaceholder(),
@@ -93,11 +92,7 @@ class SearchResultCard extends StatelessWidget {
         break;
     }
 
-    return Icon(
-      icon,
-      size: 40,
-      color: Colors.grey.shade400,
-    );
+    return Icon(icon, size: 40, color: Colors.grey.shade400);
   }
 
   Widget _buildTitle() {
@@ -116,10 +111,7 @@ class SearchResultCard extends StatelessWidget {
   Widget _buildSubtitle() {
     return Text(
       result.subtitle!,
-      style: TextStyle(
-        fontSize: 14,
-        color: Colors.grey.shade600,
-      ),
+      style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -128,10 +120,7 @@ class SearchResultCard extends StatelessWidget {
   Widget _buildDescription() {
     return Text(
       result.description!,
-      style: TextStyle(
-        fontSize: 14,
-        color: Colors.grey.shade700,
-      ),
+      style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
@@ -150,19 +139,13 @@ class SearchResultCard extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               result.rating!.toStringAsFixed(1),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
             ),
             if (result.reviewCount != null) ...[
               const SizedBox(width: 4),
               Text(
                 '(${result.reviewCount})',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
           ],
@@ -180,7 +163,9 @@ class SearchResultCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            result.price == 0 ? 'Free' : '${result.currency ?? '₹'}${result.price!.toStringAsFixed(0)}',
+            result.price == 0
+                ? 'Free'
+                : '${result.currency ?? '₹'}${result.price!.toStringAsFixed(0)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 12,
@@ -196,7 +181,7 @@ class SearchResultCard extends StatelessWidget {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: _getEntityTypeColor().withOpacity(0.1),
+          color: _getEntityTypeColor().withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -210,11 +195,7 @@ class SearchResultCard extends StatelessWidget {
       ),
     );
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: widgets,
-    );
+    return Wrap(spacing: 8, runSpacing: 4, children: widgets);
   }
 
   Color _getEntityTypeColor() {

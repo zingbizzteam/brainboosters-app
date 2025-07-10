@@ -4,11 +4,7 @@ class TeacherCard extends StatelessWidget {
   final Map<String, dynamic> teacher;
   final VoidCallback onTap;
 
-  const TeacherCard({
-    super.key,
-    required this.teacher,
-    required this.onTap,
-  });
+  const TeacherCard({super.key, required this.teacher, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +19,7 @@ class TeacherCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               spreadRadius: 1,
               blurRadius: 6,
               offset: const Offset(0, 2),
@@ -54,10 +50,7 @@ class TeacherCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.indigo[400]!,
-            Colors.indigo[600]!,
-          ],
+          colors: [Colors.indigo[400]!, Colors.indigo[600]!],
         ),
       ),
       child: Stack(
@@ -74,7 +67,7 @@ class TeacherCard extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white.withOpacity(0.1),
+                    Colors.white.withValues(alpha: 0.1),
                     Colors.transparent,
                   ],
                 ),
@@ -93,15 +86,13 @@ class TeacherCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: _buildAvatar(isMobile),
-              ),
+              child: ClipOval(child: _buildAvatar(isMobile)),
             ),
           ),
           // Verification badge
@@ -139,19 +130,20 @@ class TeacherCard extends StatelessWidget {
 
   Widget _buildAvatar(bool isMobile) {
     final avatarUrl = teacher['user_profiles']?['avatar_url']?.toString();
-    
+
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return Image.network(
         avatarUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(isMobile),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildPlaceholderAvatar(isMobile),
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return _buildPlaceholderAvatar(isMobile);
         },
       );
     }
-    
+
     return _buildPlaceholderAvatar(isMobile);
   }
 
@@ -185,7 +177,7 @@ class TeacherCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
-            
+
             // Experience
             Row(
               children: [
@@ -201,7 +193,7 @@ class TeacherCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            
+
             // Specializations
             if (_getSpecializations().isNotEmpty) ...[
               Text(
@@ -218,7 +210,10 @@ class TeacherCard extends StatelessWidget {
                 runSpacing: 4,
                 children: _getSpecializations().take(3).map((spec) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue[50],
                       borderRadius: BorderRadius.circular(8),
@@ -237,7 +232,7 @@ class TeacherCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            
+
             // Rating
             if (_getRating() > 0) ...[
               Row(
@@ -288,11 +283,15 @@ class TeacherCard extends StatelessWidget {
                 _buildCapabilityIcon(Icons.school, Colors.blue, 'Courses'),
               if (_canConductLiveClasses()) ...[
                 if (_canCreateCourses()) const SizedBox(width: 8),
-                _buildCapabilityIcon(Icons.live_tv, Colors.green, 'Live Classes'),
+                _buildCapabilityIcon(
+                  Icons.live_tv,
+                  Colors.green,
+                  'Live Classes',
+                ),
               ],
             ],
           ),
-          
+
           // View profile button
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -320,7 +319,7 @@ class TeacherCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(icon, size: 14, color: color),
@@ -332,7 +331,7 @@ class TeacherCard extends StatelessWidget {
   String _getTeacherName() {
     final userProfile = teacher['user_profiles'];
     if (userProfile == null) return 'Unknown Teacher';
-    
+
     final firstName = userProfile['first_name']?.toString() ?? '';
     final lastName = userProfile['last_name']?.toString() ?? '';
     return '$firstName $lastName'.trim();

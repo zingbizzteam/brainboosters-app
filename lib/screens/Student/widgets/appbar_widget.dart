@@ -1,4 +1,3 @@
-import 'package:brainboosters_app/screens/common/comming_soon_dialog.dart';
 import 'package:brainboosters_app/screens/Student/notifications/notifications_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -116,7 +115,8 @@ class _AppBarWidgetState extends State<AppBarWidget> {
             ),
           ),
 
-          const Spacer(), // Pushes buttons to the right
+          const Spacer(),
+
           // Search button
           IconButton(
             icon: const Icon(Icons.search, color: Color(0xFF4AA0E6)),
@@ -128,39 +128,7 @@ class _AppBarWidgetState extends State<AppBarWidget> {
           // Notifications button with badge
           _buildNotificationBadge(),
 
-          // Avatar/profile button
-          GestureDetector(
-            onTap: () {
-              // Navigate to profile page (coming soon for now)
-              showComingSoonDialog('View Profile', context);
-            },
-            child: widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty
-                ? CircleAvatar(
-                    backgroundImage: NetworkImage(widget.avatarUrl!),
-                    radius: 18,
-                    onBackgroundImageError: (exception, stackTrace) {},
-                  )
-                : CircleAvatar(
-                    backgroundColor: Colors.blue.shade100,
-                    radius: 18,
-                    child: widget.name != null && widget.name!.trim().isNotEmpty
-                        ? Text(
-                            widget.name!
-                                .trim()
-                                .split(' ')
-                                .map((e) => e[0])
-                                .take(2)
-                                .join()
-                                .toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF4AA0E6),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          )
-                        : const Icon(Icons.person, color: Color(0xFF4AA0E6)),
-                  ),
-          ),
+          // REMOVED: Profile avatar/button - moved to bottom navigation
         ],
       ),
     );

@@ -12,10 +12,10 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true;
+  final bool _notificationsEnabled = true;
   bool _emailNotifications = true;
   bool _pushNotifications = true;
-  bool _darkModeEnabled = false;
+  final bool _darkModeEnabled = false;
   bool _autoPlayVideos = true;
   bool _downloadOnWiFiOnly = true;
 
@@ -47,25 +47,25 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.person_outline,
                 title: 'Profile',
                 subtitle: 'Manage your profile information',
-                onTap: () => showComingSoonDialog('My Profile',context),
+                onTap: () => showComingSoonDialog('My Profile', context),
               ),
               _buildNavigationTile(
                 icon: Icons.school_outlined,
                 title: 'My Learning',
                 subtitle: 'View your courses and progress',
-                onTap: () => showComingSoonDialog('My Learning',context),
+                onTap: () => showComingSoonDialog('My Learning', context),
               ),
               _buildNavigationTile(
                 icon: Icons.bookmark_outline,
                 title: 'Saved Courses',
                 subtitle: 'Manage your saved courses',
-                onTap: () => showComingSoonDialog('Saved Courses',context),
+                onTap: () => showComingSoonDialog('Saved Courses', context),
               ),
               _buildNavigationTile(
                 icon: Icons.download_outlined,
                 title: 'Downloads',
                 subtitle: 'Manage offline content',
-                onTap: () => showComingSoonDialog('Downloads',context),
+                onTap: () => showComingSoonDialog('Downloads', context),
               ),
             ]),
 
@@ -128,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.schedule_outlined,
                 title: 'Study Reminders',
                 subtitle: 'Set daily study reminders',
-                onTap: () => showComingSoonDialog('Study Reminders',context),
+                onTap: () => showComingSoonDialog('Study Reminders', context),
               ),
             ]),
 
@@ -141,7 +141,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.security_outlined,
                 title: 'Privacy & Security',
                 subtitle: 'Manage your privacy settings',
-                onTap: () => showComingSoonDialog('Privacy & Security',context),
+                onTap: () =>
+                    showComingSoonDialog('Privacy & Security', context),
               ),
               _buildNavigationTile(
                 icon: Icons.storage_outlined,
@@ -232,7 +233,7 @@ class _SettingsPageState extends State<SettingsPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 6,
             offset: const Offset(0, 2),
@@ -408,10 +409,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _shareAppWithFallback() async {
-        _copyToClipboard();
+    _copyToClipboard();
   }
-
- 
 
   void _copyToClipboard() {
     const shareText =
@@ -419,17 +418,16 @@ class _SettingsPageState extends State<SettingsPage> {
         'Download now: https://brainboosterz.com/download';
 
     Clipboard.setData(const ClipboardData(text: shareText)).then((_) {
+      if(mounted){
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('App link copied to clipboard!'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 2),
         ),
-      );
+      );}
     });
   }
-
-  
 
   void _showLanguageDialog() {
     showDialog(

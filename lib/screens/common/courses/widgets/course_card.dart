@@ -28,7 +28,6 @@ class CourseCard extends StatelessWidget {
     final isSmallMobile = screenWidth < 360;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1024;
-    final isDesktop = screenWidth >= 1024;
 
     // Dynamic card width based on screen size or fixed width
     double cardWidth;
@@ -56,7 +55,7 @@ class CourseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 6,
             offset: const Offset(0, 2),
@@ -111,7 +110,7 @@ class CourseCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               spreadRadius: 1,
               blurRadius: 6,
               offset: const Offset(0, 2),
@@ -251,7 +250,7 @@ class CourseCard extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(5)),
-          child: Container(
+          child: SizedBox(
             height: thumbnailHeight,
             width: double.infinity,
             child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
@@ -284,11 +283,11 @@ class CourseCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: price == 0 ? Colors.green : Colors.white.withOpacity(0.95),
+        color: price == 0 ? Colors.green : Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -349,7 +348,7 @@ class CourseCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: levelColor.withOpacity(0.9),
+        color: levelColor.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -506,7 +505,7 @@ class CourseCard extends StatelessWidget {
                       vertical: cardWidth < 200 ? 1 : (isSmallMobile ? 2 : 3),
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -660,7 +659,7 @@ class CourseCard extends StatelessWidget {
     if (enrollmentCount == 0) return const SizedBox.shrink();
 
     return Text(
-      '${enrollmentCount}+ Enrolled',
+      '$enrollmentCount+ Enrolled',
       style: TextStyle(
         fontSize: _getResponsiveFontSize(
           isSmallMobile,

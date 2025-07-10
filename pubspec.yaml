@@ -7,6 +7,7 @@ environment:
   sdk: ^3.8.1
 
 dependencies:
+  chewie: ^1.12.1
   file_picker: ^10.2.0
   flutter:
     sdk: flutter
@@ -22,7 +23,9 @@ dependencies:
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
   supabase_flutter: ^2.3.4
+  video_player: ^2.10.0
 
+  url_launcher: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

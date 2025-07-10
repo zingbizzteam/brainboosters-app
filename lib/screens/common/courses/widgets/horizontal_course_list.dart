@@ -196,9 +196,6 @@ class HorizontalCourseList extends StatelessWidget {
         itemCount: courses.length,
         itemBuilder: (context, index) {
           final course = courses[index];
-          if (course == null) {
-            return const SizedBox.shrink();
-          }
 
           return SafeCourseCard(course: course);
         },

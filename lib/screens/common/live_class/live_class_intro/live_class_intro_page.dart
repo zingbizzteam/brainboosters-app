@@ -43,8 +43,10 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         error = null;
       });
 
-      final result = await LiveClassRepository.getLiveClassById(widget.liveClassId);
-      
+      final result = await LiveClassRepository.getLiveClassById(
+        widget.liveClassId,
+      );
+
       setState(() {
         liveClass = result;
         isLoading = false;
@@ -95,10 +97,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
                         false,
                         onTap: () => context.go('/live-classes'),
                       ),
-                      BreadcrumbItem(
-                        liveClass?['title'] ?? 'Live Class',
-                        true,
-                      ),
+                      BreadcrumbItem(liveClass?['title'] ?? 'Live Class', true),
                     ],
                   ),
             actions: [
@@ -166,10 +165,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
               const SizedBox(height: 16),
               Text(
                 error!,
-                style: TextStyle(
-                  color: Colors.red[600],
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.red[600], fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -200,16 +196,12 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          
+
           // Breadcrumb for mobile
           if (isMobile) ...[
             BreadcrumbWidget(
               items: [
-                BreadcrumbItem(
-                  'Home',
-                  false,
-                  onTap: () => context.go('/'),
-                ),
+                BreadcrumbItem('Home', false, onTap: () => context.go('/')),
                 BreadcrumbItem(
                   'Live Classes',
                   false,
@@ -233,7 +225,8 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
             items: [
               StatItem(
                 icon: Icons.people_outline,
-                text: '${liveClass!['current_participants']}/${liveClass!['max_participants']} Enrolled',
+                text:
+                    '${liveClass!['current_participants']}/${liveClass!['max_participants']} Enrolled',
               ),
               StatItem(
                 icon: Icons.access_time,
@@ -249,12 +242,11 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
               ),
             ],
             trailingWidget: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _getStatusColor(liveClass!['status']).withOpacity(0.1),
+                color: _getStatusColor(
+                  liveClass!['status'],
+                ).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: _getStatusColor(liveClass!['status']),
@@ -276,12 +268,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
           // Tabs Section
           TabSectionWidget(
             tabController: _tabController,
-            tabs: const [
-              'About',
-              'Comments',
-              "What's included",
-              'Analytics',
-            ],
+            tabs: const ['About', 'Comments', "What's included", 'Analytics'],
             tabViews: [
               _buildAboutTab(liveClass!, isMobile),
               _buildCommentsTab(liveClass!, isMobile),
@@ -312,10 +299,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         ),
         const SizedBox(width: 40),
         // Right Side - Live Class Info
-        Expanded(
-          flex: 6,
-          child: LiveClassInfoWidget(liveClass: liveClass),
-        ),
+        Expanded(flex: 6, child: LiveClassInfoWidget(liveClass: liveClass)),
       ],
     );
   }
@@ -398,7 +382,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
             ),
           ),
           const SizedBox(height: 24),
-          
+
           Text(
             'Class Details:',
             style: TextStyle(
@@ -407,18 +391,38 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
             ),
           ),
           const SizedBox(height: 12),
-          _buildDetailRow('Duration', '${liveClass['duration_minutes']} minutes', isMobile),
+          _buildDetailRow(
+            'Duration',
+            '${liveClass['duration_minutes']} minutes',
+            isMobile,
+          ),
           _buildDetailRow('Status', liveClass['status'] ?? 'Unknown', isMobile),
-          _buildDetailRow('Max Participants', '${liveClass['max_participants']}', isMobile),
-          _buildDetailRow('Current Participants', '${liveClass['current_participants']}', isMobile),
-          
+          _buildDetailRow(
+            'Max Participants',
+            '${liveClass['max_participants']}',
+            isMobile,
+          ),
+          _buildDetailRow(
+            'Current Participants',
+            '${liveClass['current_participants']}',
+            isMobile,
+          ),
+
           if (liveClass['teachers'] != null) ...[
             const SizedBox(height: 16),
-            _buildDetailRow('Instructor', _getInstructorName(liveClass['teachers']), isMobile),
+            _buildDetailRow(
+              'Instructor',
+              _getInstructorName(liveClass['teachers']),
+              isMobile,
+            ),
           ],
-          
+
           if (liveClass['coaching_centers'] != null) ...[
-            _buildDetailRow('Academy', liveClass['coaching_centers']['center_name'] ?? '', isMobile),
+            _buildDetailRow(
+              'Academy',
+              liveClass['coaching_centers']['center_name'] ?? '',
+              isMobile,
+            ),
           ],
         ],
       ),
@@ -465,9 +469,21 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
           ),
           const SizedBox(height: 20),
           _buildIncludedItem(Icons.live_tv, 'Live Interactive Session', true),
-          _buildIncludedItem(Icons.record_voice_over, 'Q&A with Instructor', liveClass['q_and_a_enabled'] ?? true),
-          _buildIncludedItem(Icons.chat, 'Live Chat', liveClass['chat_enabled'] ?? true),
-          _buildIncludedItem(Icons.video_library, 'Recording Access', liveClass['recording_url'] != null),
+          _buildIncludedItem(
+            Icons.record_voice_over,
+            'Q&A with Instructor',
+            liveClass['q_and_a_enabled'] ?? true,
+          ),
+          _buildIncludedItem(
+            Icons.chat,
+            'Live Chat',
+            liveClass['chat_enabled'] ?? true,
+          ),
+          _buildIncludedItem(
+            Icons.video_library,
+            'Recording Access',
+            liveClass['recording_url'] != null,
+          ),
           _buildIncludedItem(Icons.group, 'Community Access', true),
         ],
       ),
@@ -489,9 +505,15 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
           ),
           const SizedBox(height: 20),
           _buildAnalyticsCard('Participation', [
-            _buildMetricRow('Current Participants', '${liveClass['current_participants']}'),
+            _buildMetricRow(
+              'Current Participants',
+              '${liveClass['current_participants']}',
+            ),
             _buildMetricRow('Max Capacity', '${liveClass['max_participants']}'),
-            _buildMetricRow('Enrollment Rate', '${((liveClass['current_participants'] / liveClass['max_participants']) * 100).toStringAsFixed(1)}%'),
+            _buildMetricRow(
+              'Enrollment Rate',
+              '${((liveClass['current_participants'] / liveClass['max_participants']) * 100).toStringAsFixed(1)}%',
+            ),
           ]),
         ],
       ),
@@ -597,10 +619,10 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
 
   String _getFormattedTime(String? scheduledAt) {
     if (scheduledAt == null) return 'Not scheduled';
-    
+
     final dt = DateTime.tryParse(scheduledAt);
     if (dt == null) return 'Invalid date';
-    
+
     return '${dt.day}/${dt.month}/${dt.year} at ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
@@ -610,14 +632,14 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
 
   String _getInstructorName(Map<String, dynamic>? teachers) {
     if (teachers == null) return 'Unknown Instructor';
-    
+
     final userProfiles = teachers['user_profiles'];
     if (userProfiles is Map) {
       final firstName = userProfiles['first_name']?.toString() ?? '';
       final lastName = userProfiles['last_name']?.toString() ?? '';
       return '$firstName $lastName'.trim();
     }
-    
+
     return 'Unknown Instructor';
   }
 

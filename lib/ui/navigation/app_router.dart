@@ -50,7 +50,7 @@ class AppRouter {
 
     // If logged in and on onboarding, check user setup status
     if (currentPath == onboarding) {
-      return await _getRedirectForLoggedInUser(session!.user.id);
+      return await _getRedirectForLoggedInUser(session.user.id);
     }
 
     return null; // No redirect needed

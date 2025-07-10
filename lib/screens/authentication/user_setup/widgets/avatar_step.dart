@@ -177,6 +177,7 @@ class _AvatarStepState extends State<AvatarStep> {
                           }
                         } catch (e) {
                           if (mounted) {
+                            
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Error: ${e.toString()}')),
                             );
@@ -211,6 +212,7 @@ class _AvatarStepState extends State<AvatarStep> {
                           }
                         } catch (e) {
                           if (mounted) {
+                            
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Error: ${e.toString()}')),
                             );

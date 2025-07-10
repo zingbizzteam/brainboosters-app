@@ -6,7 +6,7 @@ import 'package:shimmer/shimmer.dart';
 class LiveClassCard extends StatelessWidget {
   final Map<String, dynamic> liveClass;
   final VoidCallback? onTap;
- final bool isLoading; // NEW: Loading state support
+  final bool isLoading; // NEW: Loading state support
 
   const LiveClassCard({
     super.key,
@@ -32,7 +32,7 @@ class LiveClassCard extends StatelessWidget {
     } else {
       cardWidth = 320;
     }
-    if (isLoading || liveClass == null) {
+    if (isLoading) {
       return _buildShimmerCard(context);
     }
 
@@ -43,7 +43,7 @@ class LiveClassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 6,
             offset: const Offset(0, 2),
@@ -85,7 +85,7 @@ class LiveClassCard extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(5)),
-          child: Container(
+          child: SizedBox(
             height: thumbnailHeight,
             width: double.infinity,
             child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
@@ -120,11 +120,11 @@ class LiveClassCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isFree ? Colors.green : Colors.white.withOpacity(0.95),
+        color: isFree ? Colors.green : Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -148,7 +148,7 @@ class LiveClassCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.9),
+        color: statusColor.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -372,7 +372,7 @@ class LiveClassCard extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
+            color: Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
@@ -491,9 +491,9 @@ class LiveClassCard extends StatelessWidget {
         vertical: isSmallMobile ? 2 : 3,
       ),
       decoration: BoxDecoration(
-        color: buttonColor.withOpacity(0.1),
+        color: buttonColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: buttonColor.withOpacity(0.3)),
+        border: Border.all(color: buttonColor.withValues(alpha: 0.3)),
       ),
       child: Text(
         buttonText,
@@ -631,76 +631,77 @@ class LiveClassCard extends StatelessWidget {
     return 0;
   }
 }
- Widget _buildShimmerCard(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = screenWidth < 360;
-    final isMobile = screenWidth < 768;
-    final isTablet = screenWidth >= 768 && screenWidth < 1024;
 
-    double cardWidth;
-    if (isSmallMobile) {
-      cardWidth = screenWidth * 0.75;
-    } else if (isMobile) {
-      cardWidth = screenWidth * 0.60;
-    } else if (isTablet) {
-      cardWidth = 300;
-    } else {
-      cardWidth = 320;
-    }
+Widget _buildShimmerCard(BuildContext context) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isSmallMobile = screenWidth < 360;
+  final isMobile = screenWidth < 768;
+  final isTablet = screenWidth >= 768 && screenWidth < 1024;
 
-    final thumbnailHeight = cardWidth * (9 / 16);
-    final adaptivePadding = cardWidth < 200 ? 8.0 : (isSmallMobile ? 10.0 : 12.0);
+  double cardWidth;
+  if (isSmallMobile) {
+    cardWidth = screenWidth * 0.75;
+  } else if (isMobile) {
+    cardWidth = screenWidth * 0.60;
+  } else if (isTablet) {
+    cardWidth = 300;
+  } else {
+    cardWidth = 320;
+  }
 
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Container(
-        width: cardWidth,
-        margin: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
-              spreadRadius: 1,
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+  final thumbnailHeight = cardWidth * (9 / 16);
+  final adaptivePadding = cardWidth < 200 ? 8.0 : (isSmallMobile ? 10.0 : 12.0);
+
+  return Shimmer.fromColors(
+    baseColor: Colors.grey[300]!,
+    highlightColor: Colors.grey[100]!,
+    child: Container(
+      width: cardWidth,
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.08),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Card(
+        elevation: 0,
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Thumbnail shimmer
+            ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(5)),
+              child: Container(
+                height: thumbnailHeight,
+                width: double.infinity,
+                color: Colors.white,
+              ),
+            ),
+
+            // Content shimmer - same structure as your original card
+            Padding(
+              padding: EdgeInsets.all(adaptivePadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // All your shimmer elements here...
+                  // (Use the shimmer structure from above)
+                ],
+              ),
             ),
           ],
-          border: Border.all(color: Colors.grey[200]!),
-        ),
-        child: Card(
-          elevation: 0,
-          color: Colors.transparent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Thumbnail shimmer
-              ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(5)),
-                child: Container(
-                  height: thumbnailHeight,
-                  width: double.infinity,
-                  color: Colors.white,
-                ),
-              ),
-              
-              // Content shimmer - same structure as your original card
-              Padding(
-                padding: EdgeInsets.all(adaptivePadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // All your shimmer elements here...
-                    // (Use the shimmer structure from above)
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}

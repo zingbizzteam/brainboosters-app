@@ -72,7 +72,7 @@ class _CoursesPageState extends State<CoursesPage> {
   // NEW: Enhanced refresh with coordination
   Future<void> _handleRefresh() async {
     if (_isRefreshing) return;
-    print('DEBUG: Starting coordinated refresh...');
+    debugPrint('DEBUG: Starting coordinated refresh...');
 
     setState(() {
       _isRefreshing = true;
@@ -95,7 +95,7 @@ class _CoursesPageState extends State<CoursesPage> {
   // NEW: Handle component refresh completion
   void _onComponentRefreshComplete() {
     _refreshCompletedComponents++;
-    print(
+    debugPrint(
       'DEBUG: Component refresh completed ($_refreshCompletedComponents/$_totalRefreshComponents)',
     );
 
@@ -105,7 +105,7 @@ class _CoursesPageState extends State<CoursesPage> {
         _categoriesRefreshTrigger = false;
         _heroRefreshTrigger = false; // NEW: Reset hero trigger
       });
-      print('DEBUG: All components refresh completed');
+      debugPrint('DEBUG: All components refresh completed');
     }
   }
 
@@ -126,7 +126,9 @@ class _CoursesPageState extends State<CoursesPage> {
     });
 
     try {
-      print('DEBUG: ${isRefresh ? "Refreshing" : "Loading"} all courses...');
+      debugPrint(
+        'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} all courses...',
+      );
 
       final result = await CourseRepository.getCourses(
         limit: _pageSize,
@@ -151,7 +153,7 @@ class _CoursesPageState extends State<CoursesPage> {
           _retryCount = 0;
         });
 
-        print('DEBUG: All courses loaded: ${_allCourses.length} total');
+        debugPrint('DEBUG: All courses loaded: ${_allCourses.length} total');
 
         // Notify refresh completion if this was a refresh
         if (isRefresh) {
@@ -159,7 +161,7 @@ class _CoursesPageState extends State<CoursesPage> {
         }
       }
     } catch (e) {
-      print('ERROR: Failed to fetch all courses: $e');
+      debugPrint('ERROR: Failed to fetch all courses: $e');
 
       if (mounted) {
         setState(() {
@@ -182,7 +184,7 @@ class _CoursesPageState extends State<CoursesPage> {
         });
       }
 
-      print(
+      debugPrint(
         'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} featured courses...',
       );
 
@@ -195,9 +197,9 @@ class _CoursesPageState extends State<CoursesPage> {
           _loadingFeatured = false;
         });
 
-        print('DEBUG: Featured courses loaded:');
-        print('  - Top rated: ${_topRatedCourses.length} courses');
-        print('  - Suggested: ${_suggestedCourses.length} courses');
+        debugPrint('DEBUG: Featured courses loaded:');
+        debugPrint('  - Top rated: ${_topRatedCourses.length} courses');
+        debugPrint('  - Suggested: ${_suggestedCourses.length} courses');
 
         // Notify refresh completion if this was a refresh
         if (isRefresh) {
@@ -205,7 +207,7 @@ class _CoursesPageState extends State<CoursesPage> {
         }
       }
     } catch (e) {
-      print('ERROR: Failed to fetch featured courses: $e');
+      debugPrint('ERROR: Failed to fetch featured courses: $e');
 
       if (mounted) {
         setState(() {

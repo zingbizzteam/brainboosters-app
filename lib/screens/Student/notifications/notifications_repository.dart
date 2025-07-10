@@ -41,19 +41,14 @@ class NotificationsRepository {
         query = query.lte('created_at', toDate.toIso8601String());
       }
 
-      // Filter out expired notifications
-      query = query.or(
-        'expires_at.is.null,expires_at.gt.${DateTime.now().toIso8601String()}',
-      );
-
       final response = await query
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1)
           .timeout(const Duration(seconds: 10));
 
-      final notifications = List<Map<String, dynamic>>.from(response)
-          .map((data) => NotificationModel.fromJson(data))
-          .toList();
+      final notifications = List<Map<String, dynamic>>.from(
+        response,
+      ).map((data) => NotificationModel.fromJson(data)).toList();
 
       // Group by date on client side
       final groupedNotifications = _groupNotificationsByDate(notifications);
@@ -113,7 +108,9 @@ class NotificationsRepository {
           .eq('user_id', user.id)
           .eq('is_read', false);
     } catch (e) {
-      throw NotificationException('Failed to mark all notifications as read: $e');
+      throw NotificationException(
+        'Failed to mark all notifications as read: $e',
+      );
     }
   }
 
@@ -127,10 +124,7 @@ class NotificationsRepository {
           .from('notifications')
           .select('id')
           .eq('user_id', user.id)
-          .eq('is_read', false)
-          .or(
-            'expires_at.is.null,expires_at.gt.${DateTime.now().toIso8601String()}',
-          );
+          .eq('is_read', false);
 
       return List<Map<String, dynamic>>.from(response).length;
     } catch (e) {
@@ -167,14 +161,14 @@ class NotificationsRepository {
 
   static bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
   static String _getDayName(int weekday) {
     const days = [
       'Monday',
-      'Tuesday', 
+      'Tuesday',
       'Wednesday',
       'Thursday',
       'Friday',

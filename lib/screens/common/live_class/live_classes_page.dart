@@ -1,5 +1,7 @@
 // screens/common/live_class/live_classes_page.dart
 
+// ignore_for_file: unused_field
+
 import 'package:brainboosters_app/screens/common/live_class/live_class_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -44,7 +46,7 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
   Future<void> _handleRefresh() async {
     if (isRefreshing) return;
 
-    print('DEBUG: Starting coordinated live classes refresh...');
+    debugPrint('DEBUG: Starting coordinated live classes refresh...');
 
     setState(() {
       isRefreshing = true;
@@ -68,7 +70,9 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
         });
       }
 
-      print('DEBUG: ${isRefresh ? "Refreshing" : "Loading"} live classes...');
+      debugPrint(
+        'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} live classes...',
+      );
 
       final results = await Future.wait([
         LiveClassRepository.getUpcomingLiveClasses(limit: 8),
@@ -83,12 +87,12 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
           isRefreshing = false;
         });
 
-        print('DEBUG: Live classes loaded:');
-        print('  - Upcoming: ${upcomingLiveClasses.length} classes');
-        print('  - Technology: ${technologyLiveClasses.length} classes');
+        debugPrint('DEBUG: Live classes loaded:');
+        debugPrint('  - Upcoming: ${upcomingLiveClasses.length} classes');
+        debugPrint('  - Technology: ${technologyLiveClasses.length} classes');
       }
     } catch (e) {
-      print('ERROR: Failed to load live classes: $e');
+      debugPrint('ERROR: Failed to load live classes: $e');
 
       if (mounted) {
         setState(() {
@@ -264,30 +268,6 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
             ),
 
           const SizedBox(height: 32),
-
-          // View All Button
-          Center(
-            child: OutlinedButton(
-              onPressed: () {
-                context.push(CommonRoutes.getSearchCoursesRoute(''));
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'View All Live Classes',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -295,7 +275,7 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
 
   // NEW: Shimmer for upcoming live classes
   Widget _buildUpcomingLiveClassesShimmer(bool isMobile, bool isTablet) {
-    print('DEBUG: Rendering upcoming live classes shimmer');
+    debugPrint('DEBUG: Rendering upcoming live classes shimmer');
 
     int crossAxisCount;
     if (isMobile) {
@@ -328,7 +308,7 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
 
   // NEW: Shimmer for technology live classes
   Widget _buildTechnologyLiveClassesShimmer(bool isMobile, bool isTablet) {
-    print('DEBUG: Rendering technology live classes shimmer');
+    debugPrint('DEBUG: Rendering technology live classes shimmer');
 
     int crossAxisCount;
     if (isMobile) {
@@ -385,7 +365,7 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 6,
             offset: const Offset(0, 2),

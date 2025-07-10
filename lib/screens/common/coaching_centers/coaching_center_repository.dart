@@ -1,8 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CoachingCenterRepository {
   static final SupabaseClient _client = Supabase.instance.client;
-  
+
   static String? get currentUserId => _client.auth.currentUser?.id;
 
   // Get courses by coaching center
@@ -40,7 +41,7 @@ class CoachingCenterRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching courses by coaching center: $e');
+      debugPrint('Error fetching courses by coaching center: $e');
       return [];
     }
   }
@@ -109,7 +110,7 @@ class CoachingCenterRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching coaching centers: $e');
+      debugPrint('Error fetching coaching centers: $e');
       return [];
     }
   }
@@ -145,7 +146,7 @@ class CoachingCenterRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching nearby coaching centers: $e');
+      debugPrint('Error fetching nearby coaching centers: $e');
       return [];
     }
   }
@@ -181,7 +182,7 @@ class CoachingCenterRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching top coaching centers: $e');
+      debugPrint('Error fetching top coaching centers: $e');
       return [];
     }
   }
@@ -217,13 +218,15 @@ class CoachingCenterRepository {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching most loved coaching centers: $e');
+      debugPrint('Error fetching most loved coaching centers: $e');
       return [];
     }
   }
 
   // Get single coaching center by ID
-  static Future<Map<String, dynamic>?> getCoachingCenterById(String centerId) async {
+  static Future<Map<String, dynamic>?> getCoachingCenterById(
+    String centerId,
+  ) async {
     try {
       final response = await _client
           .from('coaching_centers')
@@ -260,7 +263,7 @@ class CoachingCenterRepository {
 
       return response;
     } catch (e) {
-      print('Error fetching coaching center: $e');
+      debugPrint('Error fetching coaching center: $e');
       return null;
     }
   }
@@ -278,7 +281,7 @@ class CoachingCenterRepository {
       final List<dynamic> data = response;
       return data.length;
     } catch (e) {
-      print('Error getting coaching centers count: $e');
+      debugPrint('Error getting coaching centers count: $e');
       return 0;
     }
   }
@@ -289,7 +292,7 @@ class CoachingCenterRepository {
       final response = await _client.rpc('get_coaching_centers_count');
       return response ?? 0;
     } catch (e) {
-      print('Error getting coaching centers count via RPC: $e');
+      debugPrint('Error getting coaching centers count via RPC: $e');
       return 0;
     }
   }

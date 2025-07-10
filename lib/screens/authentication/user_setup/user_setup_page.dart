@@ -48,7 +48,6 @@ class _UserSetupPageState extends State<UserSetupPage> {
   String? _originalFirstName;
   String? _originalLastName;
   String? _originalAvatarUrl;
-  String? _existingStudentId;
 
   @override
   void initState() {
@@ -105,7 +104,6 @@ class _UserSetupPageState extends State<UserSetupPage> {
       // Prefill from student table if exists
       if (studentProfile != null) {
         setState(() {
-          _existingStudentId = studentProfile['student_id'];
           gradeController.text = studentProfile['grade_level'] ?? '';
           schoolController.text = studentProfile['school_name'] ?? '';
           parentNameController.text = studentProfile['parent_name'] ?? '';
@@ -541,8 +539,9 @@ class _UserSetupPageState extends State<UserSetupPage> {
                           onPressed: _isLoading
                               ? null
                               : () {
-                                  if (_validateStep())
+                                  if (_validateStep()) {
                                     setState(() => _currentStep++);
+                                  }
                                 },
                           child: const Icon(
                             Icons.arrow_forward,

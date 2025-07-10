@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_repository.dart';
 import 'package:brainboosters_app/screens/common/widgets/breadcrumb_widget.dart';
-import 'package:brainboosters_app/screens/common/widgets/tab_section_widget.dart';
 
 import 'widgets/coaching_center_header_widget.dart';
 import 'widgets/coaching_center_about_tab.dart';

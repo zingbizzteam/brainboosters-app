@@ -17,7 +17,7 @@ class CourseRepository {
           .eq('category', categoryName)
           .count(CountOption.exact);
 
-      return response.count ?? 0;
+      return response.count;
     } catch (e) {
       throw CourseRepositoryException('Failed to get course count: $e');
     }
@@ -118,11 +118,11 @@ class CourseRepository {
           orderByField = 'rating';
           ascending = false;
           break;
-        case CourseSortBy.price_low:
+        case CourseSortBy.priceLow:
           orderByField = 'price';
           ascending = true;
           break;
-        case CourseSortBy.price_high:
+        case CourseSortBy.priceHigh:
           orderByField = 'price';
           ascending = false;
           break;
@@ -605,7 +605,7 @@ class FeaturedCourses {
   });
 }
 
-enum CourseSortBy { newest, oldest, rating, price_low, price_high, popular }
+enum CourseSortBy { newest, oldest, rating, priceLow, priceHigh, popular }
 
 enum CourseLevel { beginner, intermediate, advanced }
 

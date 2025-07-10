@@ -25,16 +25,14 @@ class TeacherHeaderWidget extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 spreadRadius: 2,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: ClipOval(
-            child: _buildAvatar(),
-          ),
+          child: ClipOval(child: _buildAvatar()),
         ),
         SizedBox(width: isMobile ? 16 : 24),
 
@@ -92,10 +90,7 @@ class TeacherHeaderWidget extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Stats Row
-              if (isMobile)
-                _buildMobileStats()
-              else
-                _buildDesktopStats(),
+              if (isMobile) _buildMobileStats() else _buildDesktopStats(),
 
               const SizedBox(height: 16),
 
@@ -145,7 +140,7 @@ class TeacherHeaderWidget extends StatelessWidget {
 
   Widget _buildAvatar() {
     final avatarUrl = teacher['user_profiles']?['avatar_url']?.toString();
-    
+
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return Image.network(
         avatarUrl,
@@ -157,7 +152,7 @@ class TeacherHeaderWidget extends StatelessWidget {
         },
       );
     }
-    
+
     return _buildPlaceholderAvatar();
   }
 
@@ -239,7 +234,7 @@ class TeacherHeaderWidget extends StatelessWidget {
   String _getTeacherName() {
     final userProfile = teacher['user_profiles'];
     if (userProfile == null) return 'Unknown Teacher';
-    
+
     final firstName = userProfile['first_name']?.toString() ?? '';
     final lastName = userProfile['last_name']?.toString() ?? '';
     return '$firstName $lastName'.trim();
@@ -250,9 +245,10 @@ class TeacherHeaderWidget extends StatelessWidget {
     if (coachingCenter != null) {
       return coachingCenter!['center_name']?.toString() ?? 'Unknown Center';
     }
-    
+
     final teacherCoachingCenter = teacher['coaching_centers'];
-    return teacherCoachingCenter?['center_name']?.toString() ?? 'Independent Teacher';
+    return teacherCoachingCenter?['center_name']?.toString() ??
+        'Independent Teacher';
   }
 
   int _getExperienceYears() {

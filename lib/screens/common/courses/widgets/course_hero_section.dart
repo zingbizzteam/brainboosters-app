@@ -44,10 +44,10 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
   @override
   void didUpdateWidget(CourseHeroSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // NEW: Handle refresh trigger
     if (widget.forceRefresh && !_previousRefreshState) {
-      print('DEBUG: Hero section refresh triggered');
+      debugPrint('DEBUG: Hero section refresh triggered');
       _handleRefresh();
     }
     _previousRefreshState = widget.forceRefresh;
@@ -59,9 +59,9 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
       isLoading = true;
       error = null;
     });
-    
+
     await _fetchCourse(isRefresh: true);
-    
+
     // Notify parent that refresh is complete
     if (widget.onRefreshComplete != null) {
       widget.onRefreshComplete!();
@@ -75,21 +75,27 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
         error = null;
       });
     }
-    
+
     try {
-      print('DEBUG: ${isRefresh ? "Refreshing" : "Loading"} hero course...');
+      debugPrint(
+        'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} hero course...',
+      );
       final data = await CourseRepository.getCourseById(widget.courseId);
       if (data == null) throw Exception('Course not found');
-      
+
       setState(() {
         course = data;
         isLoading = false;
       });
-      
+
       await _checkEnrollmentStatus();
-      print('DEBUG: Hero course ${isRefresh ? "refreshed" : "loaded"} successfully');
+      debugPrint(
+        'DEBUG: Hero course ${isRefresh ? "refreshed" : "loaded"} successfully',
+      );
     } catch (e) {
-      print('ERROR: Failed to ${isRefresh ? "refresh" : "load"} hero course: $e');
+      debugPrint(
+        'ERROR: Failed to ${isRefresh ? "refresh" : "load"} hero course: $e',
+      );
       setState(() {
         error = 'Failed to load course: $e';
         isLoading = false;
@@ -156,6 +162,7 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
         isEnrolled = true;
         isEnrolling = false;
       });
+       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Successfully enrolled in ${course!['title']}!'),
@@ -192,6 +199,7 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
             .eq('course_id', course!['id'])
             .eq('user_id', user.id);
         setState(() => isWishlisted = false);
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Removed from wishlist'),
@@ -205,6 +213,7 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
           'added_at': DateTime.now().toIso8601String(),
         });
         setState(() => isWishlisted = true);
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Added to wishlist'),
@@ -263,10 +272,7 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E3A8A),
-            Color(0xFF3B82F6),
-          ],
+          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
         ),
       ),
       child: Padding(
@@ -277,16 +283,16 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
         child: isLoading
             ? _buildShimmer(isMobile)
             : error != null
-                ? _buildError(isMobile)
-                : _buildHeroContent(isMobile, isTablet),
+            ? _buildError(isMobile)
+            : _buildHeroContent(isMobile, isTablet),
       ),
     );
   }
 
   Widget _buildShimmer(bool isMobile) {
     return Shimmer.fromColors(
-      baseColor: Colors.white.withOpacity(0.3),
-      highlightColor: Colors.white.withOpacity(0.1),
+      baseColor: Colors.white.withValues(alpha: 0.3),
+      highlightColor: Colors.white.withValues(alpha: 0.1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -325,15 +331,36 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: isMobile ? 48 : 64, color: Colors.white.withOpacity(0.8)),
+          Icon(
+            Icons.error_outline,
+            size: isMobile ? 48 : 64,
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
           const SizedBox(height: 16),
-          Text('Failed to Load Course', style: TextStyle(fontSize: isMobile ? 18 : 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(
+            'Failed to Load Course',
+            style: TextStyle(
+              fontSize: isMobile ? 18 : 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(error ?? 'Something went wrong', style: TextStyle(fontSize: isMobile ? 14 : 16, color: Colors.white.withOpacity(0.8)), textAlign: TextAlign.center),
+          Text(
+            error ?? 'Something went wrong',
+            style: TextStyle(
+              fontSize: isMobile ? 14 : 16,
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _fetchCourse,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.blue[900]),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.blue[900],
+            ),
             child: const Text('Retry'),
           ),
         ],
@@ -369,11 +396,15 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
     final url = course!['thumbnail_url']?.toString();
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: SizedBox(
         height: height,
         width: double.infinity,
         child: url != null && url.isNotEmpty
-            ? Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildImagePlaceholder(height))
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildImagePlaceholder(height),
+              )
             : _buildImagePlaceholder(height),
       ),
     );
@@ -382,8 +413,14 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
   Widget _buildImagePlaceholder(double height) {
     return Container(
       height: height,
-      color: Colors.white.withOpacity(0.2),
-      child: Center(child: Icon(Icons.school, size: height * 0.3, color: Colors.white.withOpacity(0.5))),
+      color: Colors.white.withValues(alpha: 0.2),
+      child: Center(
+        child: Icon(
+          Icons.school,
+          size: height * 0.3,
+          color: Colors.white.withValues(alpha: 0.5),
+        ),
+      ),
     );
   }
 
@@ -391,25 +428,62 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(course!['title'] ?? 'Untitled Course', style: TextStyle(fontSize: isMobile ? 24 : 32, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2)),
+        Text(
+          course!['title'] ?? 'Untitled Course',
+          style: TextStyle(
+            fontSize: isMobile ? 24 : 32,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            height: 1.2,
+          ),
+        ),
         const SizedBox(height: 16),
-        Text(course!['description'] ?? 'No description available', style: TextStyle(fontSize: isMobile ? 16 : 18, color: Colors.white.withOpacity(0.9), height: 1.5), maxLines: 3, overflow: TextOverflow.ellipsis),
+        Text(
+          course!['description'] ?? 'No description available',
+          style: TextStyle(
+            fontSize: isMobile ? 16 : 18,
+            color: Colors.white.withValues(alpha: 0.9),
+            height: 1.5,
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 24),
         Row(
           children: [
-            _buildFeature(Icons.play_circle_outline, '${course!['total_lessons'] ?? 0} Lessons', isMobile),
+            _buildFeature(
+              Icons.play_circle_outline,
+              '${course!['total_lessons'] ?? 0} Lessons',
+              isMobile,
+            ),
             const SizedBox(width: 24),
-            _buildFeature(Icons.access_time, '${course!['duration_hours'] ?? 0}h', isMobile),
+            _buildFeature(
+              Icons.access_time,
+              '${course!['duration_hours'] ?? 0}h',
+              isMobile,
+            ),
             const SizedBox(width: 24),
-            _buildFeature(Icons.star, (course!['rating'] ?? 0.0).toStringAsFixed(1), isMobile),
+            _buildFeature(
+              Icons.star,
+              (course!['rating'] ?? 0.0).toStringAsFixed(1),
+              isMobile,
+            ),
           ],
         ),
         const SizedBox(height: 24),
         Row(
           children: [
-            _buildFeature(Icons.people, '${course!['enrollment_count'] ?? 0} Students', isMobile),
+            _buildFeature(
+              Icons.people,
+              '${course!['enrollment_count'] ?? 0} Students',
+              isMobile,
+            ),
             const SizedBox(width: 24),
-            _buildFeature(Icons.category, course!['category']?.toString() ?? 'General', isMobile),
+            _buildFeature(
+              Icons.category,
+              course!['category']?.toString() ?? 'General',
+              isMobile,
+            ),
           ],
         ),
       ],
@@ -422,7 +496,14 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
       children: [
         Icon(icon, color: Colors.white, size: isMobile ? 16 : 20),
         const SizedBox(width: 8),
-        Text(text, style: TextStyle(color: Colors.white, fontSize: isMobile ? 12 : 14, fontWeight: FontWeight.w500)),
+        Text(
+          text,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isMobile ? 12 : 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -441,15 +522,32 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.blue,
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 32, vertical: isMobile ? 12 : 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 20 : 32,
+              vertical: isMobile ? 12 : 16,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           icon: isEnrolling
-              ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue))
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.blue,
+                  ),
+                )
               : Icon(isEnrolled ? Icons.play_arrow : Icons.school),
           label: Text(
-            isEnrolled ? 'Go to Course' : 'Enroll Now${price == 0 ? " (Free)" : ""}',
-            style: TextStyle(fontSize: isMobile ? 14 : 16, fontWeight: FontWeight.w600),
+            isEnrolled
+                ? 'Go to Course'
+                : 'Enroll Now${price == 0 ? " (Free)" : ""}',
+            style: TextStyle(
+              fontSize: isMobile ? 14 : 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         OutlinedButton.icon(
@@ -457,26 +555,55 @@ class _CourseHeroSectionState extends State<CourseHeroSection> {
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white,
             side: const BorderSide(color: Colors.white),
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 32, vertical: isMobile ? 12 : 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 20 : 32,
+              vertical: isMobile ? 12 : 16,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-          icon: Icon(isWishlisted ? Icons.favorite : Icons.favorite_border, color: Colors.pinkAccent),
+          icon: Icon(
+            isWishlisted ? Icons.favorite : Icons.favorite_border,
+            color: Colors.pinkAccent,
+          ),
           label: Text(
             isWishlisted ? 'Wishlisted' : 'Add to Wishlist',
-            style: TextStyle(fontSize: isMobile ? 14 : 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: isMobile ? 14 : 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         if (hasDiscount)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(12)),
-            child: Text('₹${originalPrice.toStringAsFixed(0)} → ₹${price.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '₹${originalPrice.toStringAsFixed(0)} → ₹${price.toStringAsFixed(0)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           )
         else if (price > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(12)),
-            child: Text('₹${price.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '₹${price.toStringAsFixed(0)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
       ],
     );

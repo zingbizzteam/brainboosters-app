@@ -14,7 +14,8 @@ class CoachingCenterFacultyTab extends StatefulWidget {
   });
 
   @override
-  State<CoachingCenterFacultyTab> createState() => _CoachingCenterFacultyTabState();
+  State<CoachingCenterFacultyTab> createState() =>
+      _CoachingCenterFacultyTabState();
 }
 
 class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
@@ -115,123 +116,126 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
 
   Widget _buildFacultyCard(Map<String, dynamic> teacher) {
     final userProfile = teacher['user_profiles'];
-    
-    return InkWell(
-    onTap: () {
-      // Navigate to teacher detail page
-      context.go(CommonRoutes.getCoachingCenterTeacherDetailRoute(widget.center['id'], teacher['id']));
-    },
-    child:Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: _getAvatarUrl(userProfile) != null
-                ? NetworkImage(_getAvatarUrl(userProfile)!)
-                : null,
-            onBackgroundImageError: (exception, stackTrace) {},
-            child: _getAvatarUrl(userProfile) == null
-                ? const Icon(Icons.person, size: 30)
-                : null,
-          ),
-          const SizedBox(width: 16),
 
-          // Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getTeacherName(userProfile),
-                  style: const TextStyle(
-                    fontSize: 16,
+    return InkWell(
+      onTap: () {
+        // Navigate to teacher detail page
+        context.go(
+          CommonRoutes.getCoachingCenterTeacherDetailRoute(
+            widget.center['id'],
+            teacher['id'],
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 30,
+              backgroundImage: _getAvatarUrl(userProfile) != null
+                  ? NetworkImage(_getAvatarUrl(userProfile)!)
+                  : null,
+              onBackgroundImageError: (exception, stackTrace) {},
+              child: _getAvatarUrl(userProfile) == null
+                  ? const Icon(Icons.person, size: 30)
+                  : null,
+            ),
+            const SizedBox(width: 16),
+
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getTeacherName(userProfile),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_getExperienceYears(teacher)} years experience',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 4),
+                  if (_getSpecializations(teacher).isNotEmpty) ...[
+                    Text(
+                      'Specializations: ${_getSpecializations(teacher).take(3).join(', ')}',
+                      style: const TextStyle(fontSize: 14),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  if (_getRating(teacher) > 0) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          _getRating(teacher).toStringAsFixed(1),
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${_getTotalReviews(teacher)} reviews)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Verification badge
+            if (_isVerified(teacher))
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Verified',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_getExperienceYears(teacher)} years experience',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (_getSpecializations(teacher).isNotEmpty) ...[
-                  Text(
-                    'Specializations: ${_getSpecializations(teacher).take(3).join(', ')}',
-                    style: const TextStyle(fontSize: 14),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                if (_getRating(teacher) > 0) ...[
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getRating(teacher).toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(${_getTotalReviews(teacher)} reviews)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // Verification badge
-          if (_isVerified(teacher))
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'Verified',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-        ],
-      ),),
+          ],
+        ),
+      ),
     );
   }
 
   // Helper methods
   String _getTeacherName(Map<String, dynamic>? userProfile) {
     if (userProfile == null) return 'Unknown Teacher';
-    
+
     final firstName = userProfile['first_name']?.toString() ?? '';
     final lastName = userProfile['last_name']?.toString() ?? '';
     return '$firstName $lastName'.trim();

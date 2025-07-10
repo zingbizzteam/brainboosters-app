@@ -113,7 +113,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
         // Get user profile to check user type
         final userProfile = await _getUserProfile(response.user!.id);
-
+        if (!mounted) return;
         if (userProfile == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please complete your profile setup')),
@@ -320,7 +320,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
       return response;
     } catch (e) {
-      print('Error fetching user profile: $e');
+      debugPrint('Error fetching user profile: $e');
       return null;
     }
   }
@@ -335,7 +335,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
       return response;
     } catch (e) {
-      print('Error fetching student profile: $e');
+      debugPrint('Error fetching student profile: $e');
       return null;
     }
   }

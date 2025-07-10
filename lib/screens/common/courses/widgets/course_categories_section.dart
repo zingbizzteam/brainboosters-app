@@ -44,7 +44,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
 
     // NEW: Detect when parent triggers refresh
     if (widget.forceRefresh != _lastForceRefreshState && widget.forceRefresh) {
-      print('DEBUG: Categories section received refresh trigger');
+      debugPrint('DEBUG: Categories section received refresh trigger');
       _lastForceRefreshState = widget.forceRefresh;
       _handleRefresh();
     } else if (!widget.forceRefresh) {
@@ -54,7 +54,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
 
   // NEW: Handle external refresh trigger
   Future<void> _handleRefresh() async {
-    print('DEBUG: Categories section starting refresh...');
+    debugPrint('DEBUG: Categories section starting refresh...');
 
     // Clear cache to ensure fresh data
     CourseRepository.clearCache();
@@ -82,7 +82,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
         });
       }
 
-      print(
+      debugPrint(
         'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} categories with counts...',
       );
 
@@ -101,12 +101,14 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
       final configData = configResponse['config_value'] as Map<String, dynamic>;
       final categoriesConfig = configData['categories'] as List<dynamic>;
 
-      print('DEBUG: Found ${categoriesConfig.length} categories in config');
+      debugPrint(
+        'DEBUG: Found ${categoriesConfig.length} categories in config',
+      );
 
       // OPTIMIZED: Get all counts in a single batch operation
       final countMap = await CourseRepository.getAllCategoryCounts();
 
-      print(
+      debugPrint(
         'DEBUG: Retrieved counts for ${countMap.length} categories: $countMap',
       );
 
@@ -142,7 +144,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
         });
       }
 
-      print(
+      debugPrint(
         'DEBUG: Built ${categoriesWithCounts.length} categories with counts',
       );
 
@@ -152,10 +154,10 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
           isLoading = false;
         });
 
-        print('DEBUG: Categories state updated successfully');
+        debugPrint('DEBUG: Categories state updated successfully');
       }
     } catch (e) {
-      print('ERROR: Failed to load categories: $e');
+      debugPrint('ERROR: Failed to load categories: $e');
 
       if (mounted) {
         setState(() {
@@ -274,7 +276,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
     bool isTablet,
     bool isSmallMobile,
   ) {
-    print('DEBUG: Rendering skeleton loader');
+    debugPrint('DEBUG: Rendering skeleton loader');
 
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
@@ -313,7 +315,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -473,7 +475,7 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -489,15 +491,15 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
                   width: isSmallMobile ? 40 : 48,
                   height: isSmallMobile ? 40 : 48,
                   decoration: BoxDecoration(
-                    color: category['color'].withOpacity(
-                      isOfflineMode ? 0.3 : 0.1,
+                    color: category['color'].withValues(
+                      alpha: isOfflineMode ? 0.3 : 0.1,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     category['icon'],
-                    color: category['color'].withOpacity(
-                      isOfflineMode ? 0.6 : 1.0,
+                    color: category['color'].withValues(
+                      alpha: isOfflineMode ? 0.6 : 1.0,
                     ),
                     size: isSmallMobile ? 20 : 24,
                   ),
@@ -510,8 +512,8 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: category['color'].withOpacity(
-                        isOfflineMode ? 0.3 : 0.1,
+                      color: category['color'].withValues(
+                        alpha: isOfflineMode ? 0.3 : 0.1,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -519,8 +521,8 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
                       category['displayCount'],
                       style: TextStyle(
                         fontSize: 12,
-                        color: category['color'].withOpacity(
-                          isOfflineMode ? 0.6 : 1.0,
+                        color: category['color'].withValues(
+                          alpha: isOfflineMode ? 0.6 : 1.0,
                         ),
                         fontWeight: FontWeight.w600,
                       ),
@@ -556,8 +558,8 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
                     category['displayCount'],
                     style: TextStyle(
                       fontSize: 12,
-                      color: category['color'].withOpacity(
-                        isOfflineMode ? 0.6 : 1.0,
+                      color: category['color'].withValues(
+                        alpha: isOfflineMode ? 0.6 : 1.0,
                       ),
                       fontWeight: FontWeight.w600,
                     ),

@@ -26,16 +26,14 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 spreadRadius: 2,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: ClipOval(
-            child: _buildLogo(),
-          ),
+          child: ClipOval(child: _buildLogo()),
         ),
         SizedBox(width: isMobile ? 16 : 24),
 
@@ -94,10 +92,7 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Stats Row
-              if (isMobile)
-                _buildMobileStats()
-              else
-                _buildDesktopStats(),
+              if (isMobile) _buildMobileStats() else _buildDesktopStats(),
             ],
           ),
         ),
@@ -107,7 +102,7 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
 
   Widget _buildLogo() {
     final logoUrl = coachingCenter['logo_url']?.toString();
-    
+
     if (logoUrl != null && logoUrl.isNotEmpty) {
       return Image.network(
         logoUrl,
@@ -119,7 +114,7 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
         },
       );
     }
-    
+
     return _buildPlaceholderLogo();
   }
 
@@ -145,26 +140,20 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               '${_getTotalCourses()} courses',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 '${_getTotalStudents()}+ students',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        
+
         // NEW: Conditionally show teachers count
         if (showTeachersCount) ...[
           Row(
@@ -182,14 +171,11 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
           ),
           const SizedBox(height: 4),
         ],
-        
+
         // Location row
         Text(
           _getLocation(),
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -206,10 +192,7 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '${_getTotalCourses()} courses',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -223,10 +206,7 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
       ),
       Text(
         '${_getTotalStudents()}+ students',
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.grey[600],
-        ),
+        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
       ),
     ];
 
@@ -248,10 +228,7 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               '${_getTotalTeachers()} teachers',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -269,18 +246,11 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
       ),
       Text(
         _getLocation(),
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.grey[600],
-        ),
+        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
       ),
     ]);
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: statsWidgets,
-    );
+    return Wrap(spacing: 8, runSpacing: 4, children: statsWidgets);
   }
 
   // Helper methods
@@ -289,7 +259,8 @@ class CoachingCenterHeaderWidget extends StatelessWidget {
   }
 
   String _getDescription() {
-    return coachingCenter['description']?.toString() ?? 'No description available';
+    return coachingCenter['description']?.toString() ??
+        'No description available';
   }
 
   int _getTotalCourses() {

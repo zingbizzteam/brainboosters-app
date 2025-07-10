@@ -1,6 +1,7 @@
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 class TeacherCoursesTab extends StatelessWidget {
   final Map<String, dynamic> teacher;
   final List<Map<String, dynamic>> courses;
@@ -56,7 +57,7 @@ class TeacherCoursesTab extends StatelessWidget {
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -84,14 +85,16 @@ class TeacherCoursesTab extends StatelessWidget {
                     ? Image.network(
                         course['thumbnail_url'],
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Icon(Icons.play_circle_outline, color: Colors.grey[400]),
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.play_circle_outline,
+                          color: Colors.grey[400],
+                        ),
                       )
                     : Icon(Icons.play_circle_outline, color: Colors.grey[400]),
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // Course details
             Expanded(
               child: Column(
@@ -109,15 +112,12 @@ class TeacherCoursesTab extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     course['short_description'] ?? course['description'] ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Course stats
                   Row(
                     children: [
@@ -143,7 +143,7 @@ class TeacherCoursesTab extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Price
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -179,7 +179,7 @@ class TeacherCoursesTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -204,7 +204,7 @@ class TeacherCoursesTab extends StatelessWidget {
   String _getTeacherName() {
     final userProfile = teacher['user_profiles'];
     if (userProfile == null) return 'Unknown Teacher';
-    
+
     final firstName = userProfile['first_name']?.toString() ?? '';
     final lastName = userProfile['last_name']?.toString() ?? '';
     return '$firstName $lastName'.trim();
@@ -212,7 +212,7 @@ class TeacherCoursesTab extends StatelessWidget {
 
   String _getFormattedPrice(Map<String, dynamic> course) {
     if (_isFree(course)) return 'FREE';
-    
+
     final price = course['price'];
     if (price is num) {
       return '₹${price.toStringAsFixed(0)}';

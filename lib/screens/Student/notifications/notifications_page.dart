@@ -504,7 +504,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
           isRead: isRead,
           priority: notification.priority,
           scheduledAt: notification.scheduledAt,
-          expiresAt: notification.expiresAt,
           createdAt: notification.createdAt,
           updatedAt: DateTime.now(),
         );

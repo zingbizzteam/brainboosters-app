@@ -24,7 +24,9 @@ class NotificationCard extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 20),
-        color: notification.isRead ? Colors.orange.shade100 : Colors.green.shade100,
+        color: notification.isRead
+            ? Colors.orange.shade100
+            : Colors.green.shade100,
         child: Icon(
           notification.isRead ? Icons.mark_email_unread : Icons.mark_email_read,
           color: notification.isRead ? Colors.orange : Colors.green,
@@ -119,7 +121,7 @@ class NotificationCard extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: color, size: 20),
@@ -134,7 +136,9 @@ class NotificationCard extends StatelessWidget {
             notification.title,
             style: TextStyle(
               fontSize: 16,
-              fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w600,
+              fontWeight: notification.isRead
+                  ? FontWeight.w500
+                  : FontWeight.w600,
               color: Colors.black,
             ),
             maxLines: 2,
@@ -159,7 +163,9 @@ class NotificationCard extends StatelessWidget {
       notification.message,
       style: TextStyle(
         fontSize: 14,
-        color: notification.isRead ? Colors.grey.shade600 : Colors.grey.shade700,
+        color: notification.isRead
+            ? Colors.grey.shade600
+            : Colors.grey.shade700,
       ),
       maxLines: 3,
       overflow: TextOverflow.ellipsis,
@@ -172,7 +178,7 @@ class NotificationCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: _getTypeColor().withOpacity(0.1),
+            color: _getTypeColor().withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -189,7 +195,7 @@ class NotificationCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text(
@@ -204,10 +210,7 @@ class NotificationCard extends StatelessWidget {
         const Spacer(),
         Text(
           _formatTime(notification.createdAt),
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade500,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
         ),
       ],
     );
@@ -249,11 +252,7 @@ class NotificationCard extends StatelessWidget {
             ),
           ),
       ],
-      child: Icon(
-        Icons.more_vert,
-        color: Colors.grey.shade400,
-        size: 20,
-      ),
+      child: Icon(Icons.more_vert, color: Colors.grey.shade400, size: 20),
     );
   }
 
@@ -295,15 +294,35 @@ class NotificationCard extends StatelessWidget {
     } else if (difference.inDays < 365 && dateTime.year == now.year) {
       // Same year - show month and day
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[dateTime.month - 1]} ${dateTime.day}';
     } else {
       // Different year - show full date
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
     }
