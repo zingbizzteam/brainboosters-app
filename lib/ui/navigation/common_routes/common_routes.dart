@@ -1,4 +1,4 @@
-// common_routes/common_routes.dart - FIXED VERSION
+// common_routes/common_routes.dart - COMPLETE FIXED VERSION
 import 'package:brainboosters_app/screens/common/coaching_centers/teachers/teacher_details/teacher_details_page.dart';
 import 'package:brainboosters_app/screens/common/courses/assesment/assesment_page.dart';
 import 'package:brainboosters_app/screens/common/courses/assesment/quiz_attempt_page.dart';
@@ -8,6 +8,7 @@ import 'package:brainboosters_app/screens/common/courses/course_player/course_pl
 import 'package:brainboosters_app/screens/common/courses/exercises/exercise_attempt_page.dart';
 import 'package:brainboosters_app/screens/common/courses/exercises/exercise_results_page.dart';
 import 'package:brainboosters_app/screens/common/courses/exercises/practice_exercise_page.dart';
+import 'package:brainboosters_app/screens/common/live_class/room/live_class_join_page.dart';
 import 'package:brainboosters_app/screens/common/search/search_models.dart';
 import 'package:brainboosters_app/screens/common/search/search_page.dart';
 import 'package:brainboosters_app/screens/common/coaching_centers/coaching_centers_page.dart';
@@ -20,58 +21,65 @@ import 'package:brainboosters_app/screens/common/live_class/live_class_intro/liv
 import 'package:go_router/go_router.dart';
 
 class CommonRoutes {
-  // Main navigation route constants
-  static const String courses = '/courses';
-  static const String courseDetail = '/course/:courseId';
-  static const String coursesByCategory = '/courses/category/:categoryName';
-  static const String searchCourses = '/search-courses';
-  static const String liveClasses = '/live-classes';
-  static const String liveClassDetail = '/live-class/:liveClassId';
-  static const String coachingCenters = '/coaching-centers';
-  static const String coachingCenterDetail = '/coaching-center/:centerId';
-  static const String coursePlayer = '/course/:courseId/lesson/:lessonId';
+  // FIXED: Proper route constants with clear naming
+  static const String _courses = '/courses';
+  static const String _courseDetail = '/course';
+  static const String _coursesByCategory = '/courses/category';
+  static const String _searchCourses = '/search-courses';
+  static const String _liveClasses = '/live-classes';
+  static const String _liveClassDetail = '/live-class';
+  static const String _liveClassJoin = '/live-class';
+  static const String _coachingCenters = '/coaching-centers';
+  static const String _coachingCenterDetail = '/coaching-center';
+  static const String _coursePlayer = '/course';
+  static const String _assignment = '/assignment';
+  static const String _assessment = '/assessment';
+  static const String _exercise = '/exercise';
+  static const String _quiz = '/quiz';
+  static const String _search = '/search';
 
-  // FIXED: Top-level assessment routes (not nested)
-  static const String assignmentDetail = '/assignment/:assignmentId';
-  static const String assessmentDetail = '/assessment/:assessmentId';
-  static const String exerciseDetail = '/exercise/:exerciseId';
-  static const String exerciseAttempt = '/exercise/:exerciseId/attempt';
-  static const String exerciseResults = '/exercise/:exerciseId/results';
-  static const String quizDetail = '/quiz/:quizId';
-  static const String quizAttempt = '/quiz/:quizId/attempt';
-  static const String quizResults = '/quiz/:quizId/results';
-
-  // Teacher routes nested under coaching centers
-  static const String coachingCenterTeachers =
-      '/coaching-center/:centerId/teachers';
-  static const String coachingCenterTeacherDetail =
-      '/coaching-center/:centerId/teacher/:teacherId';
+  // FIXED: Route template constants (these are the actual route patterns)
+  static const String coursesRoute = '/courses';
+  static const String courseDetailRoute = '/course/:courseId';
+  static const String coursePlayerRoute = '/course/:courseId/lesson/:lessonId';
+  static const String coursePlayerSimpleRoute = '/course/:courseId/player';
+  static const String coursesByCategoryRoute = '/courses/category/:categoryName';
+  static const String liveClassesRoute = '/live-classes';
+  static const String liveClassDetailRoute = '/live-class/:liveClassId';
+  static const String liveClassJoinRoute = '/live-class/:liveClassId/join';
+  static const String coachingCentersRoute = '/coaching-centers';
+  static const String coachingCenterDetailRoute = '/coaching-center/:centerId';
+  static const String coachingCenterTeachersRoute = '/coaching-center/:centerId/teachers';
+  static const String coachingCenterTeacherDetailRoute = '/coaching-center/:centerId/teacher/:teacherId';
+  static const String assignmentRoute = '/assignment/:assignmentId';
+  static const String assessmentRoute = '/assessment/:assessmentId/:type';
+  static const String exerciseRoute = '/exercise/:exerciseId';
+  static const String exerciseAttemptRoute = '/exercise/:exerciseId/attempt';
+  static const String exerciseResultsRoute = '/exercise/:exerciseId/results';
+  static const String quizAttemptRoute = '/quiz/:testId/attempt';
+  static const String quizResultsRoute = '/quiz/:testId/results';
   static const String searchRoute = '/search';
 
-  // Helper methods for generating dynamic routes
-  static String getCourseDetailRoute(String courseId) => '/course/$courseId';
-  static String getLiveClassDetailRoute(String liveClassId) =>
-      '/live-class/$liveClassId';
-  static String getCoachingCenterDetailRoute(String centerId) =>
-      '/coaching-center/$centerId';
-  static String getSearchCoursesRoute(String query) =>
-      '/search-courses?q=${Uri.encodeComponent(query)}';
-  static String getCoursesByCategoryRoute(String categoryName) =>
-      '/courses/category/${Uri.encodeComponent(categoryName)}';
-  static String getCoachingCenterTeachersRoute(String centerId) =>
-      '/coaching-center/$centerId/teachers';
-  static String getCoachingCenterTeacherDetailRoute(
-    String centerId,
-    String teacherId,
-  ) => '/coaching-center/$centerId/teacher/$teacherId';
+  // FIXED: Helper methods for generating dynamic routes using constants
+  static String getCourseDetailRoute(String courseId) => '$_courseDetail/$courseId';
+  
+  static String getLiveClassDetailRoute(String liveClassId) => '$_liveClassDetail/$liveClassId';
+  
+  static String getLiveClassJoinRoute(String liveClassId) => '$_liveClassDetail/$liveClassId/join';
+  
+  static String getCoachingCenterDetailRoute(String centerId) => '$_coachingCenterDetail/$centerId';
+  
+  static String getSearchCoursesRoute(String query) => '$_searchCourses?q=${Uri.encodeComponent(query)}';
+  
+  static String getCoursesByCategoryRoute(String categoryName) => '$_coursesByCategory/${Uri.encodeComponent(categoryName)}';
+  
+  static String getCoachingCenterTeachersRoute(String centerId) => '$_coachingCenterDetail/$centerId/teachers';
+  
+  static String getCoachingCenterTeacherDetailRoute(String centerId, String teacherId) => '$_coachingCenterDetail/$centerId/teacher/$teacherId';
 
-  // FIXED: Assessment route helpers
-  static String getAssignmentRoute(
-    String assignmentId, {
-    String? courseId,
-    String? lessonId,
-  }) {
-    var route = '/assignment/$assignmentId';
+  // FIXED: Assessment route helpers using constants
+  static String getAssignmentRoute(String assignmentId, {String? courseId, String? lessonId}) {
+    var route = '$_assignment/$assignmentId';
     final params = <String>[];
     if (courseId != null) params.add('courseId=$courseId');
     if (lessonId != null) params.add('lessonId=$lessonId');
@@ -79,12 +87,7 @@ class CommonRoutes {
     return route;
   }
 
-  static String getAssessmentRoute(
-    String assessmentId,
-    String type, {
-    String? courseId,
-    String? lessonId,
-  }) {
+  static String getAssessmentRoute(String assessmentId, String type, {String? courseId, String? lessonId}) {
     var route = '/$type/$assessmentId';
     final params = <String>[];
     if (courseId != null) params.add('courseId=$courseId');
@@ -93,47 +96,65 @@ class CommonRoutes {
     return route;
   }
 
-  /// FIXED: All GoRouter routes for common navigation
+  static String getQuizAttemptRoute(String testId, {String? courseId, String? lessonId}) {
+    var route = '$_quiz/$testId/attempt';
+    final params = <String>[];
+    if (courseId != null) params.add('courseId=$courseId');
+    if (lessonId != null) params.add('lessonId=$lessonId');
+    if (params.isNotEmpty) route += '?${params.join('&')}';
+    return route;
+  }
+
+  static String getQuizResultsRoute(String testId) => '$_quiz/$testId/results';
+
+  /// FIXED: Complete GoRouter routes with all live class functionality
   static List<RouteBase> getAllRoutes() {
     return [
+      // Quiz routes (moved to top for priority)
+      GoRoute(
+        path: quizAttemptRoute,
+        builder: (context, state) {
+          final testId = state.pathParameters['testId']!;
+          final courseId = state.uri.queryParameters['courseId'];
+          final lessonId = state.uri.queryParameters['lessonId'];
+          return QuizAttemptPage(
+            testId: testId,
+            courseId: courseId,
+            lessonId: lessonId,
+          );
+        },
+      ),
 
       GoRoute(
-      path: '/quiz/:testId/attempt',
-      builder: (context, state) {
-        final testId = state.pathParameters['testId']!;
-        final courseId = state.uri.queryParameters['courseId'];
-        final lessonId = state.uri.queryParameters['lessonId'];
-        return QuizAttemptPage(
-          testId: testId,
-          courseId: courseId,
-          lessonId: lessonId,
-        );
-      },
-    ),
-    
-    // Quiz results route
-    GoRoute(
-      path: '/quiz/:testId/results',
-      builder: (context, state) {
-        final testId = state.pathParameters['testId']!;
-        return QuizResultsPage(testId: testId);
-      },
-    ),
-      // Courses main page
-      GoRoute(path: courses, builder: (context, state) => const CoursesPage()),
+        path: quizResultsRoute,
+        builder: (context, state) {
+          final testId = state.pathParameters['testId']!;
+          final courseId = state.uri.queryParameters['courseId'];
+          final lessonId = state.uri.queryParameters['lessonId'];
+          return QuizResultsPage(
+            testId: testId,
+            courseId: courseId,
+            lessonId: lessonId,
+          );
+        },
+      ),
 
-      // Course details
+      // Courses routes
       GoRoute(
-        path: '/course/:courseId',
+        path: coursesRoute,
+        builder: (context, state) => const CoursesPage(),
+      ),
+
+      GoRoute(
+        path: courseDetailRoute,
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
           return CourseIntroPage(courseId: courseId);
         },
       ),
 
-      // Course player
       GoRoute(
-        path: '/course/:courseId/lesson/:lessonId',
+        path: coursePlayerRoute,
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
           final lessonId = state.pathParameters['lessonId']!;
@@ -142,16 +163,52 @@ class CommonRoutes {
       ),
 
       GoRoute(
-        path: '/course/:courseId/player',
+        path: coursePlayerSimpleRoute,
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
           return CoursePlayerPage(courseId: courseId);
         },
       ),
 
-      // FIXED: Top-level assignment routes
       GoRoute(
-        path: '/assignment/:assignmentId',
+        path: coursesByCategoryRoute,
+        builder: (context, state) {
+          final categoryName = state.pathParameters['categoryName']!;
+          return CategoryCoursesPage(
+            categoryName: Uri.decodeComponent(categoryName),
+          );
+        },
+      ),
+
+      // FIXED: Complete live class routes
+      GoRoute(
+        path: liveClassesRoute,
+        builder: (context, state) => const LiveClassesPage(),
+      ),
+
+      GoRoute(
+        path: liveClassDetailRoute,
+        builder: (context, state) {
+          final liveClassId = state.pathParameters['liveClassId']!;
+          return LiveClassIntroPage(liveClassId: liveClassId);
+        },
+        routes: [
+          // CRITICAL: Missing live class join route - this was causing your error
+          GoRoute(
+            path: 'join',
+            builder: (context, state) {
+              final liveClassId = state.pathParameters['liveClassId']!;
+              return LiveClassJoinPage(
+                liveClassId: liveClassId,
+              );
+            },
+          ),
+        ],
+      ),
+
+      // Assignment routes
+      GoRoute(
+        path: assignmentRoute,
         builder: (context, state) {
           final assignmentId = state.pathParameters['assignmentId']!;
           final courseId = state.uri.queryParameters['courseId'];
@@ -164,15 +221,15 @@ class CommonRoutes {
         },
       ),
 
-      // FIXED: Generic assessment route
+      // Generic assessment route
       GoRoute(
-        path: '/assessment/:assessmentId/:type',
+        path: assessmentRoute,
         builder: (context, state) {
           final assessmentId = state.pathParameters['assessmentId']!;
           final type = state.pathParameters['type']!;
           final courseId = state.uri.queryParameters['courseId'];
           final lessonId = state.uri.queryParameters['lessonId'];
-
+          
           switch (type) {
             case 'assignment':
               return AssignmentPage(
@@ -195,7 +252,7 @@ class CommonRoutes {
 
       // Exercise routes
       GoRoute(
-        path: '/exercise/:exerciseId',
+        path: exerciseRoute,
         builder: (context, state) {
           final exerciseId = state.pathParameters['exerciseId']!;
           final courseId = state.uri.queryParameters['courseId'];
@@ -224,9 +281,9 @@ class CommonRoutes {
         ],
       ),
 
-      // Search page
+      // Search route
       GoRoute(
-        path: '/search',
+        path: searchRoute,
         builder: (context, state) {
           final query = state.uri.queryParameters['q'];
           final entityType = state.uri.queryParameters['type'];
@@ -254,47 +311,19 @@ class CommonRoutes {
         },
       ),
 
-      // Courses by category
+      // Coaching center routes
       GoRoute(
-        path: '/courses/category/:categoryName',
-        builder: (context, state) {
-          final categoryName = state.pathParameters['categoryName']!;
-          return CategoryCoursesPage(
-            categoryName: Uri.decodeComponent(categoryName),
-          );
-        },
-      ),
-
-      // Live Classes main page
-      GoRoute(
-        path: liveClasses,
-        builder: (context, state) => const LiveClassesPage(),
-      ),
-
-      // Live Class details
-      GoRoute(
-        path: '/live-class/:liveClassId',
-        builder: (context, state) {
-          final liveClassId = state.pathParameters['liveClassId']!;
-          return LiveClassIntroPage(liveClassId: liveClassId);
-        },
-      ),
-
-      // Coaching Centers main page
-      GoRoute(
-        path: coachingCenters,
+        path: coachingCentersRoute,
         builder: (context, state) => const CoachingCentersPage(),
       ),
 
-      // Coaching Center details and nested teacher routes
       GoRoute(
-        path: '/coaching-center/:centerId',
+        path: coachingCenterDetailRoute,
         builder: (context, state) {
           final centerId = state.pathParameters['centerId']!;
           return CoachingCenterDetailPage(centerId: centerId);
         },
         routes: [
-          // Teachers list for this coaching center
           GoRoute(
             path: 'teachers',
             builder: (context, state) {
@@ -302,7 +331,6 @@ class CommonRoutes {
               return CoachingCenterTeachersPage(centerId: centerId);
             },
           ),
-          // Individual teacher detail within this coaching center
           GoRoute(
             path: 'teacher/:teacherId',
             builder: (context, state) {
@@ -316,6 +344,39 @@ class CommonRoutes {
           ),
         ],
       ),
+    ];
+  }
+
+  // FIXED: Route validation helper
+  static bool isValidRoute(String route) {
+    final allRoutes = getAllRoutes();
+    // This is a simplified check - in production you'd want more sophisticated validation
+    return route.startsWith('/');
+  }
+
+  // FIXED: Debug helper to list all routes
+  static List<String> getAllRoutePaths() {
+    return [
+      coursesRoute,
+      courseDetailRoute,
+      coursePlayerRoute,
+      coursePlayerSimpleRoute,
+      coursesByCategoryRoute,
+      liveClassesRoute,
+      liveClassDetailRoute,
+      liveClassJoinRoute,
+      coachingCentersRoute,
+      coachingCenterDetailRoute,
+      coachingCenterTeachersRoute,
+      coachingCenterTeacherDetailRoute,
+      assignmentRoute,
+      assessmentRoute,
+      exerciseRoute,
+      exerciseAttemptRoute,
+      exerciseResultsRoute,
+      quizAttemptRoute,
+      quizResultsRoute,
+      searchRoute,
     ];
   }
 }

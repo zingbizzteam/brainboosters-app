@@ -1,11 +1,11 @@
 // notifications_page.dart
-import 'package:brainboosters_app/screens/Student/notifications/notifications_repository.dart';
-import 'package:brainboosters_app/screens/Student/notifications/widgets/notification_card.dart';
-import 'package:brainboosters_app/screens/Student/notifications/widgets/notification_filters_bottom_sheet.dart';
+import 'package:brainboosters_app/screens/student/notifications/notifications_repository.dart';
+import 'package:brainboosters_app/screens/student/notifications/widgets/notification_card.dart';
+import 'package:brainboosters_app/screens/student/notifications/widgets/notification_filters_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:brainboosters_app/screens/Student/notifications/notification_model.dart';
+import 'package:brainboosters_app/screens/student/notifications/notification_model.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});

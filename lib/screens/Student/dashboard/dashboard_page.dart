@@ -1,4 +1,4 @@
-import 'package:brainboosters_app/screens/Student/dashboard/widgets/enrolled_live_class_list.dart';
+import 'package:brainboosters_app/screens/student/dashboard/widgets/enrolled_live_class_list.dart';
 import 'package:brainboosters_app/screens/common/live_class/widgets/live_class_card.dart';
 import 'package:brainboosters_app/screens/common/courses/widgets/course_card.dart';
 import 'package:brainboosters_app/screens/student/dashboard/widgets/dashboard_top_bar.dart';

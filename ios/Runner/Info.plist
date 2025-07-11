@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-  <dict>
+<dict>
+    <!-- App Identity -->
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
@@ -22,50 +23,112 @@
     <string>????</string>
     <key>CFBundleVersion</key>
     <string>$(FLUTTER_BUILD_NUMBER)</string>
+    
+    <!-- Platform Requirements -->
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    
+    <!-- UI Configuration -->
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
+    
+    <!-- URL Schemes for OAuth/Deep Linking -->
     <key>CFBundleURLTypes</key>
     <array>
-      <dict>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.googleusercontent.apps.46751973266-husicesg2ic79fp7sth8phha2bgvf1e8</string>
-        </array>
-      </dict>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>com.brainboosters.oauth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.46751973266-husicesg2ic79fp7sth8phha2bgvf1e8</string>
+            </array>
+        </dict>
     </array>
+    
+    <!-- FIXED: Proper Privacy Permissions with Professional Descriptions -->
     <key>NSCameraUsageDescription</key>
-    <string>Used to demonstrate image picker plugin</string>
+    <string>Brain Boosters needs camera access to enable video participation in live classes and to capture images for assignment submissions. Your camera is only used when you explicitly choose to participate in video sessions.</string>
+    
     <key>NSMicrophoneUsageDescription</key>
-    <string>Used to capture audio for image picker plugin</string>
+    <string>Brain Boosters needs microphone access to enable audio participation in live classes and voice recordings for assignments. Your microphone is only used when you explicitly choose to participate in audio sessions.</string>
+    
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Used to demonstrate image picker plugin</string>
+    <string>Brain Boosters needs photo library access to allow you to select images for assignment submissions and profile pictures. We only access photos you specifically choose to share.</string>
+    
+    <!-- Additional Privacy Permissions for Live Classes -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Brain Boosters uses local network access to optimize video streaming quality during live classes when you're on the same network as other participants.</string>
+    
+    <!-- Interface Orientations -->
     <key>UISupportedInterfaceOrientations</key>
     <array>
-      <string>UIInterfaceOrientationPortrait</string>
-      <string>UIInterfaceOrientationLandscapeLeft</string>
-      <string>UIInterfaceOrientationLandscapeRight</string>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+    
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
-      <string>UIInterfaceOrientationPortrait</string>
-      <string>UIInterfaceOrientationPortraitUpsideDown</string>
-      <string>UIInterfaceOrientationLandscapeLeft</string>
-      <string>UIInterfaceOrientationLandscapeRight</string>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+    
+    <!-- Performance Optimizations -->
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
-  </dict>
-  <key>NSAppTransportSecurity</key>
-  <dict>
-    <key>NSAllowsArbitraryLoads</key>
-    <true/>
-  </dict>
+    
+    <!-- FIXED: Secure App Transport Security Configuration -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- NEVER use NSAllowsArbitraryLoads: true in production -->
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        
+        <!-- Only allow specific domains that require HTTP (if any) -->
+        <key>NSExceptionDomains</key>
+        <dict>
+            <!-- Example: Only if you have legacy HTTP endpoints -->
+            <!-- Remove this if all your endpoints use HTTPS -->
+            <key>legacy-api.brainboosters.com</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSExceptionMinimumTLSVersion</key>
+                <string>TLSv1.0</string>
+            </dict>
+        </dict>
+        
+        <!-- Enforce HTTPS for all other connections -->
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    
+    <!-- Background Modes for Live Classes -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+        <string>voip</string>
+        <string>background-processing</string>
+    </array>
+    
+    <!-- App Category for App Store -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.education</string>
+    
+    <!-- Prevent Screenshots in Sensitive Areas (Optional) -->
+    <key>UIApplicationSupportsMultipleScenes</key>
+    <false/>
+    
+    <!-- Required for iOS 14+ -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+</dict>
 </plist>

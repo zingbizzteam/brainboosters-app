@@ -15,19 +15,19 @@ final _navItems = [
     color: Colors.blue,
   ),
   _NavItem(
-    route: CommonRoutes.courses,
+    route: CommonRoutes.coursesRoute,
     label: 'Courses',
     icon: Icons.menu_book,
     color: const Color(0xFFA78DF0),
   ),
   _NavItem(
-    route: CommonRoutes.liveClasses,
+    route: CommonRoutes.liveClassesRoute,
     label: 'Live',
     icon: Icons.live_tv,
     color: Colors.red,
   ),
   _NavItem(
-    route: CommonRoutes.coachingCenters,
+    route: CommonRoutes.coachingCentersRoute,
     label: 'Coaching',
     icon: Icons.apartment,
     color: const Color(0xFFF9B857),
@@ -87,11 +87,11 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
 
     return pathSegments.length <= 1 ||
         currentLocation == StudentRoutes.home ||
-        currentLocation == CommonRoutes.courses ||
-        currentLocation == CommonRoutes.coachingCenters ||
+        currentLocation == CommonRoutes.coursesRoute ||
+        currentLocation == CommonRoutes.coachingCentersRoute ||
         currentLocation == StudentRoutes.settings ||
         currentLocation == StudentRoutes.profile ||
-        currentLocation == CommonRoutes.liveClasses ||
+        currentLocation == CommonRoutes.liveClassesRoute ||
         currentLocation.startsWith('/live-class/');
   }
 
@@ -100,7 +100,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
     final currentLocation = GoRouterState.of(context).uri.toString();
 
     // If on live classes, don't highlight any bottom nav item
-    if (currentLocation == CommonRoutes.liveClasses ||
+    if (currentLocation == CommonRoutes.liveClassesRoute ||
         currentLocation.startsWith('/live-class/')) {
       return -1; // No selection
     }

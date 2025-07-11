@@ -1,6 +1,6 @@
 // notifications_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:brainboosters_app/screens/Student/notifications/notification_model.dart';
+import 'package:brainboosters_app/screens/student/notifications/notification_model.dart';
 
 class NotificationsRepository {
   static final _client = Supabase.instance.client;

@@ -1,6 +1,6 @@
 // notification_card.dart
 import 'package:flutter/material.dart';
-import 'package:brainboosters_app/screens/Student/notifications/notification_model.dart';
+import 'package:brainboosters_app/screens/student/notifications/notification_model.dart';
 
 class NotificationCard extends StatelessWidget {
   final NotificationModel notification;

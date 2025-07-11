@@ -1,5 +1,5 @@
 // notification_filters_bottom_sheet.dart
-import 'package:brainboosters_app/screens/Student/notifications/notification_model.dart';
+import 'package:brainboosters_app/screens/student/notifications/notification_model.dart';
 import 'package:flutter/material.dart';
 
 class NotificationFiltersBottomSheet extends StatefulWidget {

@@ -5,6 +5,7 @@ import 'package:brainboosters_app/screens/common/widgets/stats_widget.dart';
 import 'package:brainboosters_app/screens/common/widgets/tab_section_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/live_class_info_widget.dart';
 
 class LiveClassIntroPage extends StatefulWidget {
@@ -20,6 +21,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   Map<String, dynamic>? liveClass;
+  Map<String, dynamic>? currentUser;
   bool isLoading = true;
   String? error;
 
@@ -27,7 +29,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _loadLiveClass();
+    _loadPageData();
   }
 
   @override
@@ -36,21 +38,28 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
     super.dispose();
   }
 
-  Future<void> _loadLiveClass() async {
+  // FIXED: Load both live class data and current user data
+  Future<void> _loadPageData() async {
     try {
       setState(() {
         isLoading = true;
         error = null;
       });
 
-      final result = await LiveClassRepository.getLiveClassById(
-        widget.liveClassId,
-      );
+      // Load live class and user data in parallel
+      final results = await Future.wait([
+        LiveClassRepository.getLiveClassById(widget.liveClassId),
+        _getCurrentUserData(),
+      ]);
+
+      final liveClassResult = results[0] as Map<String, dynamic>?;
+      final userResult = results[1] as Map<String, dynamic>?;
 
       setState(() {
-        liveClass = result;
+        liveClass = liveClassResult;
+        currentUser = userResult;
         isLoading = false;
-        if (result == null) {
+        if (liveClassResult == null) {
           error = 'Live class not found or you do not have access to it';
         }
       });
@@ -59,6 +68,49 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         error = 'Failed to load live class: $e';
         isLoading = false;
       });
+    }
+  }
+
+  // FIXED: Get current user data from authentication system
+  Future<Map<String, dynamic>?> _getCurrentUserData() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return null;
+
+      final userProfile = await Supabase.instance.client
+          .from('user_profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+      return {
+        'first_name': userProfile['first_name'],
+        'last_name': userProfile['last_name'],
+        'avatar_url': userProfile['avatar_url'],
+        'email': user.email,
+      };
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      return null;
+    }
+  }
+
+  // FIXED: Smart navigation with fallback strategy
+  void _handleBackNavigation() {
+    // Check if we can pop (there's a navigation stack)
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+    } else {
+      // Fallback navigation based on context
+      final currentLocation = GoRouterState.of(context).uri.toString();
+      
+      if (currentLocation.contains('/live-class/')) {
+        // If we're on a live class page, go to live classes list
+        context.go('/live-classes');
+      } else {
+        // Default fallback to home
+        context.go('/');
+      }
     }
   }
 
@@ -81,7 +133,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
             expandedHeight: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => context.pop(),
+              onPressed: _handleBackNavigation, // FIXED: Smart navigation
             ),
             title: isMobile
                 ? null
@@ -107,30 +159,13 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
                     Icons.notifications_outlined,
                     color: Colors.black,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    // TODO: Implement notifications
+                  },
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Sivakumar',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundImage: NetworkImage(
-                          'https://picsum.photos/32/32?random=user',
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _buildUserProfile(), // FIXED: Dynamic user profile
                 ),
               ],
             ],
@@ -142,6 +177,53 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
           ),
         ],
       ),
+    );
+  }
+
+  // FIXED: Dynamic user profile widget
+  Widget _buildUserProfile() {
+    if (currentUser == null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => context.go('/login'),
+            child: const Text('Login'),
+          ),
+        ],
+      );
+    }
+
+    final firstName = currentUser!['first_name'] ?? '';
+    final lastName = currentUser!['last_name'] ?? '';
+    final fullName = '$firstName $lastName'.trim();
+    final avatarUrl = currentUser!['avatar_url'];
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          fullName.isEmpty ? 'User' : fullName,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 8),
+        CircleAvatar(
+          radius: 16,
+          backgroundImage: avatarUrl != null
+              ? NetworkImage(avatarUrl)
+              : null,
+          child: avatarUrl == null
+              ? Text(
+                  fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
+                  style: const TextStyle(fontSize: 12),
+                )
+              : null,
+        ),
+      ],
     );
   }
 
@@ -169,9 +251,19 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _loadLiveClass,
-                child: const Text('Retry'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: _loadPageData,
+                    child: const Text('Retry'),
+                  ),
+                  const SizedBox(width: 16),
+                  OutlinedButton(
+                    onPressed: () => context.go('/live-classes'),
+                    child: const Text('Browse Live Classes'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -180,10 +272,30 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
     }
 
     if (liveClass == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(40),
-          child: Text('Live class not found'),
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            children: [
+              Icon(Icons.tv_off, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              const Text(
+                'Live class not found',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'The live class you\'re looking for doesn\'t exist or has been removed.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => context.go('/live-classes'),
+                child: const Text('Browse Live Classes'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -276,6 +388,8 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
               _buildAnalyticsTab(liveClass!, isMobile),
             ],
           ),
+
+          const SizedBox(height: 40), // Add bottom padding
         ],
       ),
     );

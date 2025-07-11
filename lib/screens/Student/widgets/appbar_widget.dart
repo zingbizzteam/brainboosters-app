@@ -1,4 +1,4 @@
-import 'package:brainboosters_app/screens/Student/notifications/notifications_repository.dart';
+import 'package:brainboosters_app/screens/student/notifications/notifications_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

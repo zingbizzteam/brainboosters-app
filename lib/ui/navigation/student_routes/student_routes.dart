@@ -1,4 +1,4 @@
-import 'package:brainboosters_app/screens/Student/notifications/notifications_page.dart';
+import 'package:brainboosters_app/screens/student/notifications/notifications_page.dart';
 import 'package:brainboosters_app/screens/common/coaching_centers/coaching_centers_page.dart';
 import 'package:brainboosters_app/screens/common/courses/courses_page.dart';
 import 'package:brainboosters_app/screens/common/courses/coures_intro/course_intro_page.dart';
@@ -20,102 +20,99 @@ class StudentRoutes {
 
   static final StatefulShellRoute statefulRoute =
       StatefulShellRoute.indexedStack(
-    builder: (context, state, navigationShell) =>
-        StudentMainScreen(shell: navigationShell),
-    branches: [
-      // Home
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: home,
-            builder: (context, state) => const DashboardPage(),
-          ),
-        ],
-      ),
-
-      // Courses with nested routes
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: CommonRoutes.courses,
-            builder: (context, state) => const CoursesPage(),
+        builder: (context, state, navigationShell) =>
+            StudentMainScreen(shell: navigationShell),
+        branches: [
+          // Home
+          StatefulShellBranch(
             routes: [
-              // Course intro page
               GoRoute(
-                path: ':courseId',
-                builder: (context, state) {
-                  final courseId = state.pathParameters['courseId']!;
-                  return CourseIntroPage(courseId: courseId);
-                },
+                path: home,
+                builder: (context, state) => const DashboardPage(),
+              ),
+            ],
+          ),
+
+          // Courses with nested routes
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: CommonRoutes.coursesRoute,
+                builder: (context, state) => const CoursesPage(),
                 routes: [
-                  // Course player routes
+                  // Course intro page
                   GoRoute(
-                    path: 'player',
+                    path: ':courseId',
                     builder: (context, state) {
                       final courseId = state.pathParameters['courseId']!;
-                      return CoursePlayerPage(courseId: courseId);
+                      return CourseIntroPage(courseId: courseId);
                     },
+                    routes: [
+                      // Course player routes
+                      GoRoute(
+                        path: 'player',
+                        builder: (context, state) {
+                          final courseId = state.pathParameters['courseId']!;
+                          return CoursePlayerPage(courseId: courseId);
+                        },
+                      ),
+                      GoRoute(
+                        path: 'lesson/:lessonId',
+                        builder: (context, state) {
+                          final courseId = state.pathParameters['courseId']!;
+                          final lessonId = state.pathParameters['lessonId']!;
+                          return CoursePlayerPage(
+                            courseId: courseId,
+                            lessonId: lessonId,
+                          );
+                        },
+                      ),
+                    ],
                   ),
+                ],
+              ),
+            ],
+          ),
+          // Live Classes
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: CommonRoutes.liveClassesRoute,
+                builder: (context, state) => const LiveClassesPage(),
+                routes: [
                   GoRoute(
-                    path: 'lesson/:lessonId',
+                    path: ':liveClassId',
                     builder: (context, state) {
-                      final courseId = state.pathParameters['courseId']!;
-                      final lessonId = state.pathParameters['lessonId']!;
-                      return CoursePlayerPage(
-                        courseId: courseId,
-                        lessonId: lessonId,
-                      );
+                      final liveClassId = state.pathParameters['liveClassId']!;
+                      return LiveClassIntroPage(liveClassId: liveClassId);
                     },
                   ),
                 ],
               ),
             ],
           ),
-        ],
-      ),
-// Live Classes
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: CommonRoutes.liveClasses,
-            builder: (context, state) => const LiveClassesPage(),
+
+          // Coaching Centers
+          StatefulShellBranch(
             routes: [
               GoRoute(
-                path: ':liveClassId',
-                builder: (context, state) {
-                  final liveClassId = state.pathParameters['liveClassId']!;
-                  return LiveClassIntroPage(liveClassId: liveClassId);
-                },
+                path: CommonRoutes.coachingCentersRoute,
+                builder: (context, state) => const CoachingCentersPage(),
+              ),
+            ],
+          ),
+
+          // Profile
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: profile,
+                builder: (context, state) => const ProfilePage(),
               ),
             ],
           ),
         ],
-      ),
-     
-
-      // Coaching Centers
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: CommonRoutes.coachingCenters,
-            builder: (context, state) => const CoachingCentersPage(),
-          ),
-        ],
-      ),
-
-      // Profile
-      StatefulShellBranch(
-        routes: [
-          GoRoute(
-            path: profile,
-            builder: (context, state) => const ProfilePage(),
-          ),
-        ],
-      ),
-
-      
-    ],
-  );
+      );
 
   // Standalone routes (not in bottom nav)
   static List<RouteBase> getAdditionalRoutes() {
