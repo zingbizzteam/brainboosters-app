@@ -1,8 +1,8 @@
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/avatar_step.dart';
-import 'package:brainboosters_app/screens/authentication/user_setup/widgets/goal_selection_step.dart';
-import 'package:brainboosters_app/screens/authentication/user_setup/widgets/language_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/name_step.dart';
 import 'package:brainboosters_app/screens/authentication/user_setup/widgets/personal_info_step.dart';
+import 'package:brainboosters_app/screens/authentication/user_setup/widgets/academic_step.dart';
+import 'package:brainboosters_app/screens/authentication/user_setup/widgets/preferences_step.dart';
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
 import 'package:flutter/material.dart';
@@ -20,13 +20,12 @@ class UserSetupPage extends StatefulWidget {
 class _UserSetupPageState extends State<UserSetupPage> {
   int _currentStep = 0;
   bool _isLoading = false;
-  bool _isEditing = false; // Track if editing existing data
+  bool _isEditing = false;
 
   // Controllers
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final phoneController = TextEditingController();
-  final gradeController = TextEditingController();
   final schoolController = TextEditingController();
   final parentNameController = TextEditingController();
   final parentPhoneController = TextEditingController();
@@ -44,10 +43,123 @@ class _UserSetupPageState extends State<UserSetupPage> {
   String phoneIsoCode = 'IN';
   String parentPhoneIsoCode = 'IN';
 
+  // FIXED: Structured academic data instead of free text
+  String? selectedGrade;
+  String? selectedBoard;
+  String? selectedInterest;
+  String? selectedState;
+  String? selectedCity;
+
   // Original data for comparison
   String? _originalFirstName;
   String? _originalLastName;
   String? _originalAvatarUrl;
+
+  // FIXED: Indian education system data
+  final List<Map<String, String>> _gradeOptions = [
+    {'value': 'class_1', 'display': 'Class 1'},
+    {'value': 'class_2', 'display': 'Class 2'},
+    {'value': 'class_3', 'display': 'Class 3'},
+    {'value': 'class_4', 'display': 'Class 4'},
+    {'value': 'class_5', 'display': 'Class 5'},
+    {'value': 'class_6', 'display': 'Class 6'},
+    {'value': 'class_7', 'display': 'Class 7'},
+    {'value': 'class_8', 'display': 'Class 8'},
+    {'value': 'class_9', 'display': 'Class 9'},
+    {'value': 'class_10', 'display': 'Class 10'},
+    {'value': 'class_11', 'display': 'Class 11'},
+    {'value': 'class_12', 'display': 'Class 12'},
+    {'value': 'ug_1st_year', 'display': 'UG 1st Year (BA/BSc/BCom)'},
+    {'value': 'ug_2nd_year', 'display': 'UG 2nd Year (BA/BSc/BCom)'},
+    {'value': 'ug_3rd_year', 'display': 'UG 3rd Year (BA/BSc/BCom)'},
+    {'value': 'btech_1st_year', 'display': 'B.Tech 1st Year'},
+    {'value': 'btech_2nd_year', 'display': 'B.Tech 2nd Year'},
+    {'value': 'btech_3rd_year', 'display': 'B.Tech 3rd Year'},
+    {'value': 'btech_4th_year', 'display': 'B.Tech 4th Year'},
+    {'value': 'mbbs_1st_year', 'display': 'MBBS 1st Year'},
+    {'value': 'mbbs_2nd_year', 'display': 'MBBS 2nd Year'},
+    {'value': 'mbbs_3rd_year', 'display': 'MBBS 3rd Year'},
+    {'value': 'mbbs_4th_year', 'display': 'MBBS 4th Year'},
+    {'value': 'mbbs_5th_year', 'display': 'MBBS 5th Year'},
+    {'value': 'pg_1st_year', 'display': 'PG 1st Year (MA/MSc/MCom)'},
+    {'value': 'pg_2nd_year', 'display': 'PG 2nd Year (MA/MSc/MCom)'},
+    {'value': 'mba_1st_year', 'display': 'MBA 1st Year'},
+    {'value': 'mba_2nd_year', 'display': 'MBA 2nd Year'},
+    {'value': 'mtech_1st_year', 'display': 'M.Tech 1st Year'},
+    {'value': 'mtech_2nd_year', 'display': 'M.Tech 2nd Year'},
+    {'value': 'phd_1st_year', 'display': 'PhD 1st Year'},
+    {'value': 'phd_2nd_year', 'display': 'PhD 2nd Year'},
+    {'value': 'phd_3rd_year', 'display': 'PhD 3rd Year'},
+    {'value': 'phd_4th_year', 'display': 'PhD 4th Year'},
+    {'value': 'working_professional', 'display': 'Working Professional'},
+    {'value': 'other', 'display': 'Other'},
+  ];
+
+  final List<Map<String, String>> _boardOptions = [
+    {'value': 'cbse', 'display': 'CBSE'},
+    {'value': 'icse', 'display': 'ICSE'},
+    {'value': 'state_board', 'display': 'State Board'},
+    {'value': 'igcse', 'display': 'IGCSE'},
+    {'value': 'ib', 'display': 'International Baccalaureate (IB)'},
+    {'value': 'nios', 'display': 'NIOS'},
+    {'value': 'other', 'display': 'Other'},
+  ];
+
+  final List<Map<String, String>> _interestOptions = [
+    {'value': 'mathematics', 'display': 'Mathematics'},
+    {'value': 'physics', 'display': 'Physics'},
+    {'value': 'chemistry', 'display': 'Chemistry'},
+    {'value': 'biology', 'display': 'Biology'},
+    {'value': 'computer_science', 'display': 'Computer Science'},
+    {'value': 'engineering', 'display': 'Engineering'},
+    {'value': 'medicine', 'display': 'Medicine'},
+    {'value': 'commerce', 'display': 'Commerce'},
+    {'value': 'economics', 'display': 'Economics'},
+    {'value': 'english', 'display': 'English'},
+    {'value': 'hindi', 'display': 'Hindi'},
+    {'value': 'history', 'display': 'History'},
+    {'value': 'geography', 'display': 'Geography'},
+    {'value': 'political_science', 'display': 'Political Science'},
+    {'value': 'arts', 'display': 'Arts'},
+    {'value': 'music', 'display': 'Music'},
+    {'value': 'sports', 'display': 'Sports'},
+    {'value': 'competitive_exams', 'display': 'Competitive Exams (JEE/NEET/UPSC)'},
+    {'value': 'languages', 'display': 'Languages'},
+    {'value': 'technology', 'display': 'Technology'},
+    {'value': 'other', 'display': 'Other'},
+  ];
+
+  final Map<String, List<String>> _indianStatesAndCities = {
+    'Andhra Pradesh': ['Hyderabad', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore'],
+    'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Pasighat'],
+    'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon'],
+    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia'],
+    'Chhattisgarh': ['Raipur', 'Bhilai', 'Korba', 'Bilaspur', 'Durg'],
+    'Delhi': ['New Delhi', 'Central Delhi', 'North Delhi', 'South Delhi', 'East Delhi', 'West Delhi'],
+    'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa'],
+    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar'],
+    'Haryana': ['Gurugram', 'Faridabad', 'Panipat', 'Ambala', 'Yamunanagar'],
+    'Himachal Pradesh': ['Shimla', 'Dharamshala', 'Solan', 'Mandi'],
+    'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Deoghar'],
+    'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum'],
+    'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam'],
+    'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Thane', 'Nashik'],
+    'Manipur': ['Imphal', 'Thoubal', 'Bishnupur'],
+    'Meghalaya': ['Shillong', 'Tura', 'Jowai'],
+    'Mizoram': ['Aizawl', 'Lunglei', 'Saiha'],
+    'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung'],
+    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur'],
+    'Punjab': ['Chandigarh', 'Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala'],
+    'Rajasthan': ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner'],
+    'Sikkim': ['Gangtok', 'Namchi', 'Gyalshing'],
+    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem'],
+    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam'],
+    'Tripura': ['Agartala', 'Dharmanagar', 'Udaipur'],
+    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Ghaziabad', 'Agra', 'Varanasi'],
+    'Uttarakhand': ['Dehradun', 'Haridwar', 'Roorkee', 'Haldwani'],
+    'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri'],
+  };
 
   @override
   void initState() {
@@ -75,8 +187,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
           .maybeSingle();
 
       setState(() {
-        _isEditing =
-            userProfile != null &&
+        _isEditing = userProfile != null &&
             userProfile['onboarding_completed'] == true &&
             studentProfile != null;
       });
@@ -104,7 +215,16 @@ class _UserSetupPageState extends State<UserSetupPage> {
       // Prefill from student table if exists
       if (studentProfile != null) {
         setState(() {
-          gradeController.text = studentProfile['grade_level'] ?? '';
+          // FIXED: Use structured data instead of free text
+          selectedGrade = _validateDropdownValue(
+              studentProfile['grade_level'], _gradeOptions);
+          selectedBoard = _validateDropdownValue(
+              studentProfile['education_board'], _boardOptions);
+          selectedInterest = _validateDropdownValue(
+              studentProfile['primary_interest'], _interestOptions);
+          selectedState = studentProfile['state'];
+          selectedCity = studentProfile['city'];
+          
           schoolController.text = studentProfile['school_name'] ?? '';
           parentNameController.text = studentProfile['parent_name'] ?? '';
           parentPhoneController.text = studentProfile['parent_phone'] ?? '';
@@ -121,12 +241,10 @@ class _UserSetupPageState extends State<UserSetupPage> {
         });
       }
 
-      // Fallback to auth.users metadata (for Google login or missing data)
+      // Fallback to auth.users metadata
       final meta = user.userMetadata;
       if (meta != null) {
-        // Only use metadata if profile data is empty
-        if (firstNameController.text.isEmpty &&
-            lastNameController.text.isEmpty) {
+        if (firstNameController.text.isEmpty && lastNameController.text.isEmpty) {
           final fullName = meta['full_name'] ?? '';
           final firstName = meta['first_name'] ?? '';
           final lastName = meta['last_name'] ?? '';
@@ -151,7 +269,6 @@ class _UserSetupPageState extends State<UserSetupPage> {
           });
         }
 
-        // Use metadata avatar if no profile avatar
         if (avatarUrl == null && meta['avatar_url'] != null) {
           setState(() {
             avatarUrl = meta['avatar_url'];
@@ -161,6 +278,44 @@ class _UserSetupPageState extends State<UserSetupPage> {
       }
     } catch (e) {
       debugPrint('Error prefilling: $e');
+    }
+  }
+
+  // FIXED: Helper method to validate dropdown values
+  String? _validateDropdownValue(String? value, List<Map<String, String>> options) {
+    if (value == null) return null;
+    
+    // Check if value exists in options
+    final exists = options.any((option) => option['value'] == value);
+    if (exists) return value;
+    
+    // Try to migrate old values to new format
+    final migratedValue = _migrateOldValue(value);
+    final migratedExists = options.any((option) => option['value'] == migratedValue);
+    
+    return migratedExists ? migratedValue : null;
+  }
+
+  // FIXED: Migration logic for old grade values
+  String _migrateOldValue(String oldValue) {
+    switch (oldValue) {
+      case 'Grade 1': return 'class_1';
+      case 'Grade 2': return 'class_2';
+      case 'Grade 3': return 'class_3';
+      case 'Grade 4': return 'class_4';
+      case 'Grade 5': return 'class_5';
+      case 'Grade 6': return 'class_6';
+      case 'Grade 7': return 'class_7';
+      case 'Grade 8': return 'class_8';
+      case 'Grade 9': return 'class_9';
+      case 'Grade 10': return 'class_10';
+      case 'Grade 11': return 'class_11';
+      case 'Grade 12': return 'class_12';
+      case 'College': return 'ug_1st_year';
+      case 'College Sophomore': return 'ug_2nd_year';
+      case 'University': return 'ug_1st_year';
+      case '12th Grade': return 'class_12';
+      default: return 'other';
     }
   }
 
@@ -198,34 +353,30 @@ class _UserSetupPageState extends State<UserSetupPage> {
       // Upload new avatar if selected
       String? finalAvatarUrl = avatarUrl;
       if (avatarFile != null) {
-        // Delete all existing avatars for this user first
         await _deleteAllUserAvatars(user.id);
-
-        // Upload new avatar
-        final fileName =
-            '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        
+        final fileName = '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
         await Supabase.instance.client.storage
             .from('avatars')
             .upload(fileName, avatarFile!);
+
         finalAvatarUrl = Supabase.instance.client.storage
             .from('avatars')
             .getPublicUrl(fileName);
       }
 
-      // Check if name or avatar changed to update auth.users
-      final nameChanged =
-          _originalFirstName != firstNameController.text.trim() ||
+      // Check if name or avatar changed
+      final nameChanged = _originalFirstName != firstNameController.text.trim() ||
           _originalLastName != lastNameController.text.trim();
       final avatarChanged = _originalAvatarUrl != finalAvatarUrl;
 
-      // Update auth.users metadata if name or avatar changed
+      // Update auth.users metadata if needed
       if (nameChanged || avatarChanged) {
         final currentMeta = user.userMetadata ?? {};
         final updatedMeta = Map<String, dynamic>.from(currentMeta);
-
+        
         if (nameChanged) {
-          updatedMeta['full_name'] =
-              '${firstNameController.text.trim()} ${lastNameController.text.trim()}';
+          updatedMeta['full_name'] = '${firstNameController.text.trim()} ${lastNameController.text.trim()}';
           updatedMeta['first_name'] = firstNameController.text.trim();
           updatedMeta['last_name'] = lastNameController.text.trim();
         }
@@ -239,110 +390,105 @@ class _UserSetupPageState extends State<UserSetupPage> {
         );
       }
 
-      // Get or set user_type (default to student if not exists)
-    String userType = 'student';
-    final currentProfile = await Supabase.instance.client
-        .from('user_profiles')
-        .select('user_type')
-        .eq('id', user.id)
-        .maybeSingle();
-    if (currentProfile != null && currentProfile['user_type'] != null) {
-      userType = currentProfile['user_type'];
-    }
+      // Get or set user_type
+      String userType = 'student';
+      final currentProfile = await Supabase.instance.client
+          .from('user_profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .maybeSingle();
 
-    // Upsert user_profiles (safe)
-    await Supabase.instance.client.from('user_profiles').upsert({
-      'id': user.id,
-      'user_type': userType,
-      'first_name': firstNameController.text.trim(),
-      'last_name': lastNameController.text.trim(),
-      'phone': fullPhoneNumber ?? phoneController.text.trim(),
-      'date_of_birth': selectedDate?.toIso8601String().split('T')[0],
-      'gender': selectedGender,
-      'avatar_url': avatarUrl,
-      'email_verified': true,
-      'onboarding_completed': true,
-      'updated_at': DateTime.now().toIso8601String(),
-    });
+      if (currentProfile != null && currentProfile['user_type'] != null) {
+        userType = currentProfile['user_type'];
+      }
 
-    // --- STUDENT LOGIC ---
-    // Check if student exists
-    final studentRecord = await Supabase.instance.client
-        .from('students')
-        .select('id,student_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Upsert user_profiles
+      await Supabase.instance.client.from('user_profiles').upsert({
+        'id': user.id,
+        'user_type': userType,
+        'first_name': firstNameController.text.trim(),
+        'last_name': lastNameController.text.trim(),
+        'phone': fullPhoneNumber ?? phoneController.text.trim(),
+        'date_of_birth': selectedDate?.toIso8601String().split('T')[0],
+        'gender': selectedGender,
+        'avatar_url': finalAvatarUrl,
+        'email_verified': true,
+        'onboarding_completed': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
 
-    // Prepare student data
-    final studentData = {
-      'user_id': user.id,
-      'grade_level': gradeController.text.trim().isNotEmpty ? gradeController.text.trim() : null,
-      'school_name': schoolController.text.trim().isNotEmpty ? schoolController.text.trim() : null,
-      'parent_name': parentNameController.text.trim().isNotEmpty ? parentNameController.text.trim() : null,
-      'parent_phone': parentFullPhoneNumber ?? (parentPhoneController.text.trim().isNotEmpty ? parentPhoneController.text.trim() : null),
-      'parent_email': parentEmailController.text.trim().isNotEmpty ? parentEmailController.text.trim() : null,
-      'learning_goals': selectedGoals,
-      'preferred_learning_style': selectedLanguage,
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-
-    if (studentRecord != null) {
-      // Update existing student
-      await Supabase.instance.client
+      // Check if student exists
+      final studentRecord = await Supabase.instance.client
           .from('students')
-          .update(studentData)
-          .eq('user_id', user.id);
-    } else {
-      // Insert new student
-      studentData['created_at'] = DateTime.now().toIso8601String();
-      studentData['student_id'] = await _generateStudentId();
-      await Supabase.instance.client.from('students').insert(studentData);
-    }
+          .select('id,student_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isEditing ? 'Profile updated successfully!' : 'Profile setup completed!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      context.go(StudentRoutes.home);
+      // FIXED: Prepare structured student data
+      final studentData = {
+        'user_id': user.id,
+        'grade_level': selectedGrade,
+        'education_board': selectedBoard,
+        'primary_interest': selectedInterest,
+        'state': selectedState,
+        'city': selectedCity,
+        'school_name': schoolController.text.trim().isNotEmpty ? schoolController.text.trim() : null,
+        'parent_name': parentNameController.text.trim().isNotEmpty ? parentNameController.text.trim() : null,
+        'parent_phone': parentFullPhoneNumber ?? (parentPhoneController.text.trim().isNotEmpty ? parentPhoneController.text.trim() : null),
+        'parent_email': parentEmailController.text.trim().isNotEmpty ? parentEmailController.text.trim() : null,
+        'learning_goals': selectedGoals,
+        'preferred_learning_style': selectedLanguage,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (studentRecord != null) {
+        // Update existing student
+        await Supabase.instance.client
+            .from('students')
+            .update(studentData)
+            .eq('user_id', user.id);
+      } else {
+        // Insert new student
+        studentData['created_at'] = DateTime.now().toIso8601String();
+        studentData['student_id'] = await _generateStudentId();
+        await Supabase.instance.client.from('students').insert(studentData);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isEditing ? 'Profile updated successfully!' : 'Profile setup completed!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go(StudentRoutes.home);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+      debugPrint('Save error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    }
-    debugPrint('Save error: $e');
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-  }
-  
-  // Simplified delete method - delete all files in user folder
+
   Future<void> _deleteAllUserAvatars(String userId) async {
     try {
-      // List all files in the user's folder
       final files = await Supabase.instance.client.storage
           .from('avatars')
           .list(path: userId);
 
       if (files.isNotEmpty) {
-        // Get all file paths
         final filePaths = files.map((file) => '$userId/${file.name}').toList();
-
-        // Delete all files at once
         await Supabase.instance.client.storage
             .from('avatars')
             .remove(filePaths);
-
-        debugPrint(
-          'Deleted ${filePaths.length} old avatar(s) for user $userId',
-        );
+        debugPrint('Deleted ${filePaths.length} old avatar(s) for user $userId');
       }
     } catch (e) {
-      // Don't throw error if deletion fails, just log it
       debugPrint('Failed to delete old avatars: $e');
     }
   }
@@ -361,9 +507,9 @@ class _UserSetupPageState extends State<UserSetupPage> {
         final numberPart = lastId.replaceAll('STU', '');
         nextNumber = (int.tryParse(numberPart) ?? 0) + 1;
       }
+
       return 'STU${nextNumber.toString().padLeft(3, '0')}';
     } catch (e) {
-      // Fallback to timestamp-based ID
       return 'STU${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     }
   }
@@ -378,16 +524,14 @@ class _UserSetupPageState extends State<UserSetupPage> {
         }
         break;
       case 1:
-        if (fullPhoneNumber == null ||
-            selectedDate == null ||
-            selectedGender == null) {
+        if (fullPhoneNumber == null || selectedDate == null || selectedGender == null) {
           _showError('Please complete all personal information');
           return false;
         }
         break;
       case 3:
-        if (gradeController.text.trim().isEmpty) {
-          _showError('Please enter your grade level');
+        if (selectedGrade == null) {
+          _showError('Please select your education level');
           return false;
         }
         break;
@@ -410,7 +554,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
-
+    
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
@@ -435,13 +579,8 @@ class _UserSetupPageState extends State<UserSetupPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _isEditing
-                              ? 'Editing profile for:'
-                              : 'Setting up profile for:',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
+                          _isEditing ? 'Editing profile for:' : 'Setting up profile for:',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         Text(
                           user?.email ?? '',
@@ -469,9 +608,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _isEditing
-                            ? 'Update Your Profile'
-                            : 'Complete Your Profile',
+                        _isEditing ? 'Update Your Profile' : 'Complete Your Profile',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -522,9 +659,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
                 children: [
                   if (_currentStep > 0)
                     TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() => _currentStep--),
+                      onPressed: _isLoading ? null : () => setState(() => _currentStep--),
                       child: const Text(
                         'Back',
                         style: TextStyle(color: Color(0xFF5DADE2)),
@@ -532,7 +667,6 @@ class _UserSetupPageState extends State<UserSetupPage> {
                     )
                   else
                     const SizedBox(),
-
                   _currentStep < 4
                       ? FloatingActionButton(
                           backgroundColor: const Color(0xFFD4845C),
@@ -543,19 +677,13 @@ class _UserSetupPageState extends State<UserSetupPage> {
                                     setState(() => _currentStep++);
                                   }
                                 },
-                          child: const Icon(
-                            Icons.arrow_forward,
-                            color: Colors.white,
-                          ),
+                          child: const Icon(Icons.arrow_forward, color: Colors.white),
                         )
                       : ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD4845C),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                           ),
                           onPressed: _isLoading ? null : _saveData,
                           child: _isLoading
@@ -567,11 +695,7 @@ class _UserSetupPageState extends State<UserSetupPage> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : Text(
-                                  _isEditing
-                                      ? 'Update Profile'
-                                      : 'Complete Setup',
-                                ),
+                              : Text(_isEditing ? 'Update Profile' : 'Complete Setup'),
                         ),
                 ],
               ),
@@ -610,140 +734,43 @@ class _UserSetupPageState extends State<UserSetupPage> {
           }),
         );
       case 3:
-        return _buildAcademicStep();
+        return AcademicStep(
+          selectedGrade: selectedGrade,
+          selectedBoard: selectedBoard,
+          selectedInterest: selectedInterest,
+          selectedState: selectedState,
+          selectedCity: selectedCity,
+          schoolController: schoolController,
+          parentNameController: parentNameController,
+          parentPhoneController: parentPhoneController,
+          parentEmailController: parentEmailController,
+          gradeOptions: _gradeOptions,
+          boardOptions: _boardOptions,
+          interestOptions: _interestOptions,
+          statesAndCities: _indianStatesAndCities,
+          onGradeChanged: (value) => setState(() => selectedGrade = value),
+          onBoardChanged: (value) => setState(() => selectedBoard = value),
+          onInterestChanged: (value) => setState(() => selectedInterest = value),
+          onStateChanged: (value) => setState(() {
+            selectedState = value;
+            selectedCity = null;
+          }),
+          onCityChanged: (value) => setState(() => selectedCity = value),
+        );
       case 4:
-        return _buildPreferencesStep();
+        return PreferencesStep(
+          selectedLanguage: selectedLanguage,
+          selectedGoals: selectedGoals,
+          onLanguageChanged: (val) => setState(() => selectedLanguage = val),
+          onGoalToggle: (courseName) => setState(() {
+            selectedGoals.contains(courseName)
+                ? selectedGoals.remove(courseName)
+                : selectedGoals.add(courseName);
+          }),
+        );
       default:
         return const SizedBox();
     }
-  }
-
-  Widget _buildAcademicStep() {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Academic Information',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: gradeController,
-            decoration: InputDecoration(
-              labelText: 'Grade Level (e.g., 12th Grade, College)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.school),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: schoolController,
-            decoration: InputDecoration(
-              labelText: 'School/College Name (Optional)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.location_city),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Parent/Guardian Information (Optional)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: parentNameController,
-            decoration: InputDecoration(
-              labelText: 'Parent/Guardian Name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.person),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: parentPhoneController,
-            decoration: InputDecoration(
-              labelText: 'Parent/Guardian Phone',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.phone),
-            ),
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: parentEmailController,
-            decoration: InputDecoration(
-              labelText: 'Parent/Guardian Email',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.email),
-            ),
-            keyboardType: TextInputType.emailAddress,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreferencesStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          // Header
-          const Text(
-            'Learning Preferences',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-
-          // Language selection
-          LanguageStep(
-            selectedLanguage: selectedLanguage,
-            onChanged: (val) => setState(() => selectedLanguage = val),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Course selection - Fixed height container
-          SizedBox(
-            height: 500, // Fixed height to prevent overflow
-            child: GoalSelectionStep(
-              selectedGoals: selectedGoals,
-              onCourseToggle: (courseName) => setState(() {
-                selectedGoals.contains(courseName)
-                    ? selectedGoals.remove(courseName)
-                    : selectedGoals.add(courseName);
-              }),
-            ),
-          ),
-
-          // Bottom padding to account for navigation buttons
-          const SizedBox(height: 200),
-        ],
-      ),
-    );
   }
 
   @override
@@ -751,7 +778,6 @@ class _UserSetupPageState extends State<UserSetupPage> {
     firstNameController.dispose();
     lastNameController.dispose();
     phoneController.dispose();
-    gradeController.dispose();
     schoolController.dispose();
     parentNameController.dispose();
     parentPhoneController.dispose();

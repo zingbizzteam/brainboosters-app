@@ -256,7 +256,6 @@ Widget _buildCoursesGrid(bool isMobile, bool isTablet) {
           return CourseCard(
             course: loading ? null : courses[index],
             isLoading: loading,
-            fixedWidth: null, // Let card calculate its own width in grid
           );
         },
       ),

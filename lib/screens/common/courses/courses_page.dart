@@ -1,8 +1,9 @@
-// screens/common/courses/courses_page.dart - UPDATED
-
+// screens/common/courses/courses_page.dart - ENHANCED VERSION
 import 'package:brainboosters_app/screens/common/courses/course_repository.dart';
 import 'package:brainboosters_app/screens/common/courses/widgets/course_footer_section.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'widgets/course_hero_section.dart';
 import 'widgets/course_categories_section.dart';
 import 'widgets/app_promotion_section.dart';
@@ -18,31 +19,27 @@ class CoursesPage extends StatefulWidget {
 }
 
 class _CoursesPageState extends State<CoursesPage> {
-  // State for horizontal lists
+  // ... [Keep all your existing state variables] ...
+
   List<Map<String, dynamic>> _suggestedCourses = [];
   List<Map<String, dynamic>> _topRatedCourses = [];
   bool _loadingFeatured = true;
-
-  // State for the main infinite scroll grid
   final _scrollController = ScrollController();
   List<Map<String, dynamic>> _allCourses = [];
   bool _loadingMore = false;
   bool _hasMore = true;
   int _page = 1;
   static const int _pageSize = 8;
-
-  // Add error state tracking
   String? _errorMessage;
   int _retryCount = 0;
   static const int _maxRetries = 3;
-
-  // NEW: Refresh coordination
   bool _isRefreshing = false;
   bool _categoriesRefreshTrigger = false;
   int _refreshCompletedComponents = 0;
   bool _heroRefreshTrigger = false;
-  static const int _totalRefreshComponents =
-      3; // categories, featured, all courses
+  static const int _totalRefreshComponents = 3;
+
+  // ... [Keep all your existing methods] ...
 
   @override
   void initState() {
@@ -63,13 +60,11 @@ class _CoursesPageState extends State<CoursesPage> {
         _errorMessage == null &&
         _allCourses.isNotEmpty &&
         !_isRefreshing) {
-      // NEW: Don't load more during refresh
       debugPrint('Scroll threshold reached, loading more courses...');
       _fetchAllCourses();
     }
   }
 
-  // NEW: Enhanced refresh with coordination
   Future<void> _handleRefresh() async {
     if (_isRefreshing) return;
     debugPrint('DEBUG: Starting coordinated refresh...');
@@ -78,7 +73,7 @@ class _CoursesPageState extends State<CoursesPage> {
       _isRefreshing = true;
       _refreshCompletedComponents = 0;
       _categoriesRefreshTrigger = true;
-      _heroRefreshTrigger = true; // NEW: Trigger hero refresh
+      _heroRefreshTrigger = true;
       _page = 1;
       _hasMore = true;
     });
@@ -89,10 +84,8 @@ class _CoursesPageState extends State<CoursesPage> {
       _fetchFeaturedCourses(isRefresh: true),
       _fetchAllCourses(isRefresh: true),
     ]);
-    // Categories and hero will complete separately via callbacks
   }
 
-  // NEW: Handle component refresh completion
   void _onComponentRefreshComplete() {
     _refreshCompletedComponents++;
     debugPrint(
@@ -103,7 +96,7 @@ class _CoursesPageState extends State<CoursesPage> {
       setState(() {
         _isRefreshing = false;
         _categoriesRefreshTrigger = false;
-        _heroRefreshTrigger = false; // NEW: Reset hero trigger
+        _heroRefreshTrigger = false;
       });
       debugPrint('DEBUG: All components refresh completed');
     }
@@ -155,7 +148,6 @@ class _CoursesPageState extends State<CoursesPage> {
 
         debugPrint('DEBUG: All courses loaded: ${_allCourses.length} total');
 
-        // Notify refresh completion if this was a refresh
         if (isRefresh) {
           _onComponentRefreshComplete();
         }
@@ -201,7 +193,6 @@ class _CoursesPageState extends State<CoursesPage> {
         debugPrint('  - Top rated: ${_topRatedCourses.length} courses');
         debugPrint('  - Suggested: ${_suggestedCourses.length} courses');
 
-        // Notify refresh completion if this was a refresh
         if (isRefresh) {
           _onComponentRefreshComplete();
         }
@@ -229,6 +220,123 @@ class _CoursesPageState extends State<CoursesPage> {
     super.dispose();
   }
 
+  // NEW: Build enhanced navigation section
+  Widget _buildNavigationSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section title
+          Text(
+            'Explore Learning',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey[900],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Navigation buttons row
+          Row(
+            children: [
+              Expanded(
+                child: _buildNavigationButton(
+                  icon: Icons.live_tv_rounded,
+                  title: 'Live Classes',
+                  subtitle: 'Join interactive sessions',
+                  color: Colors.red[500]!,
+                  onTap: () => context.go(CommonRoutes.liveClassesRoute),
+                  isPrimary: false,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Coaching Centers button
+              Expanded(
+                child: _buildNavigationButton(
+                  icon: Icons.school_rounded,
+                  title: 'Centers',
+                  subtitle: 'Browse institutions',
+                  color: Colors.blue[500]!,
+                  onTap: () => context.go('/coaching-centers'),
+                  isPrimary: false,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: Reusable navigation button component
+  Widget _buildNavigationButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+    required bool isPrimary,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isPrimary ? color.withOpacity(0.1) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isPrimary ? color.withOpacity(0.3) : Colors.grey[200]!,
+            width: isPrimary ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(isPrimary ? 0.2 : 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey[600],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[900],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,13 +352,17 @@ class _CoursesPageState extends State<CoursesPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
+              // Hero section
               CourseHeroSection(
                 courseId: "990e8400-e29b-41d4-a716-446655440001",
-                forceRefresh: _heroRefreshTrigger, // NEW
-                onRefreshComplete: _onComponentRefreshComplete, // NEW
+                forceRefresh: _heroRefreshTrigger,
+                onRefreshComplete: _onComponentRefreshComplete,
               ),
 
-              // NEW: Categories with refresh coordination
+              // NEW: Enhanced navigation section
+              _buildNavigationSection(),
+
+              // Categories section
               CourseCategoriesSection(
                 forceRefresh: _categoriesRefreshTrigger,
                 onRefreshComplete: _onComponentRefreshComplete,
@@ -272,7 +384,7 @@ class _CoursesPageState extends State<CoursesPage> {
                 loading: _loadingFeatured,
               ),
 
-              // All Courses Grid with proper error handling
+              // All Courses Grid
               AllCoursesGrid(
                 courses: _allCourses,
                 loading: (_loadingMore && _page == 1) || _isRefreshing,

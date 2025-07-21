@@ -176,7 +176,7 @@ class AssessmentNavigationHelper {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (submission!['score'] != null)
+              if (submission['score'] != null)
                 Text(
                   'Score: ${submission['score']}/${assessment['total_marks']}',
                 ),

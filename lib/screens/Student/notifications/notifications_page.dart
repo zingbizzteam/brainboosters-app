@@ -2,6 +2,7 @@
 import 'package:brainboosters_app/screens/student/notifications/notifications_repository.dart';
 import 'package:brainboosters_app/screens/student/notifications/widgets/notification_card.dart';
 import 'package:brainboosters_app/screens/student/notifications/widgets/notification_filters_bottom_sheet.dart';
+import 'package:brainboosters_app/ui/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
@@ -197,7 +198,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (context.canPop()) {
             context.pop();
           } else {
-            context.go('/home');
+            context.go(AppRouter.home);
           }
         },
       ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:brainboosters_app/screens/common/courses/assesment/assessment_repository.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -85,7 +86,7 @@ class _AssignmentPageState extends State<AssignmentPage> {
               if (widget.courseId != null) {
                 context.go('/course/${widget.courseId}');
               } else {
-                context.go('/courses');
+                context.go(CommonRoutes.coursesRoute);
               }
             }
           },

@@ -190,7 +190,7 @@ class HorizontalCourseList extends StatelessWidget {
 
   Widget _buildCoursesList() {
     return SizedBox(
-      height: 280,
+      height: 300,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: courses.length,

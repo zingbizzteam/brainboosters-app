@@ -179,27 +179,106 @@ CREATE TABLE teachers (
 CREATE TABLE students (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE UNIQUE,
-    student_id VARCHAR(50) UNIQUE,
-    grade_level VARCHAR(20),
+    student_id VARCHAR(50) UNIQUE NOT NULL,
+    
+    -- Academic Information (Updated for Indian System)
+    grade_level VARCHAR(50) CHECK (grade_level IN (
+        'class_1', 'class_2', 'class_3', 'class_4', 'class_5',
+        'class_6', 'class_7', 'class_8', 'class_9', 'class_10',
+        'class_11', 'class_12',
+        'ug_1st_year', 'ug_2nd_year', 'ug_3rd_year', 'ug_4th_year',
+        'btech_1st_year', 'btech_2nd_year', 'btech_3rd_year', 'btech_4th_year',
+        'mbbs_1st_year', 'mbbs_2nd_year', 'mbbs_3rd_year', 'mbbs_4th_year', 'mbbs_5th_year',
+        'pg_1st_year', 'pg_2nd_year',
+        'mba_1st_year', 'mba_2nd_year',
+        'mtech_1st_year', 'mtech_2nd_year',
+        'phd_1st_year', 'phd_2nd_year', 'phd_3rd_year', 'phd_4th_year',
+        'working_professional', 'other'
+    )),
+    
+    education_board VARCHAR(50) CHECK (education_board IN (
+        'cbse', 'icse', 'state_board', 'igcse', 'ib', 'nios', 'other'
+    )),
+    
+    primary_interest VARCHAR(50) CHECK (primary_interest IN (
+        'mathematics', 'physics', 'chemistry', 'biology', 'computer_science',
+        'engineering', 'medicine', 'commerce', 'economics', 'english',
+        'hindi', 'history', 'geography', 'political_science', 'arts',
+        'music', 'sports', 'competitive_exams', 'languages', 'technology', 'other'
+    )),
+    
+    -- Location Information (New for Indian Market)
+    state VARCHAR(100),
+    city VARCHAR(100),
+    
+    -- Language Preferences (New for Indian Market)
+    preferred_language VARCHAR(10) DEFAULT 'en' CHECK (preferred_language IN (
+        'en', 'hi', 'ta', 'te', 'bn', 'mr', 'gu', 'kn', 'ml', 'or', 'pa', 'as', 'ur'
+    )),
+    
+    -- School/Institution Information
     school_name VARCHAR(200),
+    institution_type VARCHAR(50) CHECK (institution_type IN (
+        'school', 'college', 'university', 'coaching_center', 'self_study', 'other'
+    )),
+    
+    -- Parent/Guardian Information
     parent_name VARCHAR(200),
     parent_phone VARCHAR(20),
     parent_email VARCHAR(255),
+    guardian_relationship VARCHAR(50) DEFAULT 'parent' CHECK (guardian_relationship IN (
+        'parent', 'guardian', 'sibling', 'relative', 'self', 'other'
+    )),
+    
+    -- Learning Preferences and Goals
     learning_goals TEXT[] DEFAULT '{}',
-    preferred_learning_style VARCHAR(50),
-    timezone VARCHAR(50) DEFAULT 'UTC',
-    total_courses_enrolled INTEGER DEFAULT 0,
-    total_courses_completed INTEGER DEFAULT 0,
-    total_hours_learned DECIMAL(10,2) DEFAULT 0.0,
-    current_streak_days INTEGER DEFAULT 0,
-    longest_streak_days INTEGER DEFAULT 0,
-    total_points INTEGER DEFAULT 0,
-    level INTEGER DEFAULT 1,
+    preferred_learning_style VARCHAR(50) CHECK (preferred_learning_style IN (
+        'visual', 'auditory', 'kinesthetic', 'reading_writing', 'mixed'
+    )),
+    
+    -- Competitive Exam Preparation (New for Indian Market)
+    competitive_exams TEXT[] DEFAULT '{}', -- JEE, NEET, UPSC, etc.
+    target_exam_year INTEGER,
+    
+    -- System Preferences
+    timezone VARCHAR(50) DEFAULT 'Asia/Kolkata',
+    
+    -- Learning Statistics
+    total_courses_enrolled INTEGER DEFAULT 0 CHECK (total_courses_enrolled >= 0),
+    total_courses_completed INTEGER DEFAULT 0 CHECK (total_courses_completed >= 0),
+    total_hours_learned DECIMAL(10,2) DEFAULT 0.0 CHECK (total_hours_learned >= 0),
+    current_streak_days INTEGER DEFAULT 0 CHECK (current_streak_days >= 0),
+    longest_streak_days INTEGER DEFAULT 0 CHECK (longest_streak_days >= 0),
+    total_points INTEGER DEFAULT 0 CHECK (total_points >= 0),
+    level INTEGER DEFAULT 1 CHECK (level >= 1 AND level <= 100),
+    
+    -- Achievements and Badges
     badges JSONB DEFAULT '[]',
+    achievements JSONB DEFAULT '{}',
+    
+    -- Study Preferences (New)
+    daily_study_goal_minutes INTEGER DEFAULT 60 CHECK (daily_study_goal_minutes > 0),
+    preferred_study_time VARCHAR(20) DEFAULT 'evening' CHECK (preferred_study_time IN (
+        'early_morning', 'morning', 'afternoon', 'evening', 'night', 'flexible'
+    )),
+    
+    -- Account Status and Verification
+    is_active BOOLEAN DEFAULT true,
+    is_verified BOOLEAN DEFAULT false,
+    verification_method VARCHAR(50),
+    
+    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_login_date DATE,
-    last_streak_update_date DATE
+    last_streak_update_date DATE,
+    profile_completed_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Constraints
+    CONSTRAINT valid_courses_completed CHECK (total_courses_completed <= total_courses_enrolled),
+    CONSTRAINT valid_streak_days CHECK (longest_streak_days >= current_streak_days),
+    CONSTRAINT valid_email_format CHECK (parent_email IS NULL OR parent_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    CONSTRAINT valid_phone_format CHECK (parent_phone IS NULL OR parent_phone ~* '^\+?[1-9]\d{1,14}$')
 );
 ```
 
@@ -1527,8 +1606,22 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_teachers_coaching_center ON teachers
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_teachers_verified ON teachers(is_verified) WHERE is_verified = true;
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_teachers_specializations ON teachers USING GIN(specializations);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_students_user_id ON students(user_id);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_students_learning_goals ON students USING GIN(learning_goals);
+-- Create indexes for better performance
+CREATE INDEX idx_students_user_id ON students(user_id);
+CREATE INDEX idx_students_student_id ON students(student_id);
+CREATE INDEX idx_students_grade_level ON students(grade_level);
+CREATE INDEX idx_students_education_board ON students(education_board);
+CREATE INDEX idx_students_state_city ON students(state, city);
+CREATE INDEX idx_students_primary_interest ON students(primary_interest);
+CREATE INDEX idx_students_preferred_language ON students(preferred_language);
+CREATE INDEX idx_students_competitive_exams ON students USING GIN(competitive_exams);
+CREATE INDEX idx_students_is_active ON students(is_active);
+CREATE INDEX idx_students_created_at ON students(created_at);
+CREATE INDEX idx_students_last_login ON students(last_login_date);
+
+-- Create partial indexes for better performance
+CREATE INDEX idx_students_active_grade ON students(grade_level) WHERE is_active = true;
+CREATE INDEX idx_students_active_state ON students(state) WHERE is_active = true;
 
 -- Course and Content Indexes
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_courses_coaching_center ON courses(coaching_center_id);
@@ -1695,6 +1788,9 @@ CREATE POLICY "Students can update their own data" ON students
     FOR UPDATE USING (user_id = auth.uid());
 
 CREATE POLICY "Students can insert their own data" ON students
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can insert their own student profile" ON students
     FOR INSERT WITH CHECK (user_id = auth.uid());
 
 -- Teachers Policies
@@ -1873,6 +1969,252 @@ CREATE POLICY "Students can view their learning analytics" ON learning_analytics
 -- Audit Policies
 CREATE POLICY "Users can view their own audit logs" ON audit_logs
     FOR SELECT USING (user_id = auth.uid());
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_students_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to automatically update updated_at
+CREATE TRIGGER trigger_update_students_updated_at
+    BEFORE UPDATE ON students
+    FOR EACH ROW
+    EXECUTE FUNCTION update_students_updated_at();
+
+-- Create function to generate student ID
+CREATE OR REPLACE FUNCTION generate_student_id()
+RETURNS TRIGGER AS $$
+DECLARE
+    new_student_id VARCHAR(50);
+    year_suffix VARCHAR(4);
+    counter INTEGER;
+BEGIN
+    -- Get current year suffix
+    year_suffix := EXTRACT(YEAR FROM NOW())::VARCHAR;
+    
+    -- Get next counter for this year
+    SELECT COALESCE(MAX(CAST(SUBSTRING(student_id FROM 'STU' || year_suffix || '(\d+)') AS INTEGER)), 0) + 1
+    INTO counter
+    FROM students
+    WHERE student_id LIKE 'STU' || year_suffix || '%';
+    
+    -- Generate new student ID
+    new_student_id := 'STU' || year_suffix || LPAD(counter::VARCHAR, 6, '0');
+    
+    NEW.student_id := new_student_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to auto-generate student ID
+CREATE TRIGGER trigger_generate_student_id
+    BEFORE INSERT ON students
+    FOR EACH ROW
+    WHEN (NEW.student_id IS NULL)
+    EXECUTE FUNCTION generate_student_id();
+
+-- Create function to update learning statistics
+CREATE OR REPLACE FUNCTION update_learning_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update total courses enrolled when a new enrollment is created
+    IF TG_TABLE_NAME = 'course_enrollments' AND TG_OP = 'INSERT' THEN
+        UPDATE students 
+        SET total_courses_enrolled = total_courses_enrolled + 1,
+            updated_at = NOW()
+        WHERE id = NEW.student_id;
+    END IF;
+    
+    -- Update total courses completed when an enrollment is completed
+    IF TG_TABLE_NAME = 'course_enrollments' AND TG_OP = 'UPDATE' AND 
+       OLD.completed_at IS NULL AND NEW.completed_at IS NOT NULL THEN
+        UPDATE students 
+        SET total_courses_completed = total_courses_completed + 1,
+            updated_at = NOW()
+        WHERE id = NEW.student_id;
+    END IF;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create audit table for tracking changes
+CREATE TABLE students_audit (
+    audit_id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    student_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    operation VARCHAR(10) NOT NULL,
+    old_values JSONB,
+    new_values JSONB,
+    changed_by UUID REFERENCES auth.users(id),
+    changed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    ip_address INET,
+    user_agent TEXT
+);
+
+-- Create audit trigger function
+CREATE OR REPLACE FUNCTION audit_students_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO students_audit (student_id, user_id, operation, new_values, changed_by)
+        VALUES (NEW.id, NEW.user_id, 'INSERT', to_jsonb(NEW), auth.uid());
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        INSERT INTO students_audit (student_id, user_id, operation, old_values, new_values, changed_by)
+        VALUES (NEW.id, NEW.user_id, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW), auth.uid());
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        INSERT INTO students_audit (student_id, user_id, operation, old_values, changed_by)
+        VALUES (OLD.id, OLD.user_id, 'DELETE', to_jsonb(OLD), auth.uid());
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create audit trigger
+CREATE TRIGGER trigger_audit_students
+    AFTER INSERT OR UPDATE OR DELETE ON students
+    FOR EACH ROW
+    EXECUTE FUNCTION audit_students_changes();
+
+-- Create view for student analytics
+CREATE VIEW student_analytics AS
+SELECT 
+    s.id,
+    s.student_id,
+    s.grade_level,
+    s.education_board,
+    s.state,
+    s.city,
+    s.primary_interest,
+    s.preferred_language,
+    s.total_courses_enrolled,
+    s.total_courses_completed,
+    s.total_hours_learned,
+    s.current_streak_days,
+    s.total_points,
+    s.level,
+    s.created_at,
+    s.last_login_date,
+    -- Calculated fields
+    CASE 
+        WHEN s.total_courses_enrolled > 0 
+        THEN ROUND((s.total_courses_completed::DECIMAL / s.total_courses_enrolled) * 100, 2)
+        ELSE 0 
+    END AS completion_percentage,
+    
+    CASE 
+        WHEN s.total_hours_learned > 0 AND s.total_courses_completed > 0
+        THEN ROUND(s.total_hours_learned / s.total_courses_completed, 2)
+        ELSE 0
+    END AS avg_hours_per_course,
+    
+    DATE_PART('day', NOW() - s.created_at) AS days_since_registration,
+    
+    CASE 
+        WHEN s.last_login_date IS NOT NULL 
+        THEN DATE_PART('day', NOW() - s.last_login_date)
+        ELSE NULL
+    END AS days_since_last_login
+FROM students s
+WHERE s.is_active = true;
+
+-- Grant permissions
+GRANT SELECT ON student_analytics TO authenticated;
+GRANT SELECT ON students_audit TO authenticated;
+
+-- Create function to migrate existing data
+CREATE OR REPLACE FUNCTION migrate_existing_student_data()
+RETURNS VOID AS $$
+BEGIN
+    -- Update existing grade_level values to new format
+    UPDATE students 
+    SET grade_level = CASE 
+        WHEN grade_level = 'Grade 1' THEN 'class_1'
+        WHEN grade_level = 'Grade 2' THEN 'class_2'
+        WHEN grade_level = 'Grade 3' THEN 'class_3'
+        WHEN grade_level = 'Grade 4' THEN 'class_4'
+        WHEN grade_level = 'Grade 5' THEN 'class_5'
+        WHEN grade_level = 'Grade 6' THEN 'class_6'
+        WHEN grade_level = 'Grade 7' THEN 'class_7'
+        WHEN grade_level = 'Grade 8' THEN 'class_8'
+        WHEN grade_level = 'Grade 9' THEN 'class_9'
+        WHEN grade_level = 'Grade 10' THEN 'class_10'
+        WHEN grade_level = 'Grade 11' THEN 'class_11'
+        WHEN grade_level = 'Grade 12' THEN 'class_12'
+        WHEN grade_level = 'College' THEN 'ug_1st_year'
+        WHEN grade_level = 'College Sophomore' THEN 'ug_2nd_year'
+        WHEN grade_level = 'University' THEN 'ug_1st_year'
+        ELSE 'other'
+    END
+    WHERE grade_level IS NOT NULL;
+    
+    -- Set default values for new fields
+    UPDATE students 
+    SET 
+        preferred_language = 'en',
+        timezone = 'Asia/Kolkata',
+        institution_type = 'school',
+        guardian_relationship = 'parent',
+        is_active = true,
+        is_verified = false
+    WHERE preferred_language IS NULL;
+    
+    RAISE NOTICE 'Student data migration completed successfully';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Run the migration (uncomment to execute)
+-- SELECT migrate_existing_student_data();
+
+-- Create materialized view for performance analytics
+CREATE MATERIALIZED VIEW student_performance_stats AS
+SELECT 
+    grade_level,
+    education_board,
+    state,
+    primary_interest,
+    COUNT(*) as total_students,
+    AVG(total_courses_completed) as avg_courses_completed,
+    AVG(total_hours_learned) as avg_hours_learned,
+    AVG(current_streak_days) as avg_streak_days,
+    AVG(total_points) as avg_points,
+    COUNT(*) FILTER (WHERE last_login_date >= CURRENT_DATE - INTERVAL '7 days') as active_last_week,
+    COUNT(*) FILTER (WHERE last_login_date >= CURRENT_DATE - INTERVAL '30 days') as active_last_month
+FROM students 
+WHERE is_active = true
+GROUP BY grade_level, education_board, state, primary_interest;
+
+-- Create index on materialized view
+CREATE INDEX idx_student_performance_stats_grade ON student_performance_stats(grade_level);
+CREATE INDEX idx_student_performance_stats_board ON student_performance_stats(education_board);
+CREATE INDEX idx_student_performance_stats_state ON student_performance_stats(state);
+
+-- Create function to refresh materialized view
+CREATE OR REPLACE FUNCTION refresh_student_performance_stats()
+RETURNS VOID AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY student_performance_stats;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule materialized view refresh (you can set up a cron job for this)
+-- SELECT cron.schedule('refresh-student-stats', '0 2 * * *', 'SELECT refresh_student_performance_stats();');
+
+COMMENT ON TABLE students IS 'Student profiles with Indian education system support';
+COMMENT ON COLUMN students.grade_level IS 'Education level following Indian system (Class 1-12, UG, PG, etc.)';
+COMMENT ON COLUMN students.education_board IS 'Education board (CBSE, ICSE, State Board, etc.)';
+COMMENT ON COLUMN students.primary_interest IS 'Primary subject/area of interest';
+COMMENT ON COLUMN students.competitive_exams IS 'Array of competitive exams being prepared for (JEE, NEET, etc.)';
+COMMENT ON COLUMN students.preferred_language IS 'Preferred language for content (en, hi, ta, etc.)';
+COMMENT ON COLUMN students.state IS 'Indian state for regional customization';
+COMMENT ON COLUMN students.city IS 'City for local content and services';
 ```
 
 

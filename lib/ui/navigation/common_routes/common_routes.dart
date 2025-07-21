@@ -349,8 +349,6 @@ class CommonRoutes {
 
   // FIXED: Route validation helper
   static bool isValidRoute(String route) {
-    final allRoutes = getAllRoutes();
-    // This is a simplified check - in production you'd want more sophisticated validation
     return route.startsWith('/');
   }
 

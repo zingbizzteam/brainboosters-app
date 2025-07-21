@@ -369,7 +369,6 @@ class CourseRepository {
   }
 
   /// Get course by ID with full details
-  /// Get course by ID with full details
   static Future<Map<String, dynamic>?> getCourseById(String courseId) async {
     try {
       final course = await _client

@@ -1,75 +1,181 @@
+// lib/screens/common/live_class/widgets/live_class_card.dart
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
+import 'dart:async';
 
-class LiveClassCard extends StatelessWidget {
-  final Map<String, dynamic> liveClass;
+enum LiveClassStatus { scheduled, live, ended, cancelled, starting_soon }
+
+class LiveClassCard extends StatefulWidget {
+  final Map<String, dynamic>? liveClass;
+  final bool isLoading;
   final VoidCallback? onTap;
-  final bool isLoading; // NEW: Loading state support
+  final double? width;
+  final double? height;
+  final bool enableNavigation;
+  final bool showEnrollButton;
 
   const LiveClassCard({
     super.key,
-    required this.liveClass,
-    this.onTap,
+    this.liveClass,
     this.isLoading = false,
+    this.onTap,
+    this.width,
+    this.height,
+    this.enableNavigation = true,
+    this.showEnrollButton = true,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = screenWidth < 360;
-    final isMobile = screenWidth < 768;
-    final isTablet = screenWidth >= 768 && screenWidth < 1024;
+  State<LiveClassCard> createState() => _LiveClassCardState();
+}
 
-    double cardWidth;
-    if (isSmallMobile) {
-      cardWidth = screenWidth * 0.75;
-    } else if (isMobile) {
-      cardWidth = screenWidth * 0.60;
-    } else if (isTablet) {
-      cardWidth = 300;
-    } else {
-      cardWidth = 320;
+class _LiveClassCardState extends State<LiveClassCard> {
+  Timer? _statusTimer;
+  LiveClassStatus _currentStatus = LiveClassStatus.scheduled;
+  Duration? _timeUntilStart;
+  bool _isNearCapacity = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.liveClass != null) {
+      _calculateStatus();
+      _startStatusTimer();
     }
-    if (isLoading) {
-      return _buildShimmerCard(context);
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startStatusTimer() {
+    _statusTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _calculateStatus();
+      }
+    });
+  }
+
+  void _calculateStatus() {
+    if (widget.liveClass == null) return;
+
+    final scheduledAtStr = widget.liveClass!['scheduled_at']?.toString();
+    final rawStatus = widget.liveClass!['status']?.toString().toLowerCase();
+
+    if (scheduledAtStr == null) {
+      setState(() => _currentStatus = LiveClassStatus.scheduled);
+      return;
     }
+
+    try {
+      final scheduledAt = DateTime.parse(scheduledAtStr);
+      final now = DateTime.now();
+      final difference = scheduledAt.difference(now);
+
+      final maxParticipants =
+          _safeInt(widget.liveClass!['max_participants']) ?? 100;
+      final currentParticipants =
+          _safeInt(widget.liveClass!['current_participants']) ?? 0;
+      _isNearCapacity = (currentParticipants / maxParticipants) >= 0.8;
+
+      setState(() {
+        if (rawStatus == 'live') {
+          _currentStatus = LiveClassStatus.live;
+          _timeUntilStart = null;
+        } else if (rawStatus == 'ended' || rawStatus == 'completed') {
+          _currentStatus = LiveClassStatus.ended;
+          _timeUntilStart = null;
+        } else if (rawStatus == 'cancelled') {
+          _currentStatus = LiveClassStatus.cancelled;
+          _timeUntilStart = null;
+        } else if (difference.inMinutes <= 15 && difference.inMinutes > -30) {
+          _currentStatus = LiveClassStatus.starting_soon;
+          _timeUntilStart = difference.isNegative ? null : difference;
+        } else if (scheduledAt.isAfter(now)) {
+          _currentStatus = LiveClassStatus.scheduled;
+          _timeUntilStart = difference;
+        } else {
+          _currentStatus = LiveClassStatus.ended;
+          _timeUntilStart = null;
+        }
+      });
+    } catch (e) {
+      debugPrint('Error parsing scheduled_at: $e');
+      setState(() => _currentStatus = LiveClassStatus.scheduled);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cardWidth = widget.width ?? 300.0;
+    final cardHeight = widget.height ?? 380.0;
+
+    return SizedBox(
+      width: cardWidth,
+      height: cardHeight,
+      child: widget.isLoading || widget.liveClass == null
+          ? _buildSkeletonCard(cardWidth, cardHeight)
+          : _buildLiveClassCard(context, cardWidth, cardHeight),
+    );
+  }
+
+  // CRITICAL FIX: Completely rewritten to eliminate unbounded width errors
+  Widget _buildLiveClassCard(
+    BuildContext context,
+    double width,
+    double height,
+  ) {
+    final thumbnailHeight = height * 0.30;
 
     return Container(
-      width: cardWidth,
+      width: width, // CRITICAL: Explicit width constraint
+      height: height,
       margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey[200]!),
-      ),
       child: Card(
-        elevation: 0,
-        color: Colors.transparent,
+        elevation: 3,
+        shadowColor: Colors.black12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap:
-              onTap ??
-              () {
-                final liveClassId = liveClass['id']?.toString();
-                if (liveClassId != null && liveClassId.isNotEmpty) {
-                  context.go('/live-class/$liveClassId');
-                }
-              },
+          onTap: () => _handleTap(context),
+          borderRadius: BorderRadius.circular(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildThumbnail(cardWidth),
-              _buildContent(isSmallMobile, isMobile, isTablet, cardWidth),
+              _buildThumbnail(thumbnailHeight),
+
+              // FIXED: Use Expanded with bounded width parent
+              Expanded(
+                child: Container(
+                  width:
+                      width -
+                      32, // CRITICAL: Bounded width (accounting for margins)
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildTitle(),
+                      const SizedBox(height: 4),
+                      _buildInstructor(),
+                      const SizedBox(height: 4),
+
+                      // FIXED: Single column layout instead of problematic Row
+                      _buildScheduleInfo(),
+                      const SizedBox(height: 4),
+                      _buildParticipantsAndPricing(),
+
+                      // Use remaining space for button
+                      const Spacer(),
+
+                      if (widget.showEnrollButton) _buildActionButton(context),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -77,631 +183,665 @@ class LiveClassCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail(double cardWidth) {
-    final thumbnailUrl = liveClass['thumbnail_url']?.toString();
-    final thumbnailHeight = cardWidth * (9 / 16);
+  Widget _buildThumbnail(double height) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: Container(
+        height: height,
+        width: double.infinity,
+        child: Stack(
+          children: [_buildThumbnailImage(height), _buildThumbnailOverlays()],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildThumbnailImage(double height) {
+    final thumbnailUrl = widget.liveClass?['thumbnail_url']?.toString();
+
+    if (thumbnailUrl == null || thumbnailUrl.isEmpty) {
+      return _buildPlaceholderThumbnail(height);
+    }
+
+    return CachedNetworkImage(
+      imageUrl: thumbnailUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: height,
+      placeholder: (context, url) => _buildPlaceholderThumbnail(height),
+      errorWidget: (context, url, error) => _buildPlaceholderThumbnail(height),
+      fadeInDuration: const Duration(milliseconds: 200),
+      fadeOutDuration: const Duration(milliseconds: 200),
+    );
+  }
+
+  Widget _buildPlaceholderThumbnail(double height) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue[300]!, Colors.purple[300]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Icon(Icons.videocam, size: 48, color: Colors.white),
+    );
+  }
+
+  Widget _buildThumbnailOverlays() {
     return Stack(
       children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(5)),
-          child: SizedBox(
-            height: thumbnailHeight,
-            width: double.infinity,
-            child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
-                ? Image.network(
-                    thumbnailUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildPlaceholder(),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _buildPlaceholder();
-                    },
-                  )
-                : _buildPlaceholder(),
-          ),
-        ),
-        // Price badge
-        Positioned(top: 8, right: 8, child: _buildPriceBadge()),
-        // Status badge
         Positioned(top: 8, left: 8, child: _buildStatusBadge()),
-        // Live indicator for live classes
-        if (_getStatus().toLowerCase() == 'live')
-          Positioned(top: 8, left: 50, child: _buildLiveIndicator()),
+        if (_isNearCapacity)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange[700],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Almost Full',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        if (widget.liveClass?['duration_minutes'] != null)
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _formatDuration(widget.liveClass!['duration_minutes']),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        if (_currentStatus == LiveClassStatus.live)
+          Positioned(bottom: 8, left: 8, child: _buildLiveIndicator()),
       ],
     );
   }
 
-  Widget _buildPriceBadge() {
-    final price = _getPrice();
-    final isFree = _isFree();
+  Widget _buildStatusBadge() {
+    String text;
+    Color color;
+
+    switch (_currentStatus) {
+      case LiveClassStatus.live:
+        text = 'LIVE';
+        color = Colors.red;
+        break;
+      case LiveClassStatus.starting_soon:
+        text = 'STARTING SOON';
+        color = Colors.orange;
+        break;
+      case LiveClassStatus.ended:
+        text = 'ENDED';
+        color = Colors.grey;
+        break;
+      case LiveClassStatus.cancelled:
+        text = 'CANCELLED';
+        color = Colors.red[300]!;
+        break;
+      default:
+        text = 'SCHEDULED';
+        color = Colors.blue;
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isFree ? Colors.green : Colors.white.withValues(alpha: 0.95),
+        color: color,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Text(
-        isFree ? 'FREE' : '₹${price.toStringAsFixed(0)}',
-        style: TextStyle(
-          color: isFree ? Colors.white : Colors.green,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    final status = _getStatus();
-    final statusColor = _getStatusColor(status);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        status.toUpperCase(),
+        text,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 
   Widget _buildLiveIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.red,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 3),
-          const Text(
-            'LIVE',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      color: Colors.grey[200],
-      child: Center(
-        child: Icon(Icons.live_tv, size: 48, color: Colors.grey[400]),
-      ),
-    );
-  }
-
-  Widget _buildContent(
-    bool isSmallMobile,
-    bool isMobile,
-    bool isTablet,
-    double cardWidth,
-  ) {
-    final adaptivePadding = cardWidth < 200
-        ? 8.0
-        : (isSmallMobile ? 10.0 : 12.0);
-
-    return Padding(
-      padding: EdgeInsets.all(adaptivePadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Instructor/Academy name
-          Text(
-            _getInstructorName(),
-            style: TextStyle(
-              color: Colors.purple,
-              fontSize: _getResponsiveFontSize(
-                isSmallMobile,
-                isMobile,
-                isTablet,
-                8,
-                9,
-                10,
-                11,
-              ),
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: cardWidth < 200 ? 2 : (isSmallMobile ? 3 : 4)),
-
-          // Live class title
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: cardWidth < 200 ? 32 : (isSmallMobile ? 36 : 40),
-            ),
-            child: Text(
-              _getLiveClassTitle(),
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(
-                  isSmallMobile,
-                  isMobile,
-                  isTablet,
-                  13,
-                  14,
-                  15,
-                  16,
+    return TweenAnimationBuilder(
+      duration: const Duration(seconds: 1),
+      tween: Tween<double>(begin: 0.5, end: 1.0),
+      builder: (context, double value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.5),
+                  blurRadius: 8,
+                  spreadRadius: 1,
                 ),
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-                height: 1.1,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(height: cardWidth < 200 ? 3 : (isSmallMobile ? 4 : 6)),
-
-          // Description (only for wider cards)
-          if (cardWidth >= 200 && _getDescription().isNotEmpty) ...[
-            Text(
-              _getDescription(),
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(
-                  isSmallMobile,
-                  isMobile,
-                  isTablet,
-                  7,
-                  8,
-                  9,
-                  9,
-                ),
-                color: Colors.grey[600],
-                height: 1.2,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: isSmallMobile ? 4 : 6),
-          ],
-
-          // Time and duration row
-          if (cardWidth >= 180)
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.schedule,
-                      size: isSmallMobile ? 10 : 12,
-                      color: Colors.grey[600],
-                    ),
-                    SizedBox(width: isSmallMobile ? 3 : 4),
-                    Flexible(
-                      child: Text(
-                        _getFormattedTime(),
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(
-                            isSmallMobile,
-                            isMobile,
-                            isTablet,
-                            7,
-                            8,
-                            9,
-                            9,
-                          ),
-                          color: Colors.grey[600],
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (_getDuration().isNotEmpty) ...[
-                      SizedBox(width: isSmallMobile ? 6 : 8),
-                      Icon(
-                        Icons.access_time,
-                        size: isSmallMobile ? 10 : 12,
-                        color: Colors.grey[600],
-                      ),
-                      SizedBox(width: isSmallMobile ? 3 : 4),
-                      Text(
-                        _getDuration(),
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(
-                            isSmallMobile,
-                            isMobile,
-                            isTablet,
-                            7,
-                            8,
-                            9,
-                            9,
-                          ),
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                SizedBox(height: cardWidth < 200 ? 4 : (isSmallMobile ? 6 : 8)),
               ],
             ),
-
-          // Bottom row with participants and join button
-          _buildBottomRow(isSmallMobile, isMobile, isTablet, cardWidth),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomRow(
-    bool isSmallMobile,
-    bool isMobile,
-    bool isTablet,
-    double cardWidth,
-  ) {
-    final participantCount = _getParticipantCount();
-    final status = _getStatus().toLowerCase();
-
-    // For very small cards, show only essential info
-    if (cardWidth < 160) {
-      if (status == 'live') {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            'JOIN NOW',
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: _getResponsiveFontSize(
-                isSmallMobile,
-                isMobile,
-                isTablet,
-                7,
-                8,
-                9,
-                9,
-              ),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
-      } else {
-        return Text(
-          _getFormattedTime(),
-          style: TextStyle(
-            fontSize: _getResponsiveFontSize(
-              isSmallMobile,
-              isMobile,
-              isTablet,
-              7,
-              8,
-              8,
-              9,
-            ),
-            color: Colors.grey[600],
-          ),
-        );
-      }
-    }
-
-    // For wider cards, show full bottom row
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        if (participantCount > 0)
-          Flexible(
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.people,
-                  size: _getResponsiveFontSize(
-                    isSmallMobile,
-                    isMobile,
-                    isTablet,
-                    10,
-                    11,
-                    12,
-                    13,
-                  ),
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 2),
+                Icon(Icons.circle, color: Colors.white, size: 6),
+                SizedBox(width: 4),
                 Text(
-                  '$participantCount',
+                  'LIVE',
                   style: TextStyle(
-                    fontSize: _getResponsiveFontSize(
-                      isSmallMobile,
-                      isMobile,
-                      isTablet,
-                      8,
-                      9,
-                      10,
-                      10,
-                    ),
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[600],
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-        _buildActionButton(isSmallMobile, isMobile, isTablet, status),
+        );
+      },
+      onEnd: () {
+        setState(() {}); // Restart animation
+      },
+    );
+  }
+
+  Widget _buildTitle() {
+    final title = widget.liveClass?['title']?.toString() ?? 'Live Class';
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: Colors.black87,
+        height: 1.2,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildInstructor() {
+    final teacher = _extractTeacherData();
+    final teacherName = teacher?['name'] ?? 'Unknown Instructor';
+
+    return Text(
+      teacherName,
+      style: TextStyle(
+        fontSize: 11,
+        color: Colors.grey[600],
+        fontWeight: FontWeight.w500,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  // CRITICAL FIX: Removed problematic Row layout
+  Widget _buildScheduleInfo() {
+    final scheduledAt = _parseScheduledAt();
+    if (scheduledAt == null) {
+      return Text(
+        'Schedule TBA',
+        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _formatDateTime(scheduledAt),
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.blue[700],
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (_timeUntilStart != null &&
+            _currentStatus == LiveClassStatus.scheduled)
+          Text(
+            _formatTimeUntilStart(_timeUntilStart!),
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          ),
       ],
     );
   }
 
-  Widget _buildActionButton(
-    bool isSmallMobile,
-    bool isMobile,
-    bool isTablet,
-    String status,
-  ) {
-    String buttonText;
-    Color buttonColor;
+  // CRITICAL FIX: Removed problematic Row with Expanded children
+  Widget _buildParticipantsAndPricing() {
+    final maxParticipants =
+        _safeInt(widget.liveClass?['max_participants']) ?? 0;
+    final currentParticipants =
+        _safeInt(widget.liveClass?['current_participants']) ?? 0;
+    final price = _safeDouble(widget.liveClass?['price']) ?? 0.0;
+    final isFree = widget.liveClass?['is_free'] == true || price == 0.0;
 
-    switch (status) {
-      case 'live':
-        buttonText = 'JOIN';
-        buttonColor = Colors.red;
-        break;
-      case 'scheduled':
-        buttonText = 'ENROLL';
-        buttonColor = Colors.orange;
-        break;
-      case 'completed':
-        buttonText = 'REPLAY';
-        buttonColor = Colors.green;
-        break;
-      default:
-        buttonText = 'VIEW';
-        buttonColor = Colors.grey;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Participants info
+        if (maxParticipants > 0)
+          Text(
+            '$currentParticipants/$maxParticipants participants',
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          ),
+        const SizedBox(height: 2),
+        // Pricing info
+        _buildPricing(isFree, price),
+      ],
+    );
+  }
+
+  Widget _buildPricing(bool isFree, double price) {
+    if (isFree) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.green[50],
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.green[200]!),
+        ),
+        child: Text(
+          'FREE',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Colors.green[700],
+          ),
+        ),
+      );
     }
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isSmallMobile ? 6 : 8,
-        vertical: isSmallMobile ? 2 : 3,
+    return Text(
+      '₹${_formatPrice(price)}',
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Colors.black87,
       ),
-      decoration: BoxDecoration(
-        color: buttonColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: buttonColor.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        buttonText,
-        style: TextStyle(
-          color: buttonColor,
-          fontSize: _getResponsiveFontSize(
-            isSmallMobile,
-            isMobile,
-            isTablet,
-            7,
-            8,
-            9,
-            9,
-          ),
-          fontWeight: FontWeight.bold,
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context) {
+    final isEnrolled = widget.liveClass?['is_enrolled'] == true;
+
+    String buttonText;
+    Color buttonColor;
+    VoidCallback? onPressed;
+
+    switch (_currentStatus) {
+      case LiveClassStatus.live:
+        buttonText = isEnrolled ? 'Join Now' : 'View Live';
+        buttonColor = Colors.red;
+        onPressed = () => _handleJoinLive(context);
+        break;
+      case LiveClassStatus.starting_soon:
+        buttonText = isEnrolled ? 'Join Soon' : 'Enroll Now';
+        buttonColor = Colors.orange;
+        onPressed = isEnrolled ? null : () => _handleEnroll(context);
+        break;
+      case LiveClassStatus.ended:
+        buttonText = _hasRecording() ? 'View Recording' : "No Recoding";
+        buttonColor = Colors.blue[300]!;
+        onPressed = _hasRecording()
+            ? () => _handleViewRecording(context)
+            : null;
+        break;
+      case LiveClassStatus.cancelled:
+        buttonText = 'Cancelled';
+        buttonColor = Colors.grey;
+        onPressed = null;
+        break;
+      default:
+        buttonText = isEnrolled ? 'Enrolled' : 'Enroll Now';
+        buttonColor = isEnrolled
+            ? Colors.green
+            : Theme.of(context).primaryColor;
+        onPressed = isEnrolled ? null : () => _handleEnroll(context);
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+        ),
+        child: Text(
+          buttonText,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
 
-  // Helper method for responsive font sizes
-  double _getResponsiveFontSize(
-    bool isSmallMobile,
-    bool isMobile,
-    bool isTablet,
-    double smallMobileSize,
-    double mobileSize,
-    double tabletSize,
-    double desktopSize,
-  ) {
-    if (isSmallMobile) return smallMobileSize;
-    if (isMobile) return mobileSize;
-    if (isTablet) return tabletSize;
-    return desktopSize;
-  }
+  // Navigation and action handlers (keep existing)
+  void _handleTap(BuildContext context) {
+    if (widget.onTap != null) {
+      widget.onTap!();
+      return;
+    }
 
-  // Status color mapping
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'live':
-        return Colors.red;
-      case 'scheduled':
-        return Colors.orange;
-      case 'completed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.grey;
-      default:
-        return Colors.blue;
+    if (!widget.enableNavigation) return;
+
+    final liveClassId = _extractLiveClassId();
+    if (liveClassId == null || liveClassId.isEmpty) {
+      _showErrorSnackBar(context, 'Invalid live class ID');
+      return;
+    }
+
+    try {
+      context.go('/live-class/$liveClassId');
+    } catch (e) {
+      _showErrorSnackBar(context, 'Failed to open live class');
     }
   }
 
-  // Safe getter methods with fallbacks
-  String _getLiveClassTitle() {
-    return liveClass['title']?.toString() ?? 'Untitled Live Class';
+  void _handleEnroll(BuildContext context) {
+    final liveClassId = _extractLiveClassId();
+    if (liveClassId == null) {
+      _showErrorSnackBar(context, 'Cannot enroll: Invalid live class');
+      return;
+    }
+
+    _showEnrollmentDialog(context, liveClassId);
   }
 
-  String _getInstructorName() {
-    // Handle instructor data from live class
-    final teachers = liveClass['teachers'];
-    final coachingCenters = liveClass['coaching_centers'];
+  void _handleJoinLive(BuildContext context) {
+    final liveClassId = _extractLiveClassId();
+    if (liveClassId == null) return;
 
-    String instructorName = 'Unknown Instructor';
-    String centerName = '';
+    context.go('/live-class/$liveClassId/join');
+  }
 
-    // Get instructor name
-    if (teachers is Map) {
-      final userProfiles = teachers['user_profiles'];
-      if (userProfiles is Map) {
-        final firstName = userProfiles['first_name']?.toString() ?? '';
-        final lastName = userProfiles['last_name']?.toString() ?? '';
-        if (firstName.isNotEmpty || lastName.isNotEmpty) {
-          instructorName = '$firstName $lastName'.trim();
+  void _handleViewRecording(BuildContext context) {
+    final recordingUrl = widget.liveClass?['recording_url']?.toString();
+    if (recordingUrl != null && recordingUrl.isNotEmpty) {
+      debugPrint('Opening recording: $recordingUrl');
+    }
+  }
+
+  void _showEnrollmentDialog(BuildContext context, String liveClassId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enroll in Live Class'),
+        content: Text(
+          'Would you like to enroll in "${widget.liveClass?['title']}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _performEnrollment(liveClassId);
+            },
+            child: const Text('Enroll'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performEnrollment(String liveClassId) async {
+    try {
+      debugPrint('Enrolling in live class: $liveClassId');
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(context, 'Enrollment failed');
+      }
+    }
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red[600],
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Keep all your existing skeleton and helper methods
+  Widget _buildSkeletonCard(double width, double height) {
+    final thumbnailHeight = height * 0.30;
+
+    return Container(
+      width: width,
+      height: height,
+      margin: const EdgeInsets.only(right: 16),
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: thumbnailHeight,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 14,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 11,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 11,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 10,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        height: 32,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper methods (keep all existing ones)
+  String? _extractLiveClassId() {
+    final possibleIdFields = ['id', 'live_class_id', 'liveClassId'];
+
+    for (final field in possibleIdFields) {
+      final value = widget.liveClass?[field];
+      if (value != null) {
+        final stringValue = value.toString().trim();
+        if (stringValue.isNotEmpty && stringValue != 'null') {
+          return stringValue;
         }
       }
     }
 
-    // Get coaching center name
-    if (coachingCenters is Map) {
-      centerName = coachingCenters['center_name']?.toString() ?? '';
+    return null;
+  }
+
+  Map<String, dynamic>? _extractTeacherData() {
+    final teachers = widget.liveClass?['teachers'];
+    if (teachers is List && teachers.isNotEmpty) {
+      final teacher = teachers.first;
+      final userProfile = teacher['user_profiles'];
+      if (userProfile != null) {
+        final firstName = userProfile['first_name']?.toString() ?? '';
+        final lastName = userProfile['last_name']?.toString() ?? '';
+        return {'name': '$firstName $lastName'.trim()};
+      }
     }
 
-    // Return formatted string
-    if (centerName.isNotEmpty) {
-      return '$instructorName - $centerName';
+    return null;
+  }
+
+  String _extractCenterName() {
+    final coachingCenters = widget.liveClass?['coaching_centers'];
+    return coachingCenters?['center_name']?.toString() ?? '';
+  }
+
+  DateTime? _parseScheduledAt() {
+    final scheduledAtStr = widget.liveClass?['scheduled_at']?.toString();
+    if (scheduledAtStr == null || scheduledAtStr.isEmpty) return null;
+
+    try {
+      return DateTime.parse(scheduledAtStr);
+    } catch (e) {
+      debugPrint('Error parsing scheduled_at: $e');
+      return null;
+    }
+  }
+
+  bool _hasRecording() {
+    final recordingUrl = widget.liveClass?['recording_url']?.toString();
+    return recordingUrl != null && recordingUrl.isNotEmpty;
+  }
+
+  double? _safeDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  int? _safeInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  String _formatDuration(dynamic minutes) {
+    final totalMinutes = _safeInt(minutes) ?? 0;
+    final hours = totalMinutes ~/ 60;
+    final mins = totalMinutes % 60;
+
+    if (hours > 0) {
+      return '${hours}h ${mins}m';
+    }
+    return '${mins}m';
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final cardDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    String dateStr;
+    if (cardDate == today) {
+      dateStr = 'Today';
+    } else if (cardDate == tomorrow) {
+      dateStr = 'Tomorrow';
+    } else {
+      dateStr = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
 
-    return instructorName;
+    final timeStr =
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return '$dateStr at $timeStr';
   }
 
-  String _getDescription() {
-    return liveClass['description']?.toString() ?? '';
-  }
-
-  String _getStatus() {
-    return liveClass['status']?.toString() ?? 'scheduled';
-  }
-
-  String _getFormattedTime() {
-    final scheduledAt = liveClass['scheduled_at'];
-    if (scheduledAt == null) return '';
-
-    final dt = DateTime.tryParse(scheduledAt.toString());
-    if (dt == null) return '';
-
-    return DateFormat('MMM d, h:mm a').format(dt.toLocal());
-  }
-
-  String _getDuration() {
-    final durationMinutes = liveClass['duration_minutes'];
-    if (durationMinutes == null) return '';
-
-    if (durationMinutes is num) {
-      return '${durationMinutes.toInt()} min';
+  String _formatTimeUntilStart(Duration duration) {
+    if (duration.inDays > 0) {
+      return 'Starts in ${duration.inDays} day${duration.inDays > 1 ? 's' : ''}';
+    } else if (duration.inHours > 0) {
+      return 'Starts in ${duration.inHours} hour${duration.inHours > 1 ? 's' : ''}';
+    } else if (duration.inMinutes > 0) {
+      return 'Starts in ${duration.inMinutes} minute${duration.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'Starting soon';
     }
-
-    return '';
   }
 
-  double _getPrice() {
-    final price = liveClass['price'];
-    if (price is num) return price.toDouble();
-    return 0.0;
+  String _formatPrice(double price) {
+    if (price >= 1000) {
+      return '${(price / 1000).toStringAsFixed(price % 1000 == 0 ? 0 : 1)}k';
+    }
+    return price.toStringAsFixed(price == price.roundToDouble() ? 0 : 2);
   }
-
-  bool _isFree() {
-    final isFree = liveClass['is_free'];
-    if (isFree is bool) return isFree;
-    return _getPrice() == 0.0;
-  }
-
-  int _getParticipantCount() {
-    final count = liveClass['current_participants'];
-    if (count is num) return count.toInt();
-    return 0;
-  }
-}
-
-Widget _buildShimmerCard(BuildContext context) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final isSmallMobile = screenWidth < 360;
-  final isMobile = screenWidth < 768;
-  final isTablet = screenWidth >= 768 && screenWidth < 1024;
-
-  double cardWidth;
-  if (isSmallMobile) {
-    cardWidth = screenWidth * 0.75;
-  } else if (isMobile) {
-    cardWidth = screenWidth * 0.60;
-  } else if (isTablet) {
-    cardWidth = 300;
-  } else {
-    cardWidth = 320;
-  }
-
-  final thumbnailHeight = cardWidth * (9 / 16);
-  final adaptivePadding = cardWidth < 200 ? 8.0 : (isSmallMobile ? 10.0 : 12.0);
-
-  return Shimmer.fromColors(
-    baseColor: Colors.grey[300]!,
-    highlightColor: Colors.grey[100]!,
-    child: Container(
-      width: cardWidth,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Card(
-        elevation: 0,
-        color: Colors.transparent,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Thumbnail shimmer
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(5)),
-              child: Container(
-                height: thumbnailHeight,
-                width: double.infinity,
-                color: Colors.white,
-              ),
-            ),
-
-            // Content shimmer - same structure as your original card
-            Padding(
-              padding: EdgeInsets.all(adaptivePadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // All your shimmer elements here...
-                  // (Use the shimmer structure from above)
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

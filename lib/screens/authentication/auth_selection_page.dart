@@ -119,11 +119,12 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
               SizedBox(
                 width: double.infinity,
                 child: Opacity(
-                  opacity: 0.5, // Visual indication it's disabled
-                  child: IgnorePointer(
-                    // Prevents tap interactions
-                    child: GoogleAuthButton(),
-                  ),
+                  // opacity: 0.5, // Visual indication it's disabled
+                  opacity: 1,
+                  child:
+                      // IgnorePointer(child:
+                      GoogleAuthButton(),
+                  // ),
                 ),
               ),
 
@@ -137,19 +138,16 @@ class _AuthSelectionPageState extends State<AuthSelectionPage> {
                     "Don't have an account? ",
                     style: TextStyle(color: Colors.grey[600]),
                   ),
-                  Opacity(
-                    opacity: 0.5, // Visual indication it's disabled
-                    child: IgnorePointer(
-                      // Prevents tap interactions
-                      child: Text(
-                        "Sign up with email",
-                        style: TextStyle(
-                          color: Colors.grey[400], // Changed to grey
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  // IgnorePointer(child:
+                  Text(
+                    "Sign up with email",
+                    style: TextStyle(
+                      color: Color(0xFF5DADE2),
+                      // color: Colors.grey[400], // Changed to grey
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                  // ),
                 ],
               ),
 

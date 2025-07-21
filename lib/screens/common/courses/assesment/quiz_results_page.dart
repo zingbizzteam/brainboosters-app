@@ -1,4 +1,5 @@
 // Create new file: quiz_results_page.dart
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'assessment_repository.dart';
@@ -1046,7 +1047,7 @@ String _formatTextAnswer(dynamic answer) {
     } else if (widget.courseId != null) {
       context.go('/course/${widget.courseId}');
     } else {
-      context.go('/courses');
+      context.go(CommonRoutes.coursesRoute);
     }
   }
 

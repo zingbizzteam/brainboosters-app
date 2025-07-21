@@ -13,10 +13,12 @@ class NotificationFiltersBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<NotificationFiltersBottomSheet> createState() => _NotificationFiltersBottomSheetState();
+  State<NotificationFiltersBottomSheet> createState() =>
+      _NotificationFiltersBottomSheetState();
 }
 
-class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBottomSheet> {
+class _NotificationFiltersBottomSheetState
+    extends State<NotificationFiltersBottomSheet> {
   late NotificationFilters _filters;
 
   @override
@@ -63,24 +65,16 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
           const Text(
             'Filter Notifications',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
           const Spacer(),
-          TextButton(
-            onPressed: _clearFilters,
-            child: const Text('Clear All'),
-          ),
+          TextButton(onPressed: _clearFilters, child: const Text('Clear All')),
         ],
       ),
     );
@@ -92,10 +86,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
       children: [
         const Text(
           'Read Status',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Row(
@@ -104,9 +95,11 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
               child: FilterChip(
                 label: const Text('All'),
                 selected: _filters.isRead == null,
-                onSelected: (selected) {
+                onSelected: (_) {
                   setState(() {
-                    _filters = _filters.copyWith(isRead: null);
+                    _filters = _filters.copyWith(
+                      clearIsRead: true,
+                    ); // Use the flag
                   });
                 },
               ),
@@ -116,7 +109,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
               child: FilterChip(
                 label: const Text('Unread'),
                 selected: _filters.isRead == false,
-                onSelected: (selected) {
+                onSelected: (_) {
                   setState(() {
                     _filters = _filters.copyWith(isRead: false);
                   });
@@ -128,7 +121,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
               child: FilterChip(
                 label: const Text('Read'),
                 selected: _filters.isRead == true,
-                onSelected: (selected) {
+                onSelected: (_) {
                   setState(() {
                     _filters = _filters.copyWith(isRead: true);
                   });
@@ -147,10 +140,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
       children: [
         const Text(
           'Notification Type',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -187,10 +177,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
       children: [
         const Text(
           'Priority',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -209,7 +196,9 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
                     );
                   } else {
                     _filters = _filters.copyWith(
-                      priorities: _filters.priorities.where((p) => p != priority).toList(),
+                      priorities: _filters.priorities
+                          .where((p) => p != priority)
+                          .toList(),
                     );
                   }
                 });
@@ -227,10 +216,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
       children: [
         const Text(
           'Date Range',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Row(
@@ -240,9 +226,12 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
                 onPressed: () async {
                   final picked = await showDateRangePicker(
                     context: context,
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 365),
+                    ),
                     lastDate: DateTime.now(),
-                    initialDateRange: _filters.fromDate != null && _filters.toDate != null
+                    initialDateRange:
+                        _filters.fromDate != null && _filters.toDate != null
                         ? DateTimeRange(
                             start: _filters.fromDate!,
                             end: _filters.toDate!,
@@ -284,9 +273,7 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
@@ -327,7 +314,13 @@ class _NotificationFiltersBottomSheetState extends State<NotificationFiltersBott
 
   void _clearFilters() {
     setState(() {
-      _filters = NotificationFilters();
+      _filters = NotificationFilters(
+        types: [],
+        priorities: [],
+        isRead: null, // Explicitly set to null
+        fromDate: null,
+        toDate: null,
+      );
     });
   }
 }

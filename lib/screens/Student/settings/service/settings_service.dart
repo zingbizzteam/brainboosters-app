@@ -194,20 +194,18 @@ class SettingsService extends ChangeNotifier {
 
   void _handleRealTimeUpdate(PostgresChangePayload payload) {
     try {
-      if (payload.newRecord != null) {
-        final newSettings = payload.newRecord!['settings'] as Map<String, dynamic>;
-        final serverTimestamp = DateTime.parse(payload.newRecord!['updated_at']);
-        final localTimestamp = DateTime.now().subtract(const Duration(seconds: 5));
+      final newSettings = payload.newRecord!['settings'] as Map<String, dynamic>;
+      final serverTimestamp = DateTime.parse(payload.newRecord!['updated_at']);
+      final localTimestamp = DateTime.now().subtract(const Duration(seconds: 5));
 
-        // Only update if server change is newer (avoid infinite loops)
-        if (serverTimestamp.isAfter(localTimestamp)) {
-          _settings = _mergeWithDefaults(newSettings);
-          _saveSettingsLocally(); // Save without triggering sync
-          notifyListeners();
-          debugPrint('Settings updated from real-time sync');
-        }
+      // Only update if server change is newer (avoid infinite loops)
+      if (serverTimestamp.isAfter(localTimestamp)) {
+        _settings = _mergeWithDefaults(newSettings);
+        _saveSettingsLocally(); // Save without triggering sync
+        notifyListeners();
+        debugPrint('Settings updated from real-time sync');
       }
-    } catch (e) {
+        } catch (e) {
       debugPrint('Error handling real-time update: $e');
     }
   }

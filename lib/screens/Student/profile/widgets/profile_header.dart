@@ -1,176 +1,162 @@
-// lib/screens/student/profile/widgets/profile_header.dart
-import 'package:brainboosters_app/screens/student/profile/widgets/profile_model.dart';
 import 'package:flutter/material.dart';
 
 class ProfileHeader extends StatelessWidget {
-  final ProfileData profileData;
+  final Map<String, dynamic> profileData;
+  final Map<String, dynamic> studentData;
+  final VoidCallback onEditPressed;
+  final VoidCallback onSettingsPressed;
 
   const ProfileHeader({
     super.key,
     required this.profileData,
+    required this.studentData,
+    required this.onEditPressed,
+    required this.onSettingsPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 200, // Fixed height to prevent overflow
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.blue[900]!, Colors.blue[700]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF5DADE2),
+            Color(0xFF3498DB),
+          ],
         ),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth <= 768;
-              return isMobile 
-                ? _buildMobileHeader() 
-                : _buildDesktopHeader();
-            },
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: onEditPressed,
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                      ),
+                      IconButton(
+                        onPressed: onSettingsPressed,
+                        icon: const Icon(Icons.settings, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    backgroundImage: profileData['avatar_url'] != null
+                        ? NetworkImage(profileData['avatar_url'])
+                        : null,
+                    child: profileData['avatar_url'] == null
+                        ? Text(
+                            '${profileData['first_name']?[0] ?? ''}${profileData['last_name']?[0] ?? ''}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5DADE2),
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${profileData['first_name']} ${profileData['last_name']}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Student ID: ${studentData['student_id']}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.school,
+                              color: Colors.white70,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              studentData['grade_level'] ?? 'Not specified',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildBadge(
+                              'Level ${studentData['level'] ?? 1}',
+                              const Color(0xFFD4845C),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildBadge(
+                              '${studentData['current_streak_days'] ?? 0} day streak',
+                              Colors.orange,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildMobileHeader() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircleAvatar(
-          radius: 35,
-          backgroundImage: profileData.avatarUrl != null 
-            ? NetworkImage(profileData.avatarUrl!) 
-            : null,
-          child: profileData.avatarUrl == null
-            ? Text(
-                profileData.fullName.isNotEmpty 
-                  ? profileData.fullName[0].toUpperCase() 
-                  : 'U',
-                style: const TextStyle(fontSize: 24, color: Colors.white),
-              )
-            : null,
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
-        const SizedBox(height: 8),
-        Text(
-          profileData.fullName.isEmpty ? 'User' : profileData.fullName,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if (profileData.gradeLevel != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            'Grade ${profileData.gradeLevel}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildStatItem('Level', '${profileData.level}', Icons.trending_up),
-            _buildStatItem('Streak', '${profileData.currentStreak}', Icons.local_fire_department),
-            _buildStatItem('Points', '${profileData.totalPoints}', Icons.stars),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDesktopHeader() {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 45,
-          backgroundImage: profileData.avatarUrl != null 
-            ? NetworkImage(profileData.avatarUrl!) 
-            : null,
-          child: profileData.avatarUrl == null
-            ? Text(
-                profileData.fullName.isNotEmpty 
-                  ? profileData.fullName[0].toUpperCase() 
-                  : 'U',
-                style: const TextStyle(fontSize: 28, color: Colors.white),
-              )
-            : null,
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                profileData.fullName.isEmpty ? 'User' : profileData.fullName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (profileData.gradeLevel != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Grade ${profileData.gradeLevel}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        Row(
-          children: [
-            _buildStatItem('Level', '${profileData.level}', Icons.trending_up),
-            const SizedBox(width: 24),
-            _buildStatItem('Streak', '${profileData.currentStreak} days', Icons.local_fire_department),
-            const SizedBox(width: 24),
-            _buildStatItem('Points', '${profileData.totalPoints}', Icons.stars),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white, size: 16),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 8,
-            color: Colors.white70,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

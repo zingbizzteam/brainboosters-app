@@ -3,6 +3,9 @@ import 'package:brainboosters_app/screens/common/widgets/breadcrumb_widget.dart'
 import 'package:brainboosters_app/screens/common/widgets/hero_image_widget.dart';
 import 'package:brainboosters_app/screens/common/widgets/stats_widget.dart';
 import 'package:brainboosters_app/screens/common/widgets/tab_section_widget.dart';
+import 'package:brainboosters_app/ui/navigation/app_router.dart';
+import 'package:brainboosters_app/ui/navigation/auth_routes.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -52,8 +55,8 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         _getCurrentUserData(),
       ]);
 
-      final liveClassResult = results[0] as Map<String, dynamic>?;
-      final userResult = results[1] as Map<String, dynamic>?;
+      final liveClassResult = results[0];
+      final userResult = results[1];
 
       setState(() {
         liveClass = liveClassResult;
@@ -103,13 +106,13 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
     } else {
       // Fallback navigation based on context
       final currentLocation = GoRouterState.of(context).uri.toString();
-      
+
       if (currentLocation.contains('/live-class/')) {
         // If we're on a live class page, go to live classes list
-        context.go('/live-classes');
+        context.go(CommonRoutes.liveClassesRoute);
       } else {
         // Default fallback to home
-        context.go('/');
+        context.go(AppRouter.home);
       }
     }
   }
@@ -142,12 +145,12 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
                       BreadcrumbItem(
                         'Home',
                         false,
-                        onTap: () => context.go('/'),
+                        onTap: () => context.go(AppRouter.home),
                       ),
                       BreadcrumbItem(
                         'Live Classes',
                         false,
-                        onTap: () => context.go('/live-classes'),
+                        onTap: () => context.go(CommonRoutes.liveClassesRoute),
                       ),
                       BreadcrumbItem(liveClass?['title'] ?? 'Live Class', true),
                     ],
@@ -187,7 +190,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         mainAxisSize: MainAxisSize.min,
         children: [
           TextButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () => context.go(AuthRoutes.emailLogin),
             child: const Text('Login'),
           ),
         ],
@@ -213,9 +216,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
         const SizedBox(width: 8),
         CircleAvatar(
           radius: 16,
-          backgroundImage: avatarUrl != null
-              ? NetworkImage(avatarUrl)
-              : null,
+          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
           child: avatarUrl == null
               ? Text(
                   fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
@@ -260,7 +261,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
                   ),
                   const SizedBox(width: 16),
                   OutlinedButton(
-                    onPressed: () => context.go('/live-classes'),
+                    onPressed: () => context.go(CommonRoutes.liveClassesRoute),
                     child: const Text('Browse Live Classes'),
                   ),
                 ],
@@ -291,7 +292,7 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => context.go('/live-classes'),
+                onPressed: () => context.go(CommonRoutes.liveClassesRoute),
                 child: const Text('Browse Live Classes'),
               ),
             ],
@@ -313,11 +314,15 @@ class _LiveClassIntroPageState extends State<LiveClassIntroPage>
           if (isMobile) ...[
             BreadcrumbWidget(
               items: [
-                BreadcrumbItem('Home', false, onTap: () => context.go('/')),
+                BreadcrumbItem(
+                  'Home',
+                  false,
+                  onTap: () => context.go(AppRouter.home),
+                ),
                 BreadcrumbItem(
                   'Live Classes',
                   false,
-                  onTap: () => context.go('/live-classes'),
+                  onTap: () => context.go(CommonRoutes.liveClassesRoute),
                 ),
                 BreadcrumbItem(liveClass!['title'], true),
               ],

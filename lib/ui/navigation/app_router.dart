@@ -7,29 +7,46 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
+import 'package:brainboosters_app/ui/navigation/web_routes/web_routes.dart'; 
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppRouter {
-  static const String onboarding = '/';
+  static const String onboarding = '/onboarding';
+   static const String home = '/'; 
   static final _authStateListener = SupabaseAuthStateListener();
 
   static final router = GoRouter(
     refreshListenable: _authStateListener,
-    // debugLogDiagnostics: true, // Enable for debugging
     redirect: _redirectLogic,
     routes: [
+      // Platform-specific routes
+     if (kIsWeb) 
+      ...WebRoutes.routes, // This will wrap ALL web routes with sidebar
+    
+    if (!kIsWeb) ...[
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(
         path: onboarding,
         builder: (context, state) => const OnboardingScreen(),
       ),
-      ...AuthRoutes.routes,
+      // Mobile student routes (existing StatefulNavigationShell)
       StudentRoutes.statefulRoute,
-      // Include additional student routes
+    ],
+      
+      ...AuthRoutes.routes,
+      
+      // Conditional student routes based on platform
+      if (!kIsWeb) StudentRoutes.statefulRoute,
+      if (kIsWeb) ...StudentRoutes.getWebRoutes(),
+      
       ...StudentRoutes.getAdditionalRoutes(),
       ...CommonRoutes.getAllRoutes(),
     ],
   );
 
-  // ... rest of your redirect logic remains the same
   static Future<String?> _redirectLogic(
     BuildContext context,
     GoRouterState state,
@@ -38,22 +55,74 @@ class AppRouter {
     final isLoggedIn = session != null;
     final currentPath = state.uri.path;
 
-    debugPrint('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn');
+    debugPrint('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn, Web: $kIsWeb');
 
-    // If not logged in, allow only onboarding and auth routes
+    // Web-specific logic
+    if (kIsWeb) {
+      return _handleWebRedirection(currentPath, isLoggedIn, session?.user.id);
+    }
+
+    // Mobile logic (existing)
+    return _handleMobileRedirection(currentPath, isLoggedIn, session?.user.id);
+  }
+
+  static Future<String?> _handleWebRedirection(
+    String currentPath, 
+    bool isLoggedIn, 
+    String? userId
+  ) async {
+    // Allow browsing of main content without authentication
+    final publicWebRoutes = [
+      '/',
+      '/courses',
+      '/live-classes',
+      '/coaching-centers',
+      '/search',
+    ];
+    
+    // Allow access to public routes and auth routes
+    if (publicWebRoutes.any((route) => currentPath.startsWith(route)) || 
+        currentPath.startsWith('/auth')) {
+      return null;
+    }
+    
+    // Protected routes require authentication
+    final protectedRoutes = ['/home', '/profile', '/settings', '/notifications'];
+    if (protectedRoutes.any((route) => currentPath.startsWith(route))) {
+      if (!isLoggedIn) {
+        return '/auth'; // Redirect to auth selection
+      }
+      
+      // If logged in, verify user setup
+      if (userId != null) {
+        final redirectPath = await _getRedirectForLoggedInUser(userId);
+        if (redirectPath != null && redirectPath != StudentRoutes.home) {
+          return redirectPath;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  static Future<String?> _handleMobileRedirection(
+    String currentPath, 
+    bool isLoggedIn, 
+    String? userId
+  ) async {
+    // Existing mobile logic
     if (!isLoggedIn) {
       if (currentPath == onboarding || currentPath.startsWith('/auth')) {
-        return null; // Allow access
+        return null;
       }
-      return onboarding; // Redirect to onboarding
+      return onboarding;
     }
 
-    // If logged in and on onboarding, check user setup status
-    if (currentPath == onboarding) {
-      return await _getRedirectForLoggedInUser(session.user.id);
+    if (currentPath == onboarding || currentPath == '/') {
+      return await _getRedirectForLoggedInUser(userId!);
     }
 
-    return null; // No redirect needed
+    return null;
   }
 
   static Future<String?> _getRedirectForLoggedInUser(String userId) async {

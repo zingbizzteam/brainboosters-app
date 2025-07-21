@@ -499,20 +499,20 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     'Don\'t have an account? ',
                     style: TextStyle(fontSize: 14, color: Color(0xFF999999)),
                   ),
-                  IgnorePointer(
-                    child: GestureDetector(
+                  // IgnorePointer(child: 
+                  GestureDetector(
                       onTap: () => context.go(AuthRoutes.emailRegister),
                       child: Text(
                         'Create Account',
                         style: TextStyle(
                           fontSize: 14,
-                          // color: Color(0xFF5DADE2),
-                          color: Colors.grey[400], // Changed to grey
+                          color: Color(0xFF5DADE2),
+                          // color: Colors.grey[400], // Changed to grey
 
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                    // ),
                   ),
                 ],
               ),

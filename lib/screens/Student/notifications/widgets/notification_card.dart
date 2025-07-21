@@ -7,6 +7,7 @@ class NotificationCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onMarkAsRead;
   final VoidCallback onMarkAsUnread;
+  final VoidCallback? onDismiss; // NEW: Add dismiss callback
 
   const NotificationCard({
     super.key,
@@ -14,6 +15,7 @@ class NotificationCard extends StatelessWidget {
     required this.onTap,
     required this.onMarkAsRead,
     required this.onMarkAsUnread,
+    this.onDismiss, // NEW: Optional dismiss callback
   });
 
   @override
@@ -33,12 +35,22 @@ class NotificationCard extends StatelessWidget {
           size: 24,
         ),
       ),
-      onDismissed: (direction) {
+      confirmDismiss: (direction) async {
+        // NEW: Add confirmation and handle the action immediately
         if (notification.isRead) {
           onMarkAsUnread();
         } else {
           onMarkAsRead();
         }
+
+        // Return false to prevent actual dismissal from the tree
+        // since we're just marking as read/unread, not removing the notification
+        return false;
+      },
+      onDismissed: (direction) {
+        // This should only be called if we actually want to remove the item
+        // Since we return false in confirmDismiss, this won't be called
+        onDismiss?.call();
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 2),
@@ -217,7 +229,7 @@ class NotificationCard extends StatelessWidget {
   }
 
   Widget _buildActions() {
-    return PopupMenuButton<String>(
+    return PopupMenuButton(
       onSelected: (value) {
         switch (value) {
           case 'mark_read':
@@ -292,7 +304,6 @@ class NotificationCard extends StatelessWidget {
     } else if (difference.inDays < 7) {
       return '${difference.inDays} days ago';
     } else if (difference.inDays < 365 && dateTime.year == now.year) {
-      // Same year - show month and day
       const months = [
         'Jan',
         'Feb',
@@ -309,7 +320,6 @@ class NotificationCard extends StatelessWidget {
       ];
       return '${months[dateTime.month - 1]} ${dateTime.day}';
     } else {
-      // Different year - show full date
       const months = [
         'Jan',
         'Feb',

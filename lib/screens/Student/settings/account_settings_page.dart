@@ -453,7 +453,6 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                final settings = _settingsService.getAllSettings();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Settings exported successfully')),
                 );

@@ -2,6 +2,8 @@ import 'package:brainboosters_app/screens/common/coaching_centers/coaching_cente
 import 'package:brainboosters_app/screens/common/coaching_centers/teachers/teacher_repository.dart';
 import 'package:brainboosters_app/screens/common/widgets/breadcrumb_widget.dart';
 import 'package:brainboosters_app/screens/common/widgets/tab_section_widget.dart';
+import 'package:brainboosters_app/ui/navigation/app_router.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets/teacher_header_widget.dart';
@@ -13,11 +15,7 @@ class TeacherDetailPage extends StatefulWidget {
   final String teacherId;
   final String? centerId; // NEW: Optional center context
 
-  const TeacherDetailPage({
-    super.key,
-    required this.teacherId,
-    this.centerId,
-  });
+  const TeacherDetailPage({super.key, required this.teacherId, this.centerId});
 
   @override
   State<TeacherDetailPage> createState() => _TeacherDetailPageState();
@@ -61,7 +59,9 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
 
       // Load coaching center data if centerId is provided
       if (widget.centerId != null) {
-        futures.add(CoachingCenterRepository.getCoachingCenterById(widget.centerId!));
+        futures.add(
+          CoachingCenterRepository.getCoachingCenterById(widget.centerId!),
+        );
       }
 
       final results = await Future.wait(futures);
@@ -70,13 +70,13 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
         teacher = results[0] as Map<String, dynamic>?;
         courses = results[1] as List<Map<String, dynamic>>;
         reviews = results[2] as List<Map<String, dynamic>>;
-        
+
         if (widget.centerId != null && results.length > 3) {
           coachingCenter = results[3] as Map<String, dynamic>?;
         }
-        
+
         isLoading = false;
-        
+
         if (teacher == null) {
           error = 'Teacher not found';
         }
@@ -108,9 +108,7 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
             ),
             title: isMobile ? null : _buildBreadcrumb(),
           ),
-          SliverToBoxAdapter(
-            child: _buildContent(isMobile),
-          ),
+          SliverToBoxAdapter(child: _buildContent(isMobile)),
         ],
       ),
     );
@@ -118,27 +116,38 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
 
   Widget _buildBreadcrumb() {
     final items = <BreadcrumbItem>[
-      BreadcrumbItem('Home', false, onTap: () => context.go('/')),
-      BreadcrumbItem('Coaching Centers', false, onTap: () => context.go('/coaching-centers')),
+      BreadcrumbItem('Home', false, onTap: () => context.go(AppRouter.home)),
+      BreadcrumbItem(
+        'Coaching Centers',
+        false,
+        onTap: () => context.go(CommonRoutes.coachingCentersRoute),
+      ),
     ];
 
     if (coachingCenter != null) {
-      items.add(BreadcrumbItem(
-        coachingCenter!['center_name'],
-        false,
-        onTap: () => context.go('/coaching-center/${widget.centerId}'),
-      ));
-      items.add(BreadcrumbItem(
-        'Teachers',
-        false,
-        onTap: () => context.go('/coaching-center/${widget.centerId}/teachers'),
-      ));
+      items.add(
+        BreadcrumbItem(
+          coachingCenter!['center_name'],
+          false,
+          onTap: () => context.go('/coaching-center/${widget.centerId}'),
+        ),
+      );
+      items.add(
+        BreadcrumbItem(
+          'Teachers',
+          false,
+          onTap: () =>
+              context.go('/coaching-center/${widget.centerId}/teachers'),
+        ),
+      );
     }
 
-    items.add(BreadcrumbItem(
-      teacher?['user_profiles']?['first_name'] ?? 'Teacher',
-      true,
-    ));
+    items.add(
+      BreadcrumbItem(
+        teacher?['user_profiles']?['first_name'] ?? 'Teacher',
+        true,
+      ),
+    );
 
     return BreadcrumbWidget(items: items);
   }
@@ -161,9 +170,15 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
             children: [
               Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
               const SizedBox(height: 16),
-              Text(error!, style: TextStyle(color: Colors.red[600], fontSize: 16)),
+              Text(
+                error!,
+                style: TextStyle(color: Colors.red[600], fontSize: 16),
+              ),
               const SizedBox(height: 24),
-              ElevatedButton(onPressed: _loadTeacherData, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: _loadTeacherData,
+                child: const Text('Retry'),
+              ),
             ],
           ),
         ),
@@ -185,12 +200,9 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          
+
           // Mobile breadcrumb
-          if (isMobile) ...[
-            _buildBreadcrumb(),
-            const SizedBox(height: 20),
-          ],
+          if (isMobile) ...[_buildBreadcrumb(), const SizedBox(height: 20)],
 
           // Teacher header with coaching center context
           TeacherHeaderWidget(
@@ -207,8 +219,16 @@ class _TeacherDetailPageState extends State<TeacherDetailPage>
             tabs: const ['About', 'Courses', 'Reviews'],
             tabViews: [
               TeacherAboutTab(teacher: teacher!, isMobile: isMobile),
-              TeacherCoursesTab(teacher: teacher!, courses: courses, isMobile: isMobile),
-              TeacherReviewsTab(teacher: teacher!, reviews: reviews, isMobile: isMobile),
+              TeacherCoursesTab(
+                teacher: teacher!,
+                courses: courses,
+                isMobile: isMobile,
+              ),
+              TeacherReviewsTab(
+                teacher: teacher!,
+                reviews: reviews,
+                isMobile: isMobile,
+              ),
             ],
           ),
         ],

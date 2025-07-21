@@ -1,4 +1,6 @@
 // lib/screens/common/coaching_centers/coaching_center_details/coaching_center_detail_page.dart
+import 'package:brainboosters_app/ui/navigation/app_router.dart';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
@@ -73,7 +75,9 @@ class _CoachingCenterDetailPageState extends State<CoachingCenterDetailPage>
   // ──────────────────── navigation helpers ────────────────────
   void _onBack() {
     final router = GoRouter.of(context);
-    router.canPop() ? router.pop() : router.go('/coaching-centers');
+    router.canPop()
+        ? router.pop()
+        : router.go(CommonRoutes.coachingCentersRoute);
   }
 
   // ──────────────────── build ────────────────────
@@ -141,11 +145,16 @@ class _DetailSlivers extends StatelessWidget {
               ? null
               : BreadcrumbWidget(
                   items: [
-                    BreadcrumbItem('Home', false, onTap: () => context.go('/')),
+                    BreadcrumbItem(
+                      'Home',
+                      false,
+                      onTap: () => context.go(AppRouter.home),
+                    ),
                     BreadcrumbItem(
                       'Coaching Centers',
                       false,
-                      onTap: () => context.go('/coaching-centers'),
+                      onTap: () =>
+                          context.go(CommonRoutes.coachingCentersRoute),
                     ),
                     BreadcrumbItem(center['center_name'], true),
                   ],
@@ -159,11 +168,15 @@ class _DetailSlivers extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: BreadcrumbWidget(
                 items: [
-                  BreadcrumbItem('Home', false, onTap: () => context.go('/')),
+                  BreadcrumbItem(
+                    'Home',
+                    false,
+                    onTap: () => context.go(AppRouter.home),
+                  ),
                   BreadcrumbItem(
                     'Coaching Centers',
                     false,
-                    onTap: () => context.go('/coaching-centers'),
+                    onTap: () => context.go(CommonRoutes.coachingCentersRoute),
                   ),
                   BreadcrumbItem(center['center_name'], true),
                 ],

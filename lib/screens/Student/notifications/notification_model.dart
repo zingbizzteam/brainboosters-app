@@ -180,21 +180,26 @@ class NotificationFilters {
     this.toDate,
   });
 
-  NotificationFilters copyWith({
-    List<NotificationType>? types,
-    List<NotificationPriority>? priorities,
-    bool? isRead,
-    DateTime? fromDate,
-    DateTime? toDate,
-  }) {
-    return NotificationFilters(
-      types: types ?? this.types,
-      priorities: priorities ?? this.priorities,
-      isRead: isRead ?? this.isRead,
-      fromDate: fromDate ?? this.fromDate,
-      toDate: toDate ?? this.toDate,
-    );
-  }
+ // In notification_model.dart - update the copyWith method
+NotificationFilters copyWith({
+  List<NotificationType>? types,
+  List<NotificationPriority>? priorities,
+  bool? isRead,
+  DateTime? fromDate,
+  DateTime? toDate,
+  bool clearIsRead = false, // NEW: explicit flag for clearing isRead
+  bool clearFromDate = false, // NEW: explicit flag for clearing fromDate  
+  bool clearToDate = false, // NEW: explicit flag for clearing toDate
+}) {
+  return NotificationFilters(
+    types: types ?? this.types,
+    priorities: priorities ?? this.priorities,
+    isRead: clearIsRead ? null : (isRead ?? this.isRead), // FIX: Handle null explicitly
+    fromDate: clearFromDate ? null : (fromDate ?? this.fromDate),
+    toDate: clearToDate ? null : (toDate ?? this.toDate),
+  );
+}
+
 }
 
 class NotificationException implements Exception {

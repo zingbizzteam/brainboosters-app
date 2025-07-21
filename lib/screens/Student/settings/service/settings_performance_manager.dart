@@ -1,6 +1,5 @@
 // File: lib/screens/student/settings/service/settings_performance_manager.dart
 import 'dart:async';
-import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 
 class SettingsPerformanceManager {

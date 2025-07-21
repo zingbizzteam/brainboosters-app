@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
@@ -94,7 +95,7 @@ class _CourseIntroPageState extends State<CourseIntroPage>
     if (GoRouter.of(context).canPop()) {
       context.pop();
     } else {
-      context.go('/courses');
+      context.go(CommonRoutes.coursesRoute);
     }
   }
 
@@ -172,7 +173,7 @@ class _CourseIntroPageState extends State<CourseIntroPage>
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () => context.go('/courses'),
+                    onPressed: () => context.go(CommonRoutes.coursesRoute),
                     child: const Text('Back to Courses'),
                   ),
                 ],

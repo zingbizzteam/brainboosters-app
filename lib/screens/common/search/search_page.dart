@@ -4,6 +4,7 @@ import 'package:brainboosters_app/screens/common/search/search_repository.dart';
 import 'package:brainboosters_app/screens/common/search/widgets/search_result_card.dart';
 import 'package:brainboosters_app/screens/common/search/widgets/search_filters_bottom_sheet.dart';
 import 'package:brainboosters_app/screens/common/search/widgets/search_sort_bottom_sheet.dart';
+import 'package:brainboosters_app/ui/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
@@ -236,7 +237,7 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
           if (context.canPop()) {
             context.pop();
           } else {
-            context.go('/');
+            context.go(AppRouter.home);
           }
         },
       ),
