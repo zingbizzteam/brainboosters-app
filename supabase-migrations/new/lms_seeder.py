@@ -151,25 +151,62 @@ class LMSDataSeeder:
             self.log_and_print("🔐 Database connection closed")
 
     def execute_sql_file(self, file_path: str):
-        """Execute SQL file"""
+        """If 'concurrently' in filename, run each non-comment statement one by one; otherwise run as transaction batch."""
         if not os.path.exists(file_path):
             self.log_and_print(f"❌ SQL file not found: {file_path}", "error")
             return False
-            
+
         self.log_and_print(f"📄 Executing SQL file: {file_path}")
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 sql_content = file.read()
-            
-            conn = self.get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute(sql_content)
-            cursor.close()
-            
-            self.log_and_print(f"✅ Successfully executed: {file_path}")
-            return True
+
+            if 'concurrently' in file_path.lower():
+                # Split lines, filter comments and blanks, aggregate statements ending with ;
+                statements = []
+                block = []
+                for line in sql_content.splitlines():
+                    stripped = line.strip()
+                    if not stripped or stripped.startswith('--'):
+                        continue  # skip comments and blank lines
+                    block.append(line)
+                    if stripped.endswith(';'):
+                        statements.append('\n'.join(block))
+                        block = []
+                if block:  # handle any stray statement at end
+                    statements.append('\n'.join(block))
+                # Execute one by one with autocommit
+                conn = self.get_db_connection()
+                conn.autocommit = True
+                cursor = conn.cursor()
+                success_count = 0
+                for i, stmt in enumerate(statements, 1):
+                    try:
+                        cursor.execute(stmt)
+                        self.log_and_print(f"✅ Created index {i}/{len(statements)}")
+                        success_count += 1
+                    except Exception as e:
+                        self.log_and_print(f"❌ Failed to create index {i}: {e}", "warning")
+                cursor.close()
+                return success_count > 0
+            else:
+                # Execute entire SQL content as a single transaction
+                conn = self.get_db_connection()
+                conn.autocommit = False
+                cursor = conn.cursor()
+                try:
+                    cursor.execute(sql_content)
+                    conn.commit()
+                    self.log_and_print("✅ Successfully executed file as batch")
+                    cursor.close()
+                    return True
+                except Exception as e:
+                    conn.rollback()
+                    self.log_and_print(f"❌ Error executing file: {e}", "error")
+                    cursor.close()
+                    return False
         except Exception as e:
-            self.log_and_print(f"❌ Error executing {file_path}: {e}", "error")
+            self.log_and_print(f"❌ Error reading {file_path}: {e}", "error")
             return False
 
     def setup_database_schema(self):
@@ -178,7 +215,7 @@ class LMSDataSeeder:
         
         sql_files = [
             'complete_sql_for_bb.sql',
-            'create_indexes_concurrently.sql',
+            'create_indexes_concurrently.sql'
         ]
         
         for sql_file in sql_files:
