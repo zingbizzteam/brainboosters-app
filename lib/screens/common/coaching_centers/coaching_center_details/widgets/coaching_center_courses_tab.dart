@@ -1,6 +1,6 @@
 import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart'; // ADD THIS IMPORT
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../ui/navigation/common_routes/common_routes.dart';
 
@@ -27,44 +27,56 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
   @override
   void initState() {
     super.initState();
-    // FIXED: Schedule data loading after the first frame is built
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _loadCourses();
     });
   }
 
   Future<void> _loadCourses() async {
-    try {
-      // Only set loading state if we're not already loading
-      if (!isLoading) {
-        setState(() {
-          isLoading = true;
-          error = null;
-        });
-      }
+  try {
+    if (!isLoading) {
+      setState(() {
+        isLoading = true;
+        error = null;
+      });
+    }
 
-      final result = await CoachingCenterRepository.getCoursesByCoachingCenter(
-        widget.center['id'],
-        limit: 20,
-      );
+    // ✅ DEBUG: Print the center data
+    debugPrint('📦 Center data keys: ${widget.center.keys.toList()}');
+    debugPrint('📦 Center ID: ${widget.center['id']}');
+    debugPrint('📦 Center user_id: ${widget.center['user_id']}');
 
-      // Check if widget is still mounted before calling setState
-      if (mounted) {
-        setState(() {
-          courses = result;
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      // Check if widget is still mounted before calling setState
-      if (mounted) {
-        setState(() {
-          error = 'Failed to load courses: $e';
-          isLoading = false;
-        });
-      }
+    final coachingCenterId = widget.center['user_id'] ?? widget.center['id'];
+    
+    if (coachingCenterId == null) {
+      throw Exception('Coaching center ID not found');
+    }
+
+    debugPrint('🎯 Using coaching_center_id for query: $coachingCenterId');
+
+    final result = await CoachingCenterRepository.getCoursesByCoachingCenter(
+      coachingCenterId,
+      limit: 20,
+    );
+
+    debugPrint('✅ Fetched ${result.length} courses');
+
+    if (mounted) {
+      setState(() {
+        courses = result;
+        isLoading = false;
+      });
+    }
+  } catch (e) {
+    debugPrint('❌ Error loading courses: $e');
+    if (mounted) {
+      setState(() {
+        error = 'Failed to load courses: $e';
+        isLoading = false;
+      });
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +97,7 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
             ),
           ),
           SizedBox(height: isSmallMobile ? 16 : 20),
-
+          
           if (isLoading)
             const Center(
               child: Padding(
@@ -180,11 +192,9 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Thumbnail and price row
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Course thumbnail
             Container(
               width: 60,
               height: 45,
@@ -212,13 +222,10 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
               ),
             ),
             const Spacer(),
-            // Price
             _buildPriceSection(course, isSmallMobile, isMobile),
           ],
         ),
         const SizedBox(height: 12),
-
-        // Course title
         Text(
           course['title'] ?? 'Untitled Course',
           style: TextStyle(
@@ -229,8 +236,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 6),
-
-        // Description
         Text(
           course['short_description'] ?? course['description'] ?? '',
           style: TextStyle(
@@ -241,8 +246,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 10),
-
-        // Stats - Vertical layout for small screens
         _buildStatsSection(course, isSmallMobile, isMobile),
       ],
     );
@@ -256,7 +259,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Course thumbnail
         Container(
           width: isMobile ? 70 : 80,
           height: isMobile ? 52 : 60,
@@ -279,13 +281,10 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
           ),
         ),
         SizedBox(width: isMobile ? 12 : 16),
-
-        // Course details
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title and price row
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -305,8 +304,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
                 ],
               ),
               const SizedBox(height: 6),
-
-              // Description
               Text(
                 course['short_description'] ?? course['description'] ?? '',
                 style: TextStyle(
@@ -317,8 +314,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 10),
-
-              // Stats
               _buildStatsSection(course, isSmallMobile, isMobile),
             ],
           ),
@@ -347,7 +342,7 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
         if (!_isFree(course) && course['original_price'] != null) ...[
           const SizedBox(height: 2),
           Text(
-            '₹${course['original_price'].toStringAsFixed(0)}',
+            '₹${(course['original_price'] as num).toStringAsFixed(0)}',
             style: TextStyle(
               fontSize: isSmallMobile ? 10 : 12,
               color: Colors.grey[500],
@@ -374,14 +369,14 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
       ),
       _buildStatChip(
         Icons.star_outline,
-        '${course['rating']?.toStringAsFixed(1) ?? '0.0'}',
+        '${(course['rating'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
         Colors.orange,
         isSmallMobile,
         isMobile,
       ),
       _buildStatChip(
         Icons.access_time,
-        '${course['duration_hours']?.toStringAsFixed(0) ?? '0'}h',
+        '${(course['duration_hours'] as num?)?.toStringAsFixed(0) ?? '0'}h',
         Colors.green,
         isSmallMobile,
         isMobile,
@@ -389,7 +384,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
     ];
 
     if (isSmallMobile) {
-      // Stack vertically on very small screens
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -399,7 +393,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
         ],
       );
     } else {
-      // Use Wrap for larger screens to handle overflow gracefully
       return Wrap(spacing: isMobile ? 6 : 8, runSpacing: 4, children: stats);
     }
   }
@@ -443,7 +436,6 @@ class _CoachingCenterCoursesTabState extends State<CoachingCenterCoursesTab> {
 
   String _getFormattedPrice(Map<String, dynamic> course) {
     if (_isFree(course)) return 'FREE';
-
     final price = course['price'];
     if (price is num) {
       return '₹${price.toStringAsFixed(0)}';

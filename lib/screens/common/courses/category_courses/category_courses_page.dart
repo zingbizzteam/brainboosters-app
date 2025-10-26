@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CategoryCoursesPage extends StatefulWidget {
   final String categoryName;
-  
+
   const CategoryCoursesPage({
     super.key,
     required this.categoryName,
@@ -23,16 +23,16 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
   bool isLoadingMore = false;
   bool hasMore = true;
   String? error;
-  
   final int pageSize = 12;
   int currentOffset = 0;
   final ScrollController _scrollController = ScrollController();
+  String? categoryId; // ✅ Store category ID
 
   @override
   void initState() {
     super.initState();
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      _loadCourses();
+      _initializePage();
     });
     _scrollController.addListener(_onScroll);
   }
@@ -43,7 +43,46 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
     super.dispose();
   }
 
+  // ✅ NEW: First get category ID from category name
+  Future<void> _initializePage() async {
+    try {
+      setState(() {
+        isLoading = true;
+        error = null;
+      });
+
+      // Get category ID by name or slug
+      final categoryResponse = await Supabase.instance.client
+          .from('course_categories')
+          .select('id')
+          .or('name.ilike.${widget.categoryName},slug.ilike.${widget.categoryName}')
+          .maybeSingle();
+
+      if (categoryResponse == null) {
+        if (mounted) {
+          setState(() {
+            error = 'Category "${widget.categoryName}" not found';
+            isLoading = false;
+          });
+        }
+        return;
+      }
+
+      categoryId = categoryResponse['id'];
+      await _loadCourses();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          error = 'Failed to initialize: $e';
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _loadCourses({bool isRefresh = false}) async {
+    if (categoryId == null) return;
+
     try {
       if (isRefresh) {
         setState(() {
@@ -59,13 +98,15 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
         });
       }
 
+      // ✅ FIXED: Use category_id and join with course_categories
       final response = await Supabase.instance.client
           .from('courses')
           .select('''
             id,
             title,
             thumbnail_url,
-            category,
+            category_id,
+            course_categories!inner(name, slug),
             level,
             price,
             original_price,
@@ -78,7 +119,7 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
             coaching_centers(center_name)
           ''')
           .eq('is_published', true)
-          .eq('category', widget.categoryName)
+          .eq('category_id', categoryId!) // ✅ Filter by category_id
           .order('enrollment_count', ascending: false)
           .range(currentOffset, currentOffset + pageSize - 1);
 
@@ -89,6 +130,7 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
           } else {
             courses.addAll(List<Map<String, dynamic>>.from(response));
           }
+
           hasMore = response.length == pageSize;
           currentOffset += response.length;
           isLoading = false;
@@ -107,20 +149,22 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
   }
 
   Future<void> _loadMoreCourses() async {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || !hasMore || categoryId == null) return;
 
     setState(() {
       isLoadingMore = true;
     });
 
     try {
+      // ✅ FIXED: Use category_id and join with course_categories
       final response = await Supabase.instance.client
           .from('courses')
           .select('''
             id,
             title,
             thumbnail_url,
-            category,
+            category_id,
+            course_categories!inner(name, slug),
             level,
             price,
             original_price,
@@ -133,7 +177,7 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
             coaching_centers(center_name)
           ''')
           .eq('is_published', true)
-          .eq('category', widget.categoryName)
+          .eq('category_id', categoryId!)
           .order('enrollment_count', ascending: false)
           .range(currentOffset, currentOffset + pageSize - 1);
 
@@ -187,7 +231,7 @@ class _CategoryCoursesPageState extends State<CategoryCoursesPage> {
             loadingMore: isLoadingMore,
             hasMore: hasMore,
             errorMessage: error,
-            onRetry: () => _loadCourses(isRefresh: true),
+            onRetry: () => _initializePage(),
           ),
         ),
       ),

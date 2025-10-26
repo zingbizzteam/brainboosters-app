@@ -154,44 +154,70 @@ class _SettingsPageState extends State<SettingsPage> {
   // Add this new method
   Future<void> _performLogout() async {
     try {
+      debugPrint('🚪 Starting logout process');
+
       // Show loading indicator
+      if (!mounted) return;
+
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Sign out from Supabase
+      
+
+      // 1. Sign out from Supabase
+      debugPrint('🔐 Signing out from Supabase');
       await Supabase.instance.client.auth.signOut();
 
-      // Clear settings service data
+      // 2. Clear local data first
+      debugPrint('🧹 Clearing local data');
       await _settingsService.clearAllData();
 
-      // Hide loading indicator
+      debugPrint('✅ Logout successful');
+
+      // 3. Close loading dialog BEFORE router redirect happens
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
-        // Navigate to onboarding/auth screen
-        context.go(AppRouter.home); // or your auth route
+      // 4. DON'T manually navigate - let the router handle it!
+      // The SupabaseAuthStateListener will automatically trigger a redirect
 
-        // Show success message
+      // 5. Optional: Show success message
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Successfully signed out'),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Successfully signed out'),
+              ],
+            ),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
-      // Hide loading indicator
-      if (mounted) {
-        Navigator.pop(context);
+      debugPrint('❌ Logout error: $e');
 
-        // Show error message
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error signing out: $e'),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Error signing out: $e')),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

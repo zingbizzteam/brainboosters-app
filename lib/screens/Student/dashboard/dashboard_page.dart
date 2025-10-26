@@ -12,6 +12,9 @@ import 'package:brainboosters_app/screens/student/dashboard/widgets/signup_cta_w
 import 'package:brainboosters_app/screens/student/dashboard/dashboard_skeleton.dart';
 import 'package:brainboosters_app/screens/student/dashboard/dashboard_repository.dart';
 import 'package:go_router/go_router.dart';
+import 'package:brainboosters_app/screens/student/dashboard/widgets/quick_stats_grid.dart';
+import 'package:brainboosters_app/screens/student/dashboard/dashboard_repository.dart';
+
 import 'package:brainboosters_app/ui/navigation/student_routes/student_routes.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -24,16 +27,17 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool _loading = true;
   String? _error;
-  
+
   // User state
-  Map<String, dynamic>? _studentStats;
+  StudentStats? _studentStats;
+
   List<Map<String, dynamic>> _enrolledCourses = [];
   List<Map<String, dynamic>> _enrolledLiveClasses = [];
-  
+
   // Popular content for all users
   List<Map<String, dynamic>> _popularCourses = [];
   List<Map<String, dynamic>> _popularLiveClasses = [];
-
+  bool _statsLoading = true;
   bool get _isLoggedIn => Supabase.instance.client.auth.currentUser != null;
 
   @override
@@ -41,6 +45,34 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _fetchDashboardData();
   }
+  Future<void> _fetchStudentStats() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) {
+    setState(() {
+      _statsLoading = false;
+      _studentStats = StudentStats.empty();
+    });
+    return;
+  }
+
+  try {
+    final stats = await DashboardRepository.fetchStudentStats(user.id);
+    if (mounted) {
+      setState(() {
+        _studentStats = stats;
+        _statsLoading = false;
+      });
+    }
+  } catch (e) {
+    debugPrint('Error fetching stats: $e');
+    if (mounted) {
+      setState(() {
+        _studentStats = StudentStats.empty();
+        _statsLoading = false;
+      });
+    }
+  }
+}
 
   Future<void> _refreshDashboard() async {
     setState(() {
@@ -69,7 +101,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _fetchLoggedInUserData() async {
     final user = Supabase.instance.client.auth.currentUser!;
-    
+
     // Check if user is enrolled as student
     final studentRes = await Supabase.instance.client
         .from('students')
@@ -95,7 +127,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _fetchPopularContent() async {
     try {
       final popularCourses = await DashboardRepository.getPopularCourses();
-      final popularLiveClasses = await DashboardRepository.getPopularLiveClasses();
+      final popularLiveClasses =
+          await DashboardRepository.getPopularLiveClasses();
 
       if (mounted) {
         setState(() {
@@ -138,7 +171,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 const DashboardTopBar()
               else
                 const WelcomeHeaderWidget(),
-              
+
               SizedBox(height: isWide ? 32 : 20),
 
               // Error handling
@@ -173,7 +206,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 if (_popularLiveClasses.isNotEmpty) ...[
                   PopularLiveClassesWidget(
                     liveClasses: _popularLiveClasses,
-                    title: _isLoggedIn ? "Suggested Live Classes" : "Popular Live Classes",
+                    title: _isLoggedIn
+                        ? "Suggested Live Classes"
+                        : "Popular Live Classes",
                   ),
                   SizedBox(height: isWide ? 24 : 16),
                 ],
@@ -182,7 +217,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 if (_popularCourses.isNotEmpty) ...[
                   PopularCoursesWidget(
                     courses: _popularCourses,
-                    title: _isLoggedIn ? "Recommended Courses" : "Popular Courses",
+                    title: _isLoggedIn
+                        ? "Recommended Courses"
+                        : "Popular Courses",
                   ),
                   SizedBox(height: isWide ? 24 : 16),
                 ],
@@ -215,23 +252,56 @@ class _DashboardPageState extends State<DashboardPage> {
           Icon(Icons.error_outline, color: Colors.red[600]),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              _error!,
-              style: TextStyle(color: Colors.red[700]),
-            ),
+            child: Text(_error!, style: TextStyle(color: Colors.red[700])),
           ),
-          TextButton(
-            onPressed: _refreshDashboard,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: _refreshDashboard, child: const Text('Retry')),
         ],
       ),
     );
   }
 
   Widget _buildStatsSection(bool isWide) {
-    // TODO: Implement stats section using DashboardStatCard
-    return const SizedBox.shrink();
+    return  Padding(
+    padding: const EdgeInsets.only(bottom: 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Your Progress',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _fetchStudentStats,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF4AA0E6),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: QuickStatsGrid(
+            stats: _studentStats!,
+            isLoading: _statsLoading,
+          ),
+        ),
+      ],
+    ),
+  );
+;
   }
 
   Widget _buildEnrolledCoursesSection() {
@@ -251,10 +321,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
         const SizedBox(height: 8),
-        EnrolledCourseList(
-          enrolledCourses: _enrolledCourses,
-          loading: false,
-        ),
+        EnrolledCourseList(enrolledCourses: _enrolledCourses, loading: false),
       ],
     );
   }

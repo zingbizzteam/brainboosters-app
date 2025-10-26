@@ -1,4 +1,4 @@
-// lib/screen/common/courses/courses_intro/course_repository.dart
+// lib/screen/common/courses/courses_intro/course_intro_repository.dart
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,54 +8,67 @@ class CourseIntroRepository {
   static String? get currentUserId => _client.auth.currentUser?.id;
   static bool get isAuthenticated => _client.auth.currentUser != null;
 
-  // FIXED: Handle missing chapters/lessons gracefully and create placeholders
+  // ✅ FIXED: Filter unpublished lessons
   static Future<Map<String, dynamic>?> getCourseById(String courseId) async {
     try {
       final userId = currentUserId;
+
       final courseResponse = await _client
           .from('courses')
           .select('''
-          id,
-          title,
-          slug,
-          description,
-          short_description,
-          thumbnail_url,
-          trailer_video_url,
-          about,
-          what_you_learn,
-          course_includes,
-          target_audience,
-          course_requirements,
-          category,
-          subcategory,
-          level,
-          language,
-          price,
-          original_price,
-          currency,
-          duration_hours,
-          total_lessons,
-          total_chapters,
-          prerequisites,
-          learning_outcomes,
-          tags,
-          rating,
-          total_reviews,
-          enrollment_count,
-          completion_rate,
-          last_updated,
-          published_at,
-          coaching_centers(center_name),
-          course_teachers(
-            role,
-            is_primary,
-            teachers(
-              id,
-              user_profiles(first_name, last_name, avatar_url)
+            id,
+            title,
+            slug,
+            description,
+            short_description,
+            thumbnail_url,
+            trailer_video_url,
+            course_content_overview,
+            what_you_learn,
+            course_includes,
+            target_audience,
+            prerequisites,
+            category_id,
+            course_categories!left(id, name, slug),
+            level,
+            price,
+            original_price,
+            currency,
+            duration_hours,
+            total_lessons,
+            learning_outcomes,
+            tags,
+            rating,
+            total_reviews,
+            enrollment_count,
+            last_updated,
+            created_at,
+            updated_at,
+            coaching_center_id,
+            coaching_centers(id, user_id, center_name, logo_url),
+            course_teachers!left(
+              role,
+              is_primary,
+              teachers!inner(
+                id,
+                user_id,
+                user_profiles!inner(first_name, last_name, avatar_url)
+              )
             )
-          ),
-          chapters(
+          ''')
+          .eq('id', courseId)
+          .eq('is_published', true)
+          .maybeSingle();
+
+      if (courseResponse == null) {
+        debugPrint('Course not found with ID: $courseId');
+        return null;
+      }
+
+      // Fetch chapters (show all chapters for now)
+      final chapters = await _client
+          .from('chapters')
+          .select('''
             id,
             title,
             description,
@@ -64,28 +77,45 @@ class CourseIntroRepository {
             total_lessons,
             is_published,
             is_free,
-            lessons(
+            sort_order
+          ''')
+          .eq('course_id', courseId)
+          .eq('is_published', true) // ✅ Only show published chapters
+          .order('sort_order', ascending: true);
+
+      debugPrint('📚 Fetched ${chapters.length} published chapters for course $courseId');
+
+      // ✅ FIXED: Only fetch PUBLISHED lessons
+      for (var chapter in chapters) {
+        final lessons = await _client
+            .from('lessons')
+            .select('''
               id,
               title,
               description,
               lesson_number,
               lesson_type,
               video_duration,
+              content_url,
               is_published,
-              is_free
-            )
-          )
-        ''')
-          .eq('id', courseId)
-          .eq('is_published', true)
-          .order('chapter_number', referencedTable: 'chapters')
-          .order('lesson_number', referencedTable: 'chapters.lessons')
-          .maybeSingle();
+              is_free,
+              sort_order
+            ''')
+            .eq('chapter_id', chapter['id'])
+            .eq('is_published', true) // ✅ CRITICAL: Only show published lessons
+            .order('sort_order', ascending: true);
 
-      if (courseResponse == null) {
-        debugPrint('Course not found with ID: $courseId');
-        return null;
+        chapter['lessons'] = lessons;
+        debugPrint('  📖 Chapter "${chapter['title']}": ${lessons.length} published lessons');
       }
+
+      // Filter out chapters with no published lessons
+      final chaptersWithLessons = chapters.where((chapter) {
+        final lessons = chapter['lessons'] as List?;
+        return lessons != null && lessons.isNotEmpty;
+      }).toList();
+
+      debugPrint('✅ ${chaptersWithLessons.length} chapters have published lessons');
 
       // Check enrollment status
       Map<String, dynamic>? enrollmentData;
@@ -101,15 +131,14 @@ class CourseIntroRepository {
           final enrollmentResponse = await _client
               .from('course_enrollments')
               .select('''
-              progress_percentage,
-              total_time_spent,
-              lessons_completed,
-              total_lessons_in_course,
-              last_accessed_at,
-              enrolled_at,
-              completed_at,
-              is_active
-            ''')
+                progress_percentage,
+                total_time_spent_minutes,
+                lessons_completed,
+                last_accessed_at,
+                enrolled_at,
+                completed_at,
+                is_active
+              ''')
               .eq('course_id', courseId)
               .eq('student_id', studentId)
               .eq('is_active', true)
@@ -122,19 +151,19 @@ class CourseIntroRepository {
       }
 
       final result = Map<String, dynamic>.from(courseResponse);
+      result['chapters'] = chaptersWithLessons; // ✅ Use filtered chapters
       if (enrollmentData != null) {
         result['enrollment'] = enrollmentData;
       }
 
+      debugPrint('✅ Course data prepared with ${chaptersWithLessons.length} chapters');
       return result;
     } catch (e) {
-      debugPrint('Error fetching course: $e');
+      debugPrint('❌ Error fetching course: $e');
       return null;
     }
   }
 
-
-  // Get course reviews
   static Future<List<Map<String, dynamic>>> getCourseReviews(
     String courseId,
   ) async {
@@ -143,13 +172,9 @@ class CourseIntroRepository {
           .from('reviews')
           .select('''
             id,
-            rating,
+            overall_rating,
             review_text,
-            pros,
-            cons,
-            is_verified_purchase,
-            helpful_votes_count,
-            not_helpful_votes_count,
+            helpful_votes,
             created_at,
             updated_at,
             students!inner(
@@ -168,7 +193,6 @@ class CourseIntroRepository {
     }
   }
 
-  // Enrollment method
   static Future<bool> enrollInCourse(String courseId) async {
     try {
       final userId = currentUserId;
@@ -183,6 +207,7 @@ class CourseIntroRepository {
       if (studentResponse == null) return false;
 
       final studentId = studentResponse['id'];
+
       final existingEnrollment = await _client
           .from('course_enrollments')
           .select('id')
@@ -197,7 +222,7 @@ class CourseIntroRepository {
         'student_id': studentId,
         'enrolled_at': DateTime.now().toIso8601String(),
         'progress_percentage': 0.0,
-        'total_time_spent': 0,
+        'total_time_spent_minutes': 0,
         'lessons_completed': 0,
         'is_active': true,
       });
@@ -209,7 +234,6 @@ class CourseIntroRepository {
     }
   }
 
-  // Check enrollment status
   static Future<bool> isUserEnrolled(String courseId) async {
     try {
       final userId = currentUserId;

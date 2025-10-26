@@ -26,46 +26,25 @@ class SearchRepository {
 
       if (entityTypes.contains(SearchEntityType.courses)) {
         futures.add(
-          _searchCourses(
-            query,
-            limit ~/ entityTypes.length,
-            offset,
-            filters,
-            sortBy,
-          ),
+          _searchCourses(query, limit ~/ entityTypes.length, offset, filters, sortBy),
         );
       }
+
       if (entityTypes.contains(SearchEntityType.coachingCenters)) {
         futures.add(
-          _searchCoachingCenters(
-            query,
-            limit ~/ entityTypes.length,
-            offset,
-            filters,
-            sortBy,
-          ),
+          _searchCoachingCenters(query, limit ~/ entityTypes.length, offset, filters, sortBy),
         );
       }
+
       if (entityTypes.contains(SearchEntityType.liveClasses)) {
         futures.add(
-          _searchLiveClasses(
-            query,
-            limit ~/ entityTypes.length,
-            offset,
-            filters,
-            sortBy,
-          ),
+          _searchLiveClasses(query, limit ~/ entityTypes.length, offset, filters, sortBy),
         );
       }
+
       if (entityTypes.contains(SearchEntityType.teachers)) {
         futures.add(
-          _searchTeachers(
-            query,
-            limit ~/ entityTypes.length,
-            offset,
-            filters,
-            sortBy,
-          ),
+          _searchTeachers(query, limit ~/ entityTypes.length, offset, filters, sortBy),
         );
       }
 
@@ -90,7 +69,7 @@ class SearchRepository {
     }
   }
 
-  /// Search courses with advanced filtering
+  /// ✅ FIXED: Search courses
   static Future<List<SearchResult>> _searchCourses(
     String query,
     int limit,
@@ -106,8 +85,8 @@ class SearchRepository {
           description,
           short_description,
           thumbnail_url,
-          category,
-          subcategory,
+          category_id,
+          course_categories(id, name, slug),
           level,
           price,
           original_price,
@@ -119,40 +98,45 @@ class SearchRepository {
           total_lessons,
           is_featured,
           created_at,
-          coaching_centers!inner(
+          coaching_centers!courses_coaching_center_id_fkey(
             id,
+            user_id,
             center_name,
             logo_url
-          ),
-          teachers(
-            id,
-            user_profiles(first_name, last_name, avatar_url)
           )
         ''')
         .eq('is_published', true)
-        .or(
-          'title.ilike.%$query%,description.ilike.%$query%,category.ilike.%$query%,subcategory.ilike.%$query%',
-        );
+        .or('title.ilike.%$query%,description.ilike.%$query%');
 
     // Apply filters
     if (filters != null) {
       if (filters.categories.isNotEmpty) {
-        searchQuery = searchQuery.inFilter('category', filters.categories);
+        final categoryResponse = await _client
+            .from('course_categories')
+            .select('id')
+            .inFilter('name', filters.categories);
+        
+        final categoryIds = categoryResponse.map((e) => e['id'] as String).toList();
+        
+        if (categoryIds.isNotEmpty) {
+          searchQuery = searchQuery.inFilter('category_id', categoryIds);
+        }
       }
+
       if (filters.levels.isNotEmpty) {
-        searchQuery = searchQuery.inFilter(
-          'level',
-          filters.levels.map((e) => e.name).toList(),
-        );
+        searchQuery = searchQuery.inFilter('level', filters.levels.map((e) => e.name).toList());
       }
+
       if (filters.priceRange != null) {
         searchQuery = searchQuery
             .gte('price', filters.priceRange!.min)
             .lte('price', filters.priceRange!.max);
       }
+
       if (filters.minRating != null) {
         searchQuery = searchQuery.gte('rating', filters.minRating!);
       }
+
       if (filters.isFree != null) {
         if (filters.isFree!) {
           searchQuery = searchQuery.eq('price', 0);
@@ -162,9 +146,10 @@ class SearchRepository {
       }
     }
 
-    // Apply sorting - Fixed approach
+    // Apply sorting
     String orderByField;
     bool ascending;
+
     switch (sortBy) {
       case SearchSortBy.relevance:
         orderByField = 'rating';
@@ -201,12 +186,12 @@ class SearchRepository {
         .range(offset, offset + limit - 1)
         .timeout(const Duration(seconds: 10));
 
-    return List<Map<String, dynamic>>.from(
-      response,
-    ).map((data) => SearchResult.fromCourse(data)).toList();
+    return List<Map<String, dynamic>>.from(response)
+        .map((data) => SearchResult.fromCourse(data))
+        .toList();
   }
 
-  /// Search coaching centers
+  /// ✅ FIXED: Search coaching centers
   static Future<List<SearchResult>> _searchCoachingCenters(
     String query,
     int limit,
@@ -218,23 +203,28 @@ class SearchRepository {
         .from('coaching_centers')
         .select('''
           id,
+          user_id,
           center_name,
           description,
           logo_url,
           contact_email,
           contact_phone,
           address,
+          rating,
           total_courses,
           total_students,
+          total_teachers,
+          total_reviews,
           created_at
         ''')
         .eq('approval_status', 'approved')
         .eq('is_active', true)
         .or('center_name.ilike.%$query%,description.ilike.%$query%');
 
-    // Apply sorting - Fixed approach
+    // Apply sorting
     String orderByField;
     bool ascending;
+
     switch (sortBy) {
       case SearchSortBy.relevance:
       case SearchSortBy.popularity:
@@ -250,8 +240,8 @@ class SearchRepository {
         ascending = true;
         break;
       case SearchSortBy.rating:
-        orderByField = 'center_name';
-        ascending = true;
+        orderByField = 'rating';
+        ascending = false;
         break;
       case SearchSortBy.priceLowToHigh:
       case SearchSortBy.priceHighToLow:
@@ -265,12 +255,12 @@ class SearchRepository {
         .range(offset, offset + limit - 1)
         .timeout(const Duration(seconds: 10));
 
-    return List<Map<String, dynamic>>.from(
-      response,
-    ).map((data) => SearchResult.fromCoachingCenter(data)).toList();
+    return List<Map<String, dynamic>>.from(response)
+        .map((data) => SearchResult.fromCoachingCenter(data))
+        .toList();
   }
 
-  /// Search live classes
+  /// ✅ FIXED: Search live classes - changed scheduled_at to scheduled_start
   static Future<List<SearchResult>> _searchLiveClasses(
     String query,
     int limit,
@@ -284,8 +274,8 @@ class SearchRepository {
           id,
           title,
           description,
-          scheduled_at,
-          duration_minutes,
+          scheduled_start,
+          scheduled_end,
           max_participants,
           current_participants,
           price,
@@ -293,14 +283,12 @@ class SearchRepository {
           is_free,
           status,
           thumbnail_url,
-          coaching_centers!inner(
+          coaching_center_id,
+          coaching_centers(
             id,
+            user_id,
             center_name,
             logo_url
-          ),
-          teachers(
-            id,
-            user_profiles(first_name, last_name, avatar_url)
           )
         ''')
         .inFilter('status', ['scheduled', 'live'])
@@ -311,24 +299,26 @@ class SearchRepository {
       if (filters.isFree != null) {
         searchQuery = searchQuery.eq('is_free', filters.isFree!);
       }
+
       if (filters.dateRange != null) {
         searchQuery = searchQuery
-            .gte('scheduled_at', filters.dateRange!.start.toIso8601String())
-            .lte('scheduled_at', filters.dateRange!.end.toIso8601String());
+            .gte('scheduled_start', filters.dateRange!.start.toIso8601String())
+            .lte('scheduled_start', filters.dateRange!.end.toIso8601String());
       }
     }
 
-    // Apply sorting - Fixed approach
+    // Apply sorting
     String orderByField;
     bool ascending;
+
     switch (sortBy) {
       case SearchSortBy.relevance:
       case SearchSortBy.newest:
-        orderByField = 'scheduled_at';
+        orderByField = 'scheduled_start';
         ascending = true;
         break;
       case SearchSortBy.oldest:
-        orderByField = 'scheduled_at';
+        orderByField = 'scheduled_start';
         ascending = false;
         break;
       case SearchSortBy.popularity:
@@ -336,7 +326,7 @@ class SearchRepository {
         ascending = false;
         break;
       case SearchSortBy.rating:
-        orderByField = 'scheduled_at';
+        orderByField = 'scheduled_start';
         ascending = true;
         break;
       case SearchSortBy.priceLowToHigh:
@@ -354,13 +344,12 @@ class SearchRepository {
         .range(offset, offset + limit - 1)
         .timeout(const Duration(seconds: 10));
 
-    return List<Map<String, dynamic>>.from(
-      response,
-    ).map((data) => SearchResult.fromLiveClass(data)).toList();
+    return List<Map<String, dynamic>>.from(response)
+        .map((data) => SearchResult.fromLiveClass(data))
+        .toList();
   }
 
-  /// Search teachers
-  /// Search teachers - COMPLETELY FIXED
+  /// ✅ FIXED: Search teachers with null-safe user_profiles access
   static Future<List<SearchResult>> _searchTeachers(
     String query,
     int limit,
@@ -369,113 +358,57 @@ class SearchRepository {
     SearchSortBy sortBy,
   ) async {
     try {
-      // Use separate queries for each search field to avoid parsing issues
-      final teacherIds = <String>{};
-      final teacherData = <String, Map<String, dynamic>>{};
-
-      // Search by first name
-      if (query.isNotEmpty) {
-        final firstNameResults = await _client
-            .from('teachers')
-            .select('''
+      // Search teachers with empty query to get all, then filter client-side
+      final response = await _client
+          .from('teachers')
+          .select('''
             id,
+            user_id,
+            title,
             specializations,
             qualifications,
             experience_years,
             bio,
             rating,
             total_reviews,
+            total_courses,
             is_verified,
-            user_profiles!inner(
+            status,
+            user_profiles!teachers_user_id_fkey(
               first_name,
               last_name,
               avatar_url
             ),
-            coaching_centers!inner(
+            coaching_centers!teachers_coaching_center_id_fkey(
               id,
+              user_id,
               center_name,
               logo_url
             )
           ''')
-            .eq('is_verified', true)
-            .ilike('user_profiles.first_name', '%$query%')
-            .limit(limit);
+          .eq('status', 'active')
+          .limit(limit * 2); // Get more to filter client-side
 
-        for (final teacher in firstNameResults) {
-          final id = teacher['id'] as String;
-          teacherIds.add(id);
-          teacherData[id] = teacher;
-        }
-
-        // Search by last name
-        final lastNameResults = await _client
-            .from('teachers')
-            .select('''
-            id,
-            specializations,
-            qualifications,
-            experience_years,
-            bio,
-            rating,
-            total_reviews,
-            is_verified,
-            user_profiles!inner(
-              first_name,
-              last_name,
-              avatar_url
-            ),
-            coaching_centers!inner(
-              id,
-              center_name,
-              logo_url
-            )
-          ''')
-            .eq('is_verified', true)
-            .ilike('user_profiles.last_name', '%$query%')
-            .limit(limit);
-
-        for (final teacher in lastNameResults) {
-          final id = teacher['id'] as String;
-          teacherIds.add(id);
-          teacherData[id] = teacher;
-        }
-
-        // Search by bio
-        final bioResults = await _client
-            .from('teachers')
-            .select('''
-            id,
-            specializations,
-            qualifications,
-            experience_years,
-            bio,
-            rating,
-            total_reviews,
-            is_verified,
-            user_profiles!inner(
-              first_name,
-              last_name,
-              avatar_url
-            ),
-            coaching_centers!inner(
-              id,
-              center_name,
-              logo_url
-            )
-          ''')
-            .eq('is_verified', true)
-            .ilike('bio', '%$query%')
-            .limit(limit);
-
-        for (final teacher in bioResults) {
-          final id = teacher['id'] as String;
-          teacherIds.add(id);
-          teacherData[id] = teacher;
-        }
-      }
-
-      // Convert to list and apply filters
-      var results = teacherIds.map((id) => teacherData[id]!).toList();
+      // Filter by query client-side with null safety
+      var results = List<Map<String, dynamic>>.from(response)
+          .where((teacher) {
+            if (query.isEmpty) return true;
+            
+            final userProfile = teacher['user_profiles'] as Map<String, dynamic>?;
+            if (userProfile == null) return false;
+            
+            final firstName = (userProfile['first_name'] as String?)?.toLowerCase() ?? '';
+            final lastName = (userProfile['last_name'] as String?)?.toLowerCase() ?? '';
+            final bio = (teacher['bio'] as String?)?.toLowerCase() ?? '';
+            final titleStr = (teacher['title'] as String?)?.toLowerCase() ?? '';
+            final queryLower = query.toLowerCase();
+            
+            return firstName.contains(queryLower) ||
+                   lastName.contains(queryLower) ||
+                   bio.contains(queryLower) ||
+                   titleStr.contains(queryLower);
+          })
+          .toList();
 
       // Apply additional filters
       if (filters != null) {
@@ -486,21 +419,23 @@ class SearchRepository {
               return false;
             }
           }
+
           if (filters.minRating != null) {
-            final rating = teacher['rating'] as double?;
-            if (rating == null || rating < filters.minRating!) {
+            final rating = teacher['rating'];
+            final ratingValue = rating is num ? rating.toDouble() : 0.0;
+            if (ratingValue < filters.minRating!) {
               return false;
             }
           }
+
           if (filters.specializations.isNotEmpty) {
             final teacherSpecs = teacher['specializations'] as List?;
             if (teacherSpecs == null ||
-                !filters.specializations.any(
-                  (spec) => teacherSpecs.contains(spec),
-                )) {
+                !filters.specializations.any((spec) => teacherSpecs.contains(spec))) {
               return false;
             }
           }
+
           return true;
         }).toList();
       }
@@ -528,26 +463,30 @@ class SearchRepository {
     switch (sortBy) {
       case SearchSortBy.relevance:
       case SearchSortBy.rating:
-        results.sort(
-          (a, b) => ((b['rating'] as double?) ?? 0).compareTo(
-            (a['rating'] as double?) ?? 0,
-          ),
-        );
+        results.sort((a, b) {
+          final aRating = a['rating'];
+          final bRating = b['rating'];
+          final aValue = aRating is num ? aRating.toDouble() : 0.0;
+          final bValue = bRating is num ? bRating.toDouble() : 0.0;
+          return bValue.compareTo(aValue);
+        });
         break;
       case SearchSortBy.popularity:
-        results.sort(
-          (a, b) => ((b['total_reviews'] as int?) ?? 0).compareTo(
-            (a['total_reviews'] as int?) ?? 0,
-          ),
-        );
+        results.sort((a, b) {
+          final aReviews = a['total_reviews'] as int? ?? 0;
+          final bReviews = b['total_reviews'] as int? ?? 0;
+          return bReviews.compareTo(aReviews);
+        });
         break;
       case SearchSortBy.newest:
       case SearchSortBy.oldest:
       case SearchSortBy.priceLowToHigh:
       case SearchSortBy.priceHighToLow:
         results.sort((a, b) {
-          final aName = a['user_profiles']['first_name'] as String? ?? '';
-          final bName = b['user_profiles']['first_name'] as String? ?? '';
+          final aProfile = a['user_profiles'] as Map<String, dynamic>?;
+          final bProfile = b['user_profiles'] as Map<String, dynamic>?;
+          final aName = (aProfile?['first_name'] as String?) ?? '';
+          final bName = (bProfile?['first_name'] as String?) ?? '';
           return aName.compareTo(bName);
         });
         break;
@@ -573,9 +512,7 @@ class SearchRepository {
         results.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
         break;
       case SearchSortBy.popularity:
-        results.sort(
-          (a, b) => (b.popularityScore ?? 0).compareTo(a.popularityScore ?? 0),
-        );
+        results.sort((a, b) => (b.popularityScore ?? 0).compareTo(a.popularityScore ?? 0));
         break;
       case SearchSortBy.priceLowToHigh:
         results.sort((a, b) => (a.price ?? 0).compareTo(b.price ?? 0));
@@ -586,7 +523,7 @@ class SearchRepository {
     }
   }
 
-  /// Get search suggestions
+  /// ✅ FIXED: Get search suggestions
   static Future<List<String>> getSearchSuggestions(String query) async {
     if (query.length < 2) return [];
 
@@ -596,14 +533,17 @@ class SearchRepository {
       // Get course suggestions
       final courseResponse = await _client
           .from('courses')
-          .select('title, category')
+          .select('title, category_id, course_categories(name)')
           .eq('is_published', true)
-          .or('title.ilike.%$query%,category.ilike.%$query%')
+          .ilike('title', '%$query%')
           .limit(5);
 
       for (final course in courseResponse) {
         suggestions.add(course['title']);
-        suggestions.add(course['category']);
+        final category = course['course_categories'];
+        if (category != null && category['name'] != null) {
+          suggestions.add(category['name']);
+        }
       }
 
       // Get coaching center suggestions

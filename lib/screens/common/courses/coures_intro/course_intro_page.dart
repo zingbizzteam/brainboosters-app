@@ -1,17 +1,19 @@
+// screens/common/courses/coures_intro/course_intro_page.dart
+
 import 'dart:convert';
+import 'package:brainboosters_app/screens/common/widgets/tab_section_widget.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'course_intro_repository.dart';
 import '../../widgets/breadcrumb_widget.dart';
-import '../../widgets/tab_section_widget.dart';
+import 'widgets/course_about_tab.dart';
 import 'widgets/course_content_tab.dart';
-import 'widgets/reviews_tab.dart';
-import 'widgets/whats_included_tab.dart';
 import 'widgets/course_hero_section.dart';
 import 'widgets/course_stats_section.dart';
-import 'widgets/course_about_tab.dart';
+import 'widgets/reviews_tab.dart';
+import 'widgets/whats_included_tab.dart';
 
 class CourseIntroPage extends StatefulWidget {
   final String courseId;
@@ -41,30 +43,27 @@ class _CourseIntroPageState extends State<CourseIntroPage>
   }
 
   Future<void> _loadCourse() async {
-    try {
-      if (mounted) {
-        setState(() {
-          _isLoading = true;
-          _error = null;
-          _courseData = null;
-        });
-      }
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
+    try {
       final results = await Future.wait([
         CourseIntroRepository.getCourseById(widget.courseId),
         CourseIntroRepository.getCourseReviews(widget.courseId),
       ]);
 
+      if (!mounted) return;
+
       final courseData = results[0] as Map<String, dynamic>?;
       final reviews = results[1] as List<Map<String, dynamic>>;
 
-      if (!mounted) return;
-
       if (courseData == null) {
         setState(() {
-          _error = 'Course not found';
+          _error = 'Course not found or not available.';
           _isLoading = false;
-          _courseData = null;
         });
         return;
       }
@@ -81,9 +80,8 @@ class _CourseIntroPageState extends State<CourseIntroPage>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load course: $e';
+          _error = 'Failed to load course details: $e';
           _isLoading = false;
-          _courseData = null;
         });
       }
     }
@@ -106,15 +104,16 @@ class _CourseIntroPageState extends State<CourseIntroPage>
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            if (_isLoading || _courseData == null) {
+            if (_isLoading) {
               return _buildLoadingState();
             }
-
             if (_error != null) {
               return _buildErrorState();
             }
-
-            return _buildCourseContent(_courseData!);
+            if (_courseData != null) {
+              return _buildCourseContent(_courseData!);
+            }
+            return Container(); // Should not happen
           },
         ),
       ),
@@ -122,155 +121,131 @@ class _CourseIntroPageState extends State<CourseIntroPage>
   }
 
   Widget _buildLoadingState() {
-    return Column(
-      children: [
-        AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: _handleBackNavigation,
-          ),
-          title: const Text('Loading...'),
-        ),
-        const Expanded(
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      ],
-    );
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildErrorState() {
-    return Column(
-      children: [
-        AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: _handleBackNavigation,
-          ),
-          title: const Text('Error'),
-        ),
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(40),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    _error!,
-                    style: TextStyle(color: Colors.red[600], fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _loadCourse,
-                    child: const Text('Retry'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => context.go(CommonRoutes.coursesRoute),
-                    child: const Text('Back to Courses'),
-                  ),
-                ],
-              ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: TextStyle(color: Colors.red[600], fontSize: 16),
+              textAlign: TextAlign.center,
             ),
-          ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadCourse,
+              child: const Text('Retry'),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildCourseContent(Map<String, dynamic> course) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 1200;
-    final isTablet = screenWidth > 768 && screenWidth <= 1200;
-    final isMobile = screenWidth <= 768;
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isDesktop = screenWidth > 1200;
+  final isTablet = screenWidth > 768 && screenWidth <= 1200;
+  final isMobile = screenWidth <= 768;
 
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          pinned: true,
-          expandedHeight: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: _handleBackNavigation,
-          ),
-          title: isMobile ? null : _buildBreadcrumbs(course),
+  return Column(
+    children: [
+      // ✅ FIXED: Use regular AppBar instead of SliverAppBar
+      AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: _handleBackNavigation,
         ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 80 : (isTablet ? 40 : 16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        title: isMobile ? null : _buildBreadcrumbs(course),
+      ),
+      // ✅ FIXED: Use Expanded here instead of SliverFillRemaining
+      Expanded(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 80 : (isTablet ? 40 : 16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              if (isMobile) ...[
+                _buildBreadcrumbs(course),
                 const SizedBox(height: 20),
-                if (isMobile) ...[
-                  _buildBreadcrumbs(course),
-                  const SizedBox(height: 20),
-                ],
-                CourseHeroSection(
-                  course: course,
-                  isEnrolled: _isEnrolled,
-                  onEnrollmentChanged: _onEnrollmentChanged,
-                  isDesktop: isDesktop,
-                  isTablet: isTablet,
-                ),
-                const SizedBox(height: 40),
-                CourseStatsSection(course: course),
-                const SizedBox(height: 30),
-                Expanded(
-                  child: TabSectionWidget(
-                    tabController: _tabController,
-                    tabs: const [
-                      'About',
-                      'Course Content',
-                      "What's Included",
-                      'Reviews',
-                    ],
-                    tabViews: [
-                      CourseAboutTab(course: course),
-                      CourseContentTab(chapters: _getChapters(course)),
-                      WhatsIncludedTab(whatsIncluded: _getWhatsIncluded(course)),
-                      ReviewsTab(reviews: _reviews),
-                    ],
-                  ),
-                ),
               ],
-            ),
+              CourseHeroSection(
+                course: course,
+                isEnrolled: _isEnrolled,
+                onEnrollmentChanged: _onEnrollmentChanged,
+                isDesktop: isDesktop,
+                isTablet: isTablet,
+              ),
+              const SizedBox(height: 40),
+              CourseStatsSection(course: course),
+              const SizedBox(height: 30),
+              // ✅ FIXED: Set explicit height for TabSection
+              SizedBox(
+                height: 600, // Or calculate based on screen height
+                child: TabSectionWidget(
+                  tabController: _tabController,
+                  tabs: const [
+                    'About',
+                    'Course Content',
+                    "What's Included",
+                    'Reviews',
+                  ],
+                  tabViews: [
+                    CourseAboutTab(course: course),
+                    CourseContentTab(chapters: course['chapters'] ?? []),
+                    WhatsIncludedTab(whatsIncluded: _getWhatsIncluded(course)),
+                    ReviewsTab(reviews: _reviews),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
+
 
   Widget _buildBreadcrumbs(Map<String, dynamic> course) {
     return BreadcrumbWidget(
       items: [
         BreadcrumbItem('Home', false, onTap: () => context.go('/')),
-        BreadcrumbItem('Courses', false, onTap: () => context.go('/courses')),
+        BreadcrumbItem('Courses', false,
+            onTap: () => context.go('/courses')),
         BreadcrumbItem(course['title']?.toString() ?? 'Course', true),
       ],
     );
   }
 
-  List<Map<String, dynamic>> _getChapters(Map<String, dynamic> course) {
-    final chapters = course['chapters'] as List?;
-    if (chapters == null) return [];
-    return chapters.map((chapter) => Map<String, dynamic>.from(chapter)).toList();
+  // ✅ FIXED: Changed from _getChapters to _getLessons to match repository
+  List<Map<String, dynamic>> _getLessons(Map<String, dynamic> course) {
+    final lessons = course['lessons'] as List?;
+    if (lessons == null) return [];
+    return lessons.map((lesson) => Map<String, dynamic>.from(lesson)).toList();
   }
 
   List<String> _getWhatsIncluded(Map<String, dynamic> course) {
     final courseIncludes = course['course_includes'];
+    if (courseIncludes is Map && courseIncludes.containsKey('includes')) {
+      final includes = courseIncludes['includes'];
+      if (includes is List) {
+        return includes.map((item) => item.toString()).toList();
+      }
+    }
     return _parseJsonArray(courseIncludes);
   }
 
@@ -285,9 +260,7 @@ class _CourseIntroPageState extends State<CourseIntroPage>
         if (parsed is List) {
           return parsed.map((item) => item.toString()).toList();
         }
-      } catch (e) {
-        debugPrint('Error parsing JSON: $e');
-      }
+      } catch (_) {}
     }
     return [];
   }
@@ -298,3 +271,4 @@ class _CourseIntroPageState extends State<CourseIntroPage>
     super.dispose();
   }
 }
+

@@ -4,10 +4,8 @@ import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:brainboosters_app/screens/common/coaching_centers/coaching_center_repository.dart';
 import 'package:brainboosters_app/screens/common/widgets/breadcrumb_widget.dart';
-
 import 'widgets/coaching_center_header_widget.dart';
 import 'widgets/coaching_center_about_tab.dart';
 import 'widgets/coaching_center_courses_tab.dart';

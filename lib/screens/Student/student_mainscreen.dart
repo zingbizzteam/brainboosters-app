@@ -8,6 +8,7 @@ import 'widgets/bottom_navbar.dart';
 import 'widgets/sidebar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:brainboosters_app/screens/student/widgets/navigation_item.dart';
+import 'dart:async'; // ADD THIS for StreamSubscription
 
 final _navItems = [
   NavigationItem(
@@ -50,21 +51,46 @@ class StudentMainScreen extends StatefulWidget {
   State<StudentMainScreen> createState() => _StudentMainScreenState();
 }
 
-class _StudentMainScreenState extends State<StudentMainScreen> with TickerProviderStateMixin {
+class _StudentMainScreenState extends State<StudentMainScreen>
+    with TickerProviderStateMixin {
   Map<String, dynamic>? _profile;
   bool _loading = true;
   bool _sidebarExpanded = false;
   late AnimationController _sidebarAnimationController;
   late Animation<double> _sidebarAnimation;
+  StreamSubscription<AuthState>? _authSubscription;
 
   bool get _isMobile => MediaQuery.of(context).size.width < 768;
   bool get _isWide => MediaQuery.of(context).size.width >= 900;
+
+  void _setupAuthListener() {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      event,
+    ) {
+      debugPrint('🔄 Auth state changed: ${event.event}');
+
+      if (event.event == AuthChangeEvent.signedOut) {
+        // Clear profile when signed out
+        if (mounted) {
+          setState(() {
+            _profile = null;
+            _loading = false;
+          });
+        }
+      } else if (event.event == AuthChangeEvent.signedIn ||
+          event.event == AuthChangeEvent.tokenRefreshed) {
+        // Refresh profile when signed in or token refreshed
+        _fetchProfile();
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _fetchProfile();
+    _setupAuthListener(); // ADD THIS LINE
   }
 
   void _initializeAnimations() {
@@ -72,20 +98,19 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _sidebarAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _sidebarAnimationController,
-      curve: Curves.easeInOut,
-    ));
+
+    _sidebarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _sidebarAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     if (_isMobile && _sidebarExpanded) {
       setState(() => _sidebarExpanded = false);
       _sidebarAnimationController.reset();
@@ -128,7 +153,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
     setState(() {
       _sidebarExpanded = !_sidebarExpanded;
     });
-    
+
     if (_sidebarExpanded) {
       _sidebarAnimationController.forward();
     } else {
@@ -164,8 +189,9 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
 
     for (int i = 0; i < _navItems.length; i++) {
       final item = _navItems[i];
-      if (currentLocation == item.route || 
-          (item.route != StudentRoutes.home && currentLocation.startsWith(item.route))) {
+      if (currentLocation == item.route ||
+          (item.route != StudentRoutes.home &&
+              currentLocation.startsWith(item.route))) {
         return i;
       }
     }
@@ -176,6 +202,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
   @override
   void dispose() {
     _sidebarAnimationController.dispose();
+    _authSubscription?.cancel(); // ADD THIS LINE
     super.dispose();
   }
 
@@ -197,7 +224,8 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
                 child: DashboardSidebar(
                   selectedIndex: selectedIndex,
                   onItemSelected: _onNavTap,
-                  items: _navItems, // FIXED: Now uses shared NavigationItem type
+                  items:
+                      _navItems, // FIXED: Now uses shared NavigationItem type
                   profile: _profile,
                   loading: _loading,
                 ),
@@ -207,7 +235,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
                 animation: _sidebarAnimation,
                 builder: (context, child) {
                   final maxSidebarWidth = screenWidth * 0.85;
-                  final currentWidth = _sidebarExpanded 
+                  final currentWidth = _sidebarExpanded
                       ? maxSidebarWidth * _sidebarAnimation.value
                       : 0.0;
 
@@ -221,7 +249,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
                             ? _buildMobileSidebar(currentWidth, selectedIndex)
                             : const SizedBox.shrink(),
                       ),
-                      
+
                       if (_sidebarExpanded && _sidebarAnimation.value > 0.3)
                         Positioned.fill(
                           left: currentWidth,
@@ -238,7 +266,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
                   );
                 },
               ),
-            
+
             // Main content area
             Expanded(
               child: Column(
@@ -254,16 +282,21 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
       bottomNavigationBar: _isWide
           ? null
           : DashboardBottomNavBar(
-              selectedIndex: selectedIndex >= 0 && selectedIndex < _navItems.length 
-                  ? selectedIndex 
+              selectedIndex:
+                  selectedIndex >= 0 && selectedIndex < _navItems.length
+                  ? selectedIndex
                   : 0,
               onItemSelected: _onNavTap,
-              items: _navItems.map((item) => _NavItem(
-                route: item.route,
-                label: item.label,
-                icon: item.icon,
-                color: item.color,
-              )).toList(),
+              items: _navItems
+                  .map(
+                    (item) => _NavItem(
+                      route: item.route,
+                      label: item.label,
+                      icon: item.icon,
+                      color: item.color,
+                    ),
+                  )
+                  .toList(),
               avatarUrl: _profile?['avatar_url'],
             ),
     );
@@ -305,9 +338,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
       ),
       child: Row(
         children: [
@@ -351,11 +382,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
       decoration: const BoxDecoration(
         color: Color(0xFFF9FBFD),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -375,7 +402,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> with TickerProvid
             ),
             const SizedBox(width: 8),
           ],
-          
+
           Expanded(
             child: AppBarWidget(
               name: _profile?['first_name'] != null

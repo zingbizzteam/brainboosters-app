@@ -7,12 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
-import 'package:brainboosters_app/ui/navigation/web_routes/web_routes.dart'; 
+import 'package:brainboosters_app/ui/navigation/web_routes/web_routes.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppRouter {
   static const String onboarding = '/onboarding';
-   static const String home = '/'; 
+  static const String home = '/';
   static final _authStateListener = SupabaseAuthStateListener();
 
   static final router = GoRouter(
@@ -20,28 +20,28 @@ class AppRouter {
     redirect: _redirectLogic,
     routes: [
       // Platform-specific routes
-     if (kIsWeb) 
-      ...WebRoutes.routes, // This will wrap ALL web routes with sidebar
-    
-    if (!kIsWeb) ...[
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const OnboardingScreen(),
-      ),
-      GoRoute(
-        path: onboarding,
-        builder: (context, state) => const OnboardingScreen(),
-      ),
-      // Mobile student routes (existing StatefulNavigationShell)
-      StudentRoutes.statefulRoute,
-    ],
-      
+      if (kIsWeb)
+        ...WebRoutes.routes, // This will wrap ALL web routes with sidebar
+
+      if (!kIsWeb) ...[
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const OnboardingScreen(),
+        ),
+        GoRoute(
+          path: onboarding,
+          builder: (context, state) => const OnboardingScreen(),
+        ),
+        // Mobile student routes (existing StatefulNavigationShell)
+        StudentRoutes.statefulRoute,
+      ],
+
       ...AuthRoutes.routes,
-      
+
       // Conditional student routes based on platform
       if (!kIsWeb) StudentRoutes.statefulRoute,
       if (kIsWeb) ...StudentRoutes.getWebRoutes(),
-      
+
       ...StudentRoutes.getAdditionalRoutes(),
       ...CommonRoutes.getAllRoutes(),
     ],
@@ -54,24 +54,41 @@ class AppRouter {
     final session = Supabase.instance.client.auth.currentSession;
     final isLoggedIn = session != null;
     final currentPath = state.uri.path;
+    final queryParams = state.uri.queryParameters; // ADD THIS LINE
 
-    debugPrint('Redirect check - Path: $currentPath, LoggedIn: $isLoggedIn, Web: $kIsWeb');
+    // ADD THIS: Check for OAuth callback
+    final isOAuthCallback =
+        queryParams.containsKey('code') ||
+        queryParams.containsKey('access_token');
 
-    // Web-specific logic
     if (kIsWeb) {
-      return _handleWebRedirection(currentPath, isLoggedIn, session?.user.id);
+      return _handleWebRedirection(
+        currentPath,
+        isLoggedIn,
+        session?.user.id,
+        isOAuthCallback, // ADD THIS PARAMETER
+      );
     }
 
-    // Mobile logic (existing)
     return _handleMobileRedirection(currentPath, isLoggedIn, session?.user.id);
   }
 
   static Future<String?> _handleWebRedirection(
-    String currentPath, 
-    bool isLoggedIn, 
-    String? userId
+    String currentPath,
+    bool isLoggedIn,
+    String? userId,
+    bool isOAuthCallback,
   ) async {
-    // Allow browsing of main content without authentication
+    // CRITICAL FIX: Handle OAuth callback when logged in
+    if (isOAuthCallback && isLoggedIn && currentPath.startsWith('/auth')) {
+      debugPrint('🔄 OAuth callback detected - redirecting logged-in user');
+      if (userId != null) {
+        final redirectPath = await _getRedirectForLoggedInUser(userId);
+        return redirectPath ?? StudentRoutes.home;
+      }
+      return StudentRoutes.home;
+    }
+
     final publicWebRoutes = [
       '/',
       '/courses',
@@ -79,36 +96,50 @@ class AppRouter {
       '/coaching-centers',
       '/search',
     ];
-    
-    // Allow access to public routes and auth routes
-    if (publicWebRoutes.any((route) => currentPath.startsWith(route)) || 
-        currentPath.startsWith('/auth')) {
+
+    if (publicWebRoutes.any((route) => currentPath.startsWith(route))) {
       return null;
     }
-    
-    // Protected routes require authentication
-    final protectedRoutes = ['/home', '/profile', '/settings', '/notifications'];
+
+   if (currentPath.startsWith('/auth')) {
+  // If logged in and NOT an OAuth callback, redirect away
+  if (isLoggedIn && userId != null && !isOAuthCallback) {
+    debugPrint('🔄 Logged in user trying to access /auth - redirecting');
+    final redirectPath = await _getRedirectForLoggedInUser(userId);
+    return redirectPath ?? StudentRoutes.home;
+  }
+  // Not logged in or OAuth callback - allow access
+  return null;
+}
+
+    final protectedRoutes = [
+      '/home',
+      '/profile',
+      '/settings',
+      '/notifications',
+    ];
+
     if (protectedRoutes.any((route) => currentPath.startsWith(route))) {
       if (!isLoggedIn) {
-        return '/auth'; // Redirect to auth selection
+        return '/auth';
       }
-      
-      // If logged in, verify user setup
+
       if (userId != null) {
         final redirectPath = await _getRedirectForLoggedInUser(userId);
         if (redirectPath != null && redirectPath != StudentRoutes.home) {
           return redirectPath;
         }
       }
+      return null;
     }
-    
+
     return null;
   }
 
   static Future<String?> _handleMobileRedirection(
-    String currentPath, 
-    bool isLoggedIn, 
-    String? userId
+    String currentPath,
+    bool isLoggedIn,
+    String? userId,
   ) async {
     // Existing mobile logic
     if (!isLoggedIn) {

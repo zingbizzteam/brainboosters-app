@@ -1,4 +1,4 @@
-// screens/common/courses/courses_page.dart - ENHANCED VERSION
+// screens/common/courses/courses_page.dart
 import 'package:brainboosters_app/screens/common/courses/course_repository.dart';
 import 'package:brainboosters_app/screens/common/courses/widgets/course_footer_section.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
@@ -19,8 +19,6 @@ class CoursesPage extends StatefulWidget {
 }
 
 class _CoursesPageState extends State<CoursesPage> {
-  // ... [Keep all your existing state variables] ...
-
   List<Map<String, dynamic>> _suggestedCourses = [];
   List<Map<String, dynamic>> _topRatedCourses = [];
   bool _loadingFeatured = true;
@@ -38,8 +36,6 @@ class _CoursesPageState extends State<CoursesPage> {
   int _refreshCompletedComponents = 0;
   bool _heroRefreshTrigger = false;
   static const int _totalRefreshComponents = 3;
-
-  // ... [Keep all your existing methods] ...
 
   @override
   void initState() {
@@ -180,7 +176,7 @@ class _CoursesPageState extends State<CoursesPage> {
         'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} featured courses...',
       );
 
-      final featured = await CourseRepository.getFeaturedCourses(limit: 8);
+      final featured = await CourseRepository.getFeaturedCourses(limit: 10);
 
       if (mounted) {
         setState(() {
@@ -220,14 +216,12 @@ class _CoursesPageState extends State<CoursesPage> {
     super.dispose();
   }
 
-  // NEW: Build enhanced navigation section
   Widget _buildNavigationSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           Text(
             'Explore Learning',
             style: TextStyle(
@@ -237,8 +231,6 @@ class _CoursesPageState extends State<CoursesPage> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Navigation buttons row
           Row(
             children: [
               Expanded(
@@ -252,8 +244,6 @@ class _CoursesPageState extends State<CoursesPage> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Coaching Centers button
               Expanded(
                 child: _buildNavigationButton(
                   icon: Icons.school_rounded,
@@ -271,7 +261,6 @@ class _CoursesPageState extends State<CoursesPage> {
     );
   }
 
-  // NEW: Reusable navigation button component
   Widget _buildNavigationButton({
     required IconData icon,
     required String title,
@@ -352,14 +341,44 @@ class _CoursesPageState extends State<CoursesPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // Hero section
-              CourseHeroSection(
-                courseId: "990e8400-e29b-41d4-a716-446655440001",
-                forceRefresh: _heroRefreshTrigger,
-                onRefreshComplete: _onComponentRefreshComplete,
-              ),
+              // ✅ FIXED: Hero section with proper null check
+              if (_topRatedCourses.isNotEmpty)
+                CourseHeroSection(
+                  courseId: _topRatedCourses.first['id'] as String,
+                  forceRefresh: _heroRefreshTrigger,
+                  onRefreshComplete: _onComponentRefreshComplete,
+                )
+              else if (_loadingFeatured)
+                Container(
+                  height: 400,
+                  color: Colors.grey[100],
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else
+                Container(
+                  height: 200,
+                  color: Colors.grey[50],
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.school, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No courses available',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
-              // NEW: Enhanced navigation section
+              // Navigation section
               _buildNavigationSection(),
 
               // Categories section
@@ -368,7 +387,7 @@ class _CoursesPageState extends State<CoursesPage> {
                 onRefreshComplete: _onComponentRefreshComplete,
               ),
 
-              // Suggested Courses Section
+              // Suggested Courses
               HorizontalCourseList(
                 title: 'Suggested For You',
                 subtitle: 'Courses based on your learning goals and interests',
@@ -376,7 +395,7 @@ class _CoursesPageState extends State<CoursesPage> {
                 loading: _loadingFeatured,
               ),
 
-              // Top Rated Courses Section
+              // Top Rated Courses
               HorizontalCourseList(
                 title: 'Top Rated Courses',
                 subtitle: 'Highest rated courses by our students',

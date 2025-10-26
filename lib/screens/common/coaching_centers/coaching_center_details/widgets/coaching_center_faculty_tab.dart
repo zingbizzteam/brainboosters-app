@@ -1,6 +1,7 @@
 import 'package:brainboosters_app/screens/common/coaching_centers/teachers/teacher_repository.dart';
 import 'package:brainboosters_app/ui/navigation/common_routes/common_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 
 class CoachingCenterFacultyTab extends StatefulWidget {
@@ -26,7 +27,9 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
   @override
   void initState() {
     super.initState();
-    _loadFaculty();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _loadFaculty();
+    });
   }
 
   Future<void> _loadFaculty() async {
@@ -36,19 +39,30 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
         error = null;
       });
 
+      // ✅ FIXED: Use user_id instead of id
+      final coachingCenterId = widget.center['user_id'] ?? widget.center['id'];
+      
+      if (coachingCenterId == null) {
+        throw Exception('Coaching center ID not found');
+      }
+
       final result = await TeacherRepository.getTeachersByCoachingCenter(
-        widget.center['id'],
+        coachingCenterId,
       );
 
-      setState(() {
-        faculty = result;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          faculty = result;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        error = 'Failed to load faculty: $e';
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          error = 'Failed to load faculty: $e';
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -67,7 +81,7 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
             ),
           ),
           const SizedBox(height: 20),
-
+          
           if (isLoading)
             const Center(
               child: Padding(
@@ -119,7 +133,6 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
 
     return InkWell(
       onTap: () {
-        // Navigate to teacher detail page
         context.go(
           CommonRoutes.getCoachingCenterTeacherDetailRoute(
             widget.center['id'],
@@ -145,7 +158,6 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
         ),
         child: Row(
           children: [
-            // Avatar
             CircleAvatar(
               radius: 30,
               backgroundImage: _getAvatarUrl(userProfile) != null
@@ -157,8 +169,6 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
                   : null,
             ),
             const SizedBox(width: 16),
-
-            // Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,8 +218,6 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
                 ],
               ),
             ),
-
-            // Verification badge
             if (_isVerified(teacher))
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -235,7 +243,6 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
   // Helper methods
   String _getTeacherName(Map<String, dynamic>? userProfile) {
     if (userProfile == null) return 'Unknown Teacher';
-
     final firstName = userProfile['first_name']?.toString() ?? '';
     final lastName = userProfile['last_name']?.toString() ?? '';
     return '$firstName $lastName'.trim();
@@ -271,3 +278,4 @@ class _CoachingCenterFacultyTabState extends State<CoachingCenterFacultyTab> {
     return teacher['is_verified'] == true;
   }
 }
+

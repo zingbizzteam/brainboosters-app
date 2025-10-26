@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:brainboosters_app/screens/student/widgets/navigation_item.dart';
+import 'dart:async'; // Add this for StreamSubscription
 
 class WebMainScreen extends StatefulWidget {
   final Widget child;
@@ -23,6 +24,7 @@ class _WebMainScreenState extends State<WebMainScreen>
   late AnimationController _sidebarAnimationController;
   late Animation<double> _sidebarAnimation;
   int _selectedIndex = 0;
+  StreamSubscription<AuthState>? _authSubscription;
 
   bool get _isLoggedIn => Supabase.instance.client.auth.currentUser != null;
   bool get _isMobile => MediaQuery.of(context).size.width < 768;
@@ -87,13 +89,31 @@ class _WebMainScreenState extends State<WebMainScreen>
 
     return baseItems;
   }
+  void _setupAuthListener() {
+  _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+    debugPrint('🔄 Auth state changed: ${event.event}');
+    
+    if (event.event == AuthChangeEvent.signedOut) {
+      if (mounted) {
+        setState(() {
+          _profile = null;
+          _loading = false;
+        });
+      }
+    } else if (event.event == AuthChangeEvent.signedIn || 
+               event.event == AuthChangeEvent.tokenRefreshed) {
+      _fetchProfile();
+    }
+  });
+}
+
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _initializeData();
-    // REMOVED: _updateSelectedIndex() - moved to didChangeDependencies
+    _setupAuthListener();
   }
 
   void _initializeAnimations() {
@@ -211,6 +231,7 @@ class _WebMainScreenState extends State<WebMainScreen>
   @override
   void dispose() {
     _sidebarAnimationController.dispose();
+    _authSubscription?.cancel();
     super.dispose();
   }
 

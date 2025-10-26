@@ -86,23 +86,21 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
         'DEBUG: ${isRefresh ? "Refreshing" : "Loading"} categories with counts...',
       );
 
-      // Fetch categories from app_config
-      final configResponse = await Supabase.instance.client
-          .from('app_config')
-          .select('config_value')
-          .eq('config_key', 'course_categories')
-          .eq('is_active', true)
-          .maybeSingle();
+      // ✅ FIXED: Fetch categories directly from course_categories table
+      final categoriesResponse = await Supabase.instance.client
+    .from('course_categories')
+    .select('id, name, description, icon_url, slug, sort_order, is_active')
+    .eq('is_active', true)
+    .order('sort_order', ascending: true);
 
-      if (configResponse == null) {
-        throw Exception('Course categories configuration not found');
+      if (categoriesResponse.isEmpty) {
+        throw Exception('No course categories found');
       }
 
-      final configData = configResponse['config_value'] as Map<String, dynamic>;
-      final categoriesConfig = configData['categories'] as List<dynamic>;
+      final categoriesConfig = categoriesResponse as List;
 
       debugPrint(
-        'DEBUG: Found ${categoriesConfig.length} categories in config',
+        'DEBUG: Found ${categoriesConfig.length} categories from database',
       );
 
       // OPTIMIZED: Get all counts in a single batch operation
@@ -115,33 +113,54 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
       // Build categories with real counts
       final categoriesWithCounts = <Map<String, dynamic>>[];
 
-      for (final categoryConfig in categoriesConfig) {
-        final categoryName = categoryConfig['name'] as String;
-        final count = countMap[categoryName] ?? 0;
+      for (final categoryData in categoriesConfig) {
+        final categoryId = categoryData['id'] as String;
+        final categoryName = categoryData['name'] as String;
+        final count = countMap[categoryId] ?? 0;
 
+        // Default icon mapping (fallback if no icon in DB)
         final iconMap = {
-          '💻': Icons.computer,
-          '📊': Icons.business,
-          '🎨': Icons.design_services,
-          '🔬': Icons.science,
+          'computer': Icons.computer,
+          'business': Icons.business,
+          'design_services': Icons.design_services,
+          'science': Icons.science,
+          'school': Icons.school,
+          'calculate': Icons.calculate,
+          'language': Icons.language,
+          'sports': Icons.sports_soccer,
         };
 
+        // Default color mapping
         final colorMap = {
-          '#3B82F6': Colors.blue,
-          '#10B981': Colors.green,
-          '#F59E0B': Colors.orange,
-          '#8B5CF6': Colors.purple,
+          'blue': Colors.blue,
+          'green': Colors.green,
+          'orange': Colors.orange,
+          'purple': Colors.purple,
+          'red': Colors.red,
+          'teal': Colors.teal,
+          'indigo': Colors.indigo,
         };
 
-        categoriesWithCounts.add({
-          'id': categoryConfig['id'],
-          'title': categoryName,
-          'subtitle': categoryConfig['description'],
-          'icon': iconMap[categoryConfig['icon']] ?? Icons.category,
-          'color': colorMap[categoryConfig['color']] ?? Colors.blue,
-          'count': count,
-          'displayCount': count > 0 ? '$count+ Courses' : 'No Courses',
-        });
+        // Get icon from database or use default
+        final iconName = categoryData['icon'] as String?;
+        final icon = iconName != null ? iconMap[iconName] ?? Icons.category : Icons.category;
+
+        // Get color from database or use default
+        final colorName = categoryData['icon_color'] as String?;
+        final color = colorName != null ? colorMap[colorName] ?? Colors.blue : Colors.blue;
+final iconUrl = categoryData['icon_url'] as String?;
+
+categoriesWithCounts.add({
+  'id': categoryId,
+  'title': categoryName,
+  'subtitle': categoryData['description'] ?? '',
+  'icon': Icons.category, // Default icon
+  'iconUrl': iconUrl, // Store URL for future use
+  'color': _getColorForCategory(categoryId), // Generate color based on category
+  'count': count,
+  'displayCount': count > 0 ? '$count+ Courses' : 'No Courses',
+  'slug': categoryData['slug'],
+});
       }
 
       debugPrint(
@@ -208,6 +227,38 @@ class _CourseCategoriesSectionState extends State<CourseCategoriesSection> {
         'displayCount': 'Loading...',
       },
     ];
+  }
+
+  // Returns a Color for a given category id; extend mapping as needed.
+  Color _getColorForCategory(String categoryId) {
+    const defaultColor = Colors.blue;
+    final colorMap = <String, Color>{
+      'technology': Colors.blue,
+      'business': Colors.green,
+      'design': Colors.purple,
+      'science': Colors.orange,
+      // Add other known category ids here
+    };
+
+    // If categoryId is not present in the map, pick a color deterministically
+    // by hashing the id to reduce collisions and keep consistent colors.
+    if (colorMap.containsKey(categoryId)) {
+      return colorMap[categoryId]!;
+    }
+
+    // Simple deterministic fallback: choose from a palette using hashCode.
+    final palette = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+      Colors.teal,
+      Colors.indigo,
+      Colors.brown,
+    ];
+    final index = categoryId.hashCode.abs() % palette.length;
+    return palette[index];
   }
 
   void _onCategoryTap(Map<String, dynamic> category) {

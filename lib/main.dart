@@ -5,9 +5,9 @@ import 'package:flutter_quill/flutter_quill.dart';
 
 Future<void> main() async {
   await Supabase.initialize(
-    url: 'https://fsajdylrjyhatgqecfoc.supabase.co',
+    url: "https://ytiednidnujnyczorddc.supabase.co",
     anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYWpkeWxyanloYXRncWVjZm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MzA4NDYsImV4cCI6MjA2NzMwNjg0Nn0.0cG_QK0f9v8p4Z6V-qKE5ZB5UMhB7dX4PpvnRtHJsDU',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0aWVkbmlkbnVqbnljem9yZGRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwOTY0NDAsImV4cCI6MjA3MzY3MjQ0MH0.SqcLnsqcxE2mJtMOqlaI7M_JqcQv5a7_P-ataVJ5gzw',
   );
   runApp(MainApp());
 }
@@ -18,9 +18,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      localizationsDelegates: const [
-        FlutterQuillLocalizations.delegate,
-      ],
+      localizationsDelegates: const [FlutterQuillLocalizations.delegate],
       routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

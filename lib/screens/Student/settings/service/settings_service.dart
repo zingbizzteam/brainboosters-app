@@ -136,7 +136,7 @@ class SettingsService extends ChangeNotifier {
       
       // Sync to Supabase in real-time
       if (_isRealTimeEnabled) {
-        await _syncToSupabase();
+        // await _syncToSupabase();
       }
       
       notifyListeners();
@@ -151,7 +151,7 @@ class SettingsService extends ChangeNotifier {
 
     try {
       await _loadSettings();
-      await _initializeRealTime();
+      // await _initializeRealTime();
       _isInitialized = true;
     } catch (e) {
       debugPrint('Settings initialization failed: $e');
@@ -166,23 +166,23 @@ class SettingsService extends ChangeNotifier {
       if (user == null) return;
 
       // Create or update user settings in Supabase
-      await _syncToSupabase();
+      // await _syncToSupabase();
 
       // Subscribe to real-time changes
-      _settingsChannel = Supabase.instance.client
-          .channel('user_settings_${user.id}')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'user_settings',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'user_id',
-              value: user.id,
-            ),
-            callback: _handleRealTimeUpdate,
-          )
-          .subscribe();
+      // _settingsChannel = Supabase.instance.client
+      //     .channel('user_settings_${user.id}')
+      //     .onPostgresChanges(
+      //       event: PostgresChangeEvent.all,
+      //       schema: 'public',
+      //       table: 'user_settings',
+      //       filter: PostgresChangeFilter(
+      //         type: PostgresChangeFilterType.eq,
+      //         column: 'user_id',
+      //         value: user.id,
+      //       ),
+      //       callback: _handleRealTimeUpdate,
+      //     )
+          // .subscribe();
 
       _isRealTimeEnabled = true;
       debugPrint('Real-time settings sync enabled');
@@ -232,7 +232,7 @@ class SettingsService extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     // Try to load from Supabase first
-    await _loadFromSupabase();
+    // await _loadFromSupabase();
     
     // Fallback to local storage
     if (_settings.isEmpty) {
@@ -356,7 +356,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> _saveSettings() async {
     await Future.wait([
       _saveSettingsLocally(),
-      if (_isRealTimeEnabled) _syncToSupabase(),
+      // if (_isRealTimeEnabled) _syncToSupabase(),
     ]);
   }
 
@@ -451,25 +451,40 @@ class SettingsService extends ChangeNotifier {
   });
   
   Future<void> clearAllData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_settingsKey);
-    await prefs.remove(_checksumKey);
-    
-    // Clear from Supabase
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        await Supabase.instance.client
-            .from('user_settings')
-            .delete()
-            .eq('user_id', user.id);
-      }
-    } catch (e) {
-      debugPrint('Failed to clear settings from Supabase: $e');
-    }
-    
-    await _resetToDefaults();
+  final prefs = await SharedPreferences.getInstance();
+  
+  // Get all keys
+  final allKeys = prefs.getKeys();
+  
+  // Filter out Supabase OAuth keys (preserve them!)
+  final keysToRemove = allKeys.where((key) => 
+    !key.startsWith('supabase.') && // Preserve Supabase auth state
+    !key.contains('code_verifier') && // Preserve OAuth PKCE
+    !key.contains('auth.') // Preserve auth tokens
+  ).toList();
+  
+  // Remove only app-specific keys
+  for (final key in keysToRemove) {
+    await prefs.remove(key);
   }
+  
+  debugPrint('🧹 Cleared ${keysToRemove.length} app keys (preserved ${allKeys.length - keysToRemove.length} Supabase keys)');
+
+  // Clear from Supabase
+  try {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      await Supabase.instance.client
+          .from('user_settings')
+          .delete()
+          .eq('user_id', user.id);
+    }
+  } catch (e) {
+    debugPrint('Failed to clear settings from Supabase: $e');
+  }
+
+  await _resetToDefaults();
+}
 
   @override
   void dispose() {

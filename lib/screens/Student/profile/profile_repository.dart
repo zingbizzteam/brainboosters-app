@@ -58,17 +58,28 @@ class ProfileRepository {
 
       // Calculate summary statistics with null safety
       final totalTimeSpent = learningData.fold<int>(
-          0, (sum, item) => sum + ((item['time_spent_minutes'] as int?) ?? 0));
+        0,
+        (sum, item) => sum + ((item['time_spent_minutes'] as int?) ?? 0),
+      );
       final totalLessonsCompleted = learningData.fold<int>(
-          0, (sum, item) => sum + ((item['lessons_completed'] as int?) ?? 0));
+        0,
+        (sum, item) => sum + ((item['lessons_completed'] as int?) ?? 0),
+      );
       final averageQuizScore = testData.isNotEmpty
-          ? testData.fold<double>(0, (sum, item) =>
-                  sum + ((item['percentage'] as double?) ?? 0)) / testData.length
+          ? testData.fold<double>(
+                  0,
+                  (sum, item) => sum + ((item['percentage'] as double?) ?? 0),
+                ) /
+                testData.length
           : 0.0;
-      final coursesInProgress = courseData.where((course) =>
-          ((course['progress_percentage'] as double?) ?? 0) < 100).length;
-      final coursesCompleted = courseData.where((course) =>
-          course['completed_at'] != null).length;
+      final coursesInProgress = courseData
+          .where(
+            (course) => ((course['progress_percentage'] as double?) ?? 0) < 100,
+          )
+          .length;
+      final coursesCompleted = courseData
+          .where((course) => course['completed_at'] != null)
+          .length;
 
       return {
         'summary': {
@@ -138,8 +149,9 @@ class ProfileRepository {
           .select('''
             *,
             courses(
-              id, title, thumbnail_url, category,
-              total_lessons, duration_hours
+              id, title, thumbnail_url, category_id,
+  course_categories(id, name, slug),
+  total_lessons, duration_hours
             )
           ''')
           .eq('student_id', studentId)
@@ -210,7 +222,7 @@ class ProfileRepository {
       for (final enrollment in enrollments) {
         final course = enrollment['courses'] as Map<String, dynamic>?;
         final teacherId = course?['teacher_id'];
-        
+
         Map<String, dynamic>? teacherProfile;
         if (teacherId != null) {
           try {
@@ -227,7 +239,9 @@ class ProfileRepository {
 
         certificates.add({
           ...enrollment,
-          'teacher_profile': teacherProfile ?? {'first_name': 'Unknown', 'last_name': 'Teacher'},
+          'teacher_profile':
+              teacherProfile ??
+              {'first_name': 'Unknown', 'last_name': 'Teacher'},
         });
       }
 
@@ -238,7 +252,9 @@ class ProfileRepository {
     }
   }
 
-  static Future<bool> updateUserProfile(Map<String, dynamic> profileData) async {
+  static Future<bool> updateUserProfile(
+    Map<String, dynamic> profileData,
+  ) async {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) return false;
@@ -319,21 +335,24 @@ class ProfileRepository {
     };
   }
 
-  static Map<String, dynamic> _validateAndCleanUserProfile(Map<String, dynamic> profile) {
+  static Map<String, dynamic> _validateAndCleanUserProfile(
+    Map<String, dynamic> profile,
+  ) {
     // Ensure all required fields exist with defaults
     final cleanProfile = Map<String, dynamic>.from(_getDefaultUserProfile());
-    
+
     // Merge with actual data, keeping defaults for missing fields
     cleanProfile.addAll(profile);
-    
+
     // Validate nested student data
     if (profile['students'] != null) {
-      final studentDefaults = _getDefaultUserProfile()['students'] as Map<String, dynamic>;
+      final studentDefaults =
+          _getDefaultUserProfile()['students'] as Map<String, dynamic>;
       final studentData = Map<String, dynamic>.from(studentDefaults);
       studentData.addAll(profile['students'] as Map<String, dynamic>);
       cleanProfile['students'] = studentData;
     }
-    
+
     return cleanProfile;
   }
 }

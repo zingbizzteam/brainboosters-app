@@ -8,13 +8,13 @@ class CourseRepository {
   static const Duration _cacheExpiry = Duration(minutes: 5);
 
   /// Get course count for category without fetching data
-  static Future<int> getCourseCountByCategory(String categoryName) async {
+  static Future<int> getCourseCountByCategory(String categoryId) async {
     try {
       final response = await _client
           .from('courses')
           .select('id')
           .eq('is_published', true)
-          .eq('category', categoryName)
+          .eq('category_id', categoryId)
           .count(CountOption.exact);
 
       return response.count;
@@ -28,21 +28,22 @@ class CourseRepository {
     try {
       final response = await _client
           .from('courses')
-          .select('category')
+          .select('category_id')
           .eq('is_published', true);
 
       final countMap = <String, int>{};
       for (final course in response) {
-        final category = course['category'] as String?;
-        if (category != null) {
-          countMap[category] = (countMap[category] ?? 0) + 1;
+        final categoryId = course['category_id'] as String?;
+        if (categoryId != null) {
+          countMap[categoryId] = (countMap[categoryId] ?? 0) + 1;
         }
       }
-      // Cache all results
+
       for (final entry in countMap.entries) {
         final cacheKey = 'count_${entry.key}';
         _countCache[cacheKey] = _CachedCount(entry.value, DateTime.now());
       }
+
       return countMap;
     } catch (e) {
       throw CourseRepositoryException('Failed to get category counts: $e');
@@ -53,7 +54,7 @@ class CourseRepository {
   static Future<PaginatedCourses> getCourses({
     int limit = 12,
     int offset = 0,
-    String? category,
+    String? categoryId,
     String? searchQuery,
     CourseSortBy sortBy = CourseSortBy.newest,
     CourseLevel? level,
@@ -67,7 +68,8 @@ class CourseRepository {
             id,
             title,
             thumbnail_url,
-            category,
+            category_id,
+            course_categories!left(id, name, slug),
             level,
             price,
             original_price,
@@ -83,26 +85,28 @@ class CourseRepository {
           ''')
           .eq('is_published', true);
 
-      // Apply filters
-      if (category != null) {
-        query = query.eq('category', category);
+      if (categoryId != null) {
+        query = query.eq('category_id', categoryId);
       }
+
       if (searchQuery != null && searchQuery.isNotEmpty) {
         query = query.or(
-          'title.ilike.%$searchQuery%,category.ilike.%$searchQuery%',
+          'title.ilike.%$searchQuery%,course_categories.name.ilike.%$searchQuery%',
         );
       }
+
       if (level != null) {
         query = query.eq('level', level.name);
       }
+
       if (minRating != null) {
         query = query.gte('rating', minRating);
       }
+
       if (maxPrice != null) {
         query = query.lte('price', maxPrice);
       }
 
-      // Sorting
       String orderByField;
       bool ascending;
       switch (sortBy) {
@@ -136,8 +140,10 @@ class CourseRepository {
           .order(orderByField, ascending: ascending)
           .range(offset, offset + limit - 1)
           .timeout(const Duration(seconds: 15));
+
       final courses = List<Map<String, dynamic>>.from(response);
       final hasMore = courses.length == limit;
+
       return PaginatedCourses(
         courses: courses,
         hasMore: hasMore,
@@ -157,15 +163,17 @@ class CourseRepository {
       if (user == null) {
         return _getPopularCourses(limit);
       }
+
       final studentData = await _client
           .from('students')
-          .select('learning_goals, preferred_categories, skill_level')
+          .select('learning_goals, preferred_learning_style')
           .eq('user_id', user.id)
           .maybeSingle();
+
       if (studentData == null) {
         return _getPopularCourses(limit);
       }
-      // Layer 1: Learning goals
+
       final userGoals = studentData['learning_goals'] as List?;
       if (userGoals != null && userGoals.isNotEmpty) {
         try {
@@ -176,26 +184,7 @@ class CourseRepository {
           if (tagBasedCourses.isNotEmpty) return tagBasedCourses;
         } catch (_) {}
       }
-      // Layer 2: Preferred categories
-      final preferredCategories = studentData['preferred_categories'] as List?;
-      if (preferredCategories != null && preferredCategories.isNotEmpty) {
-        try {
-          final categoryBasedCourses = await _getCoursesByCategories(
-            preferredCategories.cast<String>(),
-            limit,
-          );
-          if (categoryBasedCourses.isNotEmpty) return categoryBasedCourses;
-        } catch (_) {}
-      }
-      // Layer 3: Skill level
-      final skillLevel = studentData['skill_level'] as String?;
-      if (skillLevel != null) {
-        try {
-          final levelBasedCourses = await _getCoursesByLevel(skillLevel, limit);
-          if (levelBasedCourses.isNotEmpty) return levelBasedCourses;
-        } catch (_) {}
-      }
-      // Layer 4: Enrollment history
+
       try {
         final historyBasedCourses = await _getCoursesByEnrollmentHistory(
           user.id,
@@ -203,8 +192,9 @@ class CourseRepository {
         );
         if (historyBasedCourses.isNotEmpty) return historyBasedCourses;
       } catch (_) {}
-      // Layer 5: Fallback to top-rated
-      return _getTopRatedCourses(limit);
+
+      // ✅ FIXED: Fallback to all published courses instead of top-rated
+      return _getAllCourses(limit);
     } catch (_) {
       return _getPopularCourses(limit);
     }
@@ -220,7 +210,8 @@ class CourseRepository {
           id,
           title,
           thumbnail_url,
-          category,
+          category_id,
+          course_categories!left(id, name, slug),
           level,
           price,
           original_price,
@@ -233,67 +224,9 @@ class CourseRepository {
         ''')
         .eq('is_published', true)
         .overlaps('tags', tags)
-        .gte('rating', 3.5)
-        .order('rating', ascending: false)
+        .order('created_at', ascending: false)
         .limit(limit);
-    return List<Map<String, dynamic>>.from(response);
-  }
 
-  static Future<List<Map<String, dynamic>>> _getCoursesByCategories(
-    List<String> categories,
-    int limit,
-  ) async {
-    final response = await _client
-        .from('courses')
-        .select('''
-          id,
-          title,
-          thumbnail_url,
-          category,
-          level,
-          price,
-          original_price,
-          rating,
-          total_reviews,
-          total_lessons,
-          duration_hours,
-          enrollment_count,
-          coaching_centers(center_name)
-        ''')
-        .eq('is_published', true)
-        .inFilter('category', categories)
-        .gte('rating', 3.5)
-        .order('enrollment_count', ascending: false)
-        .limit(limit);
-    return List<Map<String, dynamic>>.from(response);
-  }
-
-  static Future<List<Map<String, dynamic>>> _getCoursesByLevel(
-    String skillLevel,
-    int limit,
-  ) async {
-    final response = await _client
-        .from('courses')
-        .select('''
-          id,
-          title,
-          thumbnail_url,
-          category,
-          level,
-          price,
-          original_price,
-          rating,
-          total_reviews,
-          total_lessons,
-          duration_hours,
-          enrollment_count,
-          coaching_centers(center_name)
-        ''')
-        .eq('is_published', true)
-        .eq('level', skillLevel)
-        .gte('rating', 4.0)
-        .order('rating', ascending: false)
-        .limit(limit);
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -303,22 +236,27 @@ class CourseRepository {
   ) async {
     final enrolledCourses = await _client
         .from('course_enrollments')
-        .select('courses(category)')
+        .select('courses(category_id)')
         .eq('student_id', userId)
         .eq('is_active', true);
+
     if (enrolledCourses.isEmpty) return [];
-    final enrolledCategories = enrolledCourses
-        .map((e) => e['courses']['category'] as String?)
-        .where((category) => category != null)
+
+    final enrolledCategoryIds = enrolledCourses
+        .map((e) => e['courses']?['category_id'] as String?)
+        .where((categoryId) => categoryId != null)
         .cast<String>()
         .toSet()
         .toList();
-    if (enrolledCategories.isEmpty) return [];
+
+    if (enrolledCategoryIds.isEmpty) return [];
+
     final enrolledCourseIds = await _client
         .from('course_enrollments')
         .select('course_id')
         .eq('student_id', userId)
         .eq('is_active', true);
+
     final excludeIds = enrolledCourseIds
         .map((e) => e['course_id'] as String)
         .toList();
@@ -329,7 +267,8 @@ class CourseRepository {
           id,
           title,
           thumbnail_url,
-          category,
+          category_id,
+          course_categories!left(id, name, slug),
           level,
           price,
           original_price,
@@ -341,27 +280,32 @@ class CourseRepository {
           coaching_centers(center_name)
         ''')
         .eq('is_published', true)
-        .inFilter('category', enrolledCategories)
-        .gte('rating', 4.0);
+        .inFilter('category_id', enrolledCategoryIds);
+
     if (excludeIds.isNotEmpty) {
       query = query.not('id', 'in', '(${excludeIds.join(',')})');
     }
-    final response = await query.order('rating', ascending: false).limit(limit);
+
+    final response = await query
+        .order('created_at', ascending: false)
+        .limit(limit);
+
     return List<Map<String, dynamic>>.from(response);
   }
 
   /// Get featured courses (top rated, popular, suggested)
-  static Future<FeaturedCourses> getFeaturedCourses({int limit = 8}) async {
+  static Future<FeaturedCourses> getFeaturedCourses({int limit = 10}) async {
     try {
-      final results = await Future.wait([
+      final responses = await Future.wait([
         _getTopRatedCourses(limit),
         _getPopularCourses(limit),
         getSuggestedCourses(limit),
       ]);
+
       return FeaturedCourses(
-        topRated: results[0],
-        popular: results[1],
-        suggested: results[2],
+        topRated: responses[0],
+        popular: responses[1],
+        suggested: responses[2],
       );
     } catch (e) {
       throw CourseRepositoryException('Failed to fetch featured courses: $e');
@@ -374,62 +318,58 @@ class CourseRepository {
       final course = await _client
           .from('courses')
           .select('''
-          *,
-          coaching_centers(
-            id,
-            center_name,
-            description,
-            logo_url
-          )
-        ''')
+            *,
+            course_categories!left(id, name, slug),
+            coaching_centers(
+              id,
+              center_name,
+              description,
+              logo_url
+            )
+          ''')
           .eq('id', courseId)
           .eq('is_published', true)
           .maybeSingle();
 
       if (course == null) return null;
 
-      // Try to fetch lessons with fallback for missing columns
       final lessons = await _fetchLessonsWithFallback(courseId);
       course['lessons'] = lessons;
+
       return course;
     } catch (e) {
       throw CourseRepositoryException('Failed to fetch course details: $e');
     }
   }
 
-  /// Fetch lessons with graceful handling of missing columns
   static Future<List<Map<String, dynamic>>> _fetchLessonsWithFallback(
     String courseId,
   ) async {
     try {
-      // First, try with all expected columns
       return await _client
           .from('lessons')
-          .select('id, title, duration_minutes, lesson_order, is_preview')
+          .select('id, title, video_duration, lesson_number, is_free')
           .eq('course_id', courseId)
-          .order('lesson_order', ascending: true);
+          .order('lesson_number', ascending: true);
     } catch (e) {
       if (e.toString().contains('does not exist')) {
-        // Fallback: fetch only basic columns that should exist
         try {
           final basicLessons = await _client
               .from('lessons')
-              .select('id, title, lesson_order')
+              .select('id, title, lesson_number')
               .eq('course_id', courseId)
-              .order('lesson_order', ascending: true);
+              .order('lesson_number', ascending: true);
 
-          // Add default values for missing fields
           return basicLessons
               .map(
                 (lesson) => {
                   ...lesson,
-                  'duration_minutes': 0,
-                  'is_preview': false,
+                  'video_duration': 0,
+                  'is_free': false,
                 },
               )
               .toList();
         } catch (fallbackError) {
-          // If even basic query fails, return empty list
           return [];
         }
       }
@@ -437,12 +377,10 @@ class CourseRepository {
     }
   }
 
-  /// Search courses with advanced filters
   static Future<List<Map<String, dynamic>>> searchCourses({
     required String query,
     int limit = 20,
-    String? category,
-    CourseLevel? level,
+    String? categoryId,
   }) async {
     try {
       var searchQuery = _client
@@ -451,7 +389,8 @@ class CourseRepository {
             id,
             title,
             thumbnail_url,
-            category,
+            category_id,
+            course_categories!left(id, name, slug),
             level,
             price,
             original_price,
@@ -461,24 +400,23 @@ class CourseRepository {
           ''')
           .eq('is_published', true)
           .or(
-            'title.ilike.%$query%,category.ilike.%$query%,description.ilike.%$query%',
+            'title.ilike.%$query%,course_categories.name.ilike.%$query%,description.ilike.%$query%',
           );
-      if (category != null) {
-        searchQuery = searchQuery.eq('category', category);
+
+      if (categoryId != null) {
+        searchQuery = searchQuery.eq('category_id', categoryId);
       }
-      if (level != null) {
-        searchQuery = searchQuery.eq('level', level.name);
-      }
+
       final response = await searchQuery
-          .order('rating', ascending: false)
+          .order('created_at', ascending: false)
           .limit(limit);
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       throw CourseRepositoryException('Failed to search courses: $e');
     }
   }
 
-  /// Get courses by coaching center
   static Future<List<Map<String, dynamic>>> getCoursesByCoachingCenter({
     required String coachingCenterId,
     int limit = 20,
@@ -491,7 +429,8 @@ class CourseRepository {
             id,
             title,
             thumbnail_url,
-            category,
+            category_id,
+            course_categories!left(id, name, slug),
             level,
             price,
             original_price,
@@ -505,6 +444,7 @@ class CourseRepository {
           .eq('coaching_center_id', coachingCenterId)
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       throw CourseRepositoryException(
@@ -513,12 +453,11 @@ class CourseRepository {
     }
   }
 
-  /// Clear cache (useful for testing or force refresh)
   static void clearCache() {
     _countCache.clear();
   }
 
-  // Private helper methods
+  // ✅ FIXED: Remove rating filter, show up to 10 courses
   static Future<List<Map<String, dynamic>>> _getTopRatedCourses(
     int limit,
   ) async {
@@ -528,7 +467,8 @@ class CourseRepository {
           id,
           title,
           thumbnail_url,
-          category,
+          category_id,
+          course_categories!left(id, name, slug),
           level,
           price,
           original_price,
@@ -540,9 +480,10 @@ class CourseRepository {
           coaching_centers(center_name)
         ''')
         .eq('is_published', true)
-        .gte('rating', 4.0)
         .order('rating', ascending: false)
+        .order('created_at', ascending: false)
         .limit(limit);
+
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -555,7 +496,8 @@ class CourseRepository {
           id,
           title,
           thumbnail_url,
-          category,
+          category_id,
+          course_categories!left(id, name, slug),
           level,
           price,
           original_price,
@@ -568,7 +510,38 @@ class CourseRepository {
         ''')
         .eq('is_published', true)
         .order('enrollment_count', ascending: false)
+        .order('created_at', ascending: false)
         .limit(limit);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // ✅ NEW: Get all published courses (fallback)
+  static Future<List<Map<String, dynamic>>> _getAllCourses(
+    int limit,
+  ) async {
+    final response = await _client
+        .from('courses')
+        .select('''
+          id,
+          title,
+          thumbnail_url,
+          category_id,
+          course_categories!left(id, name, slug),
+          level,
+          price,
+          original_price,
+          rating,
+          total_reviews,
+          total_lessons,
+          duration_hours,
+          enrollment_count,
+          coaching_centers(center_name)
+        ''')
+        .eq('is_published', true)
+        .order('created_at', ascending: false)
+        .limit(limit);
+
     return List<Map<String, dynamic>>.from(response);
   }
 }
@@ -577,7 +550,9 @@ class CourseRepository {
 class _CachedCount {
   final int count;
   final DateTime timestamp;
+
   _CachedCount(this.count, this.timestamp);
+
   bool get isExpired =>
       DateTime.now().difference(timestamp) > CourseRepository._cacheExpiry;
 }
@@ -586,6 +561,7 @@ class PaginatedCourses {
   final List<Map<String, dynamic>> courses;
   final bool hasMore;
   final int totalFetched;
+
   PaginatedCourses({
     required this.courses,
     required this.hasMore,
@@ -597,6 +573,7 @@ class FeaturedCourses {
   final List<Map<String, dynamic>> topRated;
   final List<Map<String, dynamic>> popular;
   final List<Map<String, dynamic>> suggested;
+
   FeaturedCourses({
     required this.topRated,
     required this.popular,
@@ -610,7 +587,9 @@ enum CourseLevel { beginner, intermediate, advanced }
 
 class CourseRepositoryException implements Exception {
   final String message;
+
   CourseRepositoryException(this.message);
+
   @override
   String toString() => 'CourseRepositoryException: $message';
 }
